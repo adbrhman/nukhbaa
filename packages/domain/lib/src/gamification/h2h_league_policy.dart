@@ -148,6 +148,11 @@ final class H2hMember {
   bool activeIn(int round) =>
       round >= fromRound && (untilRound == null || round <= untilRound!);
 
+  /// NK277: whether the member sits in a waiting group that has not
+  /// started: he plays no round of the month
+  /// ([H2hLeaguePolicy.waitingFromRound]).
+  bool get waiting => fromRound > H2hLeaguePolicy.maxRounds;
+
   /// Whether the member still holds the seat: no swap took it from him.
   bool get current => untilRound == null;
 }
@@ -394,6 +399,7 @@ final class H2hDrawGroup {
     required this.groupIndex,
     required this.seats,
     this.capacity = H2hLeaguePolicy.groupCapacity,
+    this.waiting = false,
   });
 
   /// The division.
@@ -409,6 +415,11 @@ final class H2hDrawGroup {
   /// or 22 for the one group of the elite draw that takes a last single
   /// player as its 21st member (`H2hLeaguePolicy.eliteDraw`). Always even.
   final int capacity;
+
+  /// NK277: the group is a waiting list, not a competing group: it has
+  /// fewer than twenty players and plays no round until the twentieth
+  /// joins (`h2h_waiting_groups`, migration 0213; December 2026 on).
+  final bool waiting;
 }
 
 /// One seat handed out by the draw.
@@ -658,7 +669,16 @@ final class H2hLeaguePolicy {
   /// its 21st member, in a group of 22 seats (one seat stays empty and plays
   /// the group average). Alone, with no extra group to join, he plays in a
   /// group of his own.
-  static List<H2hDrawGroup> eliteDraw(List<UserId> ordered) {
+  ///
+  /// **NK277, December 2026 on ([waitingRest]):** the last extra group,
+  /// when it has fewer than twenty players, is a waiting group
+  /// (`H2hDrawGroup.waiting`): it plays no round until its twentieth player
+  /// joins. No 21st member: a single player left at the end is a waiting
+  /// group of one.
+  static List<H2hDrawGroup> eliteDraw(
+    List<UserId> ordered, {
+    bool waitingRest = false,
+  }) {
     final eliteCount = ordered.length < eliteSeats
         ? ordered.length
         : eliteSeats;
@@ -694,7 +714,7 @@ final class H2hLeaguePolicy {
           : rest.length;
       chunks.add(rest.sublist(start, end));
     }
-    if (chunks.length > 1 && chunks.last.length == 1) {
+    if (!waitingRest && chunks.length > 1 && chunks.last.length == 1) {
       final single = chunks.removeLast();
       chunks[chunks.length - 1] = <UserId>[...chunks.last, ...single];
     }
@@ -708,6 +728,8 @@ final class H2hLeaguePolicy {
           division: extraDivision,
           groupIndex: i,
           capacity: capacity,
+          // NK277: fewer than twenty wait for the twentieth.
+          waiting: waitingRest && players.length < groupCapacity,
           seats: List<H2hDrawSeat>.unmodifiable([
             for (var k = 0; k < players.length; k++)
               H2hDrawSeat(userId: players[k], slot: k),
@@ -718,6 +740,39 @@ final class H2hLeaguePolicy {
     return List<H2hDrawGroup>.unmodifiable(groups);
   }
   // NK182_000
+
+  // NK277 waiting groups (owner, 2026-11-14; December 2026 on)
+  /// The round a member of a waiting group that has not started is read
+  /// from (`h2h_waiting_groups`, migration 0213): after the month's last
+  /// round, so he plays none of them and no absence counts against him.
+  static const int waitingFromRound = maxRounds + 1;
+
+  /// Rounds a group that starts late must have left, its first included,
+  /// to take part in the month's promotion and relegation.
+  static const int minCountedRounds = 7;
+
+  /// Whether a group whose first round is [startRound] takes part in the
+  /// month's promotion and relegation: [minCountedRounds] or more rounds
+  /// left when it started. A group that never started takes no part; its
+  /// results, if any, are kept all the same.
+  static bool countsForMovement(int startRound) =>
+      startRound <= maxRounds && maxRounds - startRound + 1 >= minCountedRounds;
+
+  /// The first round a group plays: the earliest round any of [members]
+  /// holds a seat from ([waitingFromRound] for a waiting group that has not
+  /// started). 1 for a group drawn and played from the month's start.
+  static int groupStartOf(List<H2hMember> members) {
+    if (members.isEmpty) {
+      return 1;
+    }
+    var start = members.first.fromRound;
+    for (final member in members) {
+      if (member.fromRound < start) {
+        start = member.fromRound;
+      }
+    }
+    return start;
+  }
 
   /// The first day of the Riyadh month containing [riyadhDay], as a UTC
   /// midnight -- the value of `month_start` in the 0100 tables.

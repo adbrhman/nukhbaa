@@ -131,6 +131,8 @@ final class MyH2hLeague {
     this.rounds = const <MyH2hRound>[],
     this.promotionZone = 0,
     this.relegationZone = 0,
+    this.groupStart = 1,
+    this.waitingFor,
   });
 
   /// Where the caller stands with the league.
@@ -163,6 +165,15 @@ final class MyH2hLeague {
 
   /// How many places from the bottom go down if the month ended now.
   final int relegationZone;
+
+  /// NK277: the first round the caller's group plays (1 for a group drawn
+  /// at the month's start); after the month's last round for a waiting
+  /// group that has not started.
+  final int groupStart;
+
+  /// NK277: players the caller's waiting group still needs before it
+  /// starts, or null when it plays.
+  final int? waitingFor;
 }
 
 /// Reads the caller's group for the Riyadh month that is open now.
@@ -352,8 +363,14 @@ final class GetMyH2hLeague {
       return opponent == reader ? null : opponent;
     }
 
+    // NK277: a group that started late shows its own rounds only, and a
+    // waiting group none until its twentieth player joins.
+    final groupStart = H2hLeaguePolicy.groupStartOf(sheet.members);
     final views = <MyH2hRound>[];
     for (final round in rounds) {
+      if (round.number < groupStart) {
+        continue;
+      }
       final status = _statusOf(round, sheet);
       final lastKickoff = sheet.lastKickoffs[round.number];
       final match = myMatches[round.number];
@@ -417,6 +434,10 @@ final class GetMyH2hLeague {
         relegationZone: H2hLeaguePolicy.usesEliteDraw(month)
             ? 0
             : H2hLeaguePolicy.relegationCount(seat.division, size),
+        groupStart: groupStart,
+        waitingFor: groupStart > H2hLeaguePolicy.maxRounds
+            ? H2hLeaguePolicy.groupCapacity - size
+            : null,
       ),
     );
   }

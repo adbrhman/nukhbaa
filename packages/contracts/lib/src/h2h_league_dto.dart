@@ -242,6 +242,8 @@ final class MyH2hLeagueDto {
     this.division,
     this.groupIndex,
     this.daysLeft = 0,
+    this.groupStart = 1,
+    this.waitingFor,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -255,6 +257,8 @@ final class MyH2hLeagueDto {
     division: json['division'] as int?,
     groupIndex: json['group_index'] as int?,
     daysLeft: (json['days_left'] as int?) ?? 0,
+    groupStart: (json['group_start'] as int?) ?? 1,
+    waitingFor: json['waiting_for'] as int?,
     myRank: (json['my_rank'] as int?) ?? 0,
     promotionZone: (json['promotion_zone'] as int?) ?? 0,
     relegationZone: (json['relegation_zone'] as int?) ?? 0,
@@ -290,6 +294,14 @@ final class MyH2hLeagueDto {
   /// Days left in the month after today, Riyadh; 0 on its last day.
   final int daysLeft;
 
+  /// NK277: the first round the caller's group plays: 1, a later round for
+  /// a group that started late, 20 for a waiting group (none yet).
+  final int groupStart;
+
+  /// NK277: players the caller's waiting group still needs before it
+  /// starts; null when it plays.
+  final int? waitingFor;
+
   /// The caller's rank on the table, 0 when not open.
   final int myRank;
 
@@ -318,6 +330,8 @@ final class MyH2hLeagueDto {
     'division': division,
     'group_index': groupIndex,
     'days_left': daysLeft,
+    'group_start': groupStart,
+    'waiting_for': waitingFor,
     'my_rank': myRank,
     'promotion_zone': promotionZone,
     'relegation_zone': relegationZone,

@@ -31,6 +31,8 @@ MyH2hLeagueDto myH2hLeagueToDto(MyH2hLeague league) {
     myRank: league.myRank,
     promotionZone: league.promotionZone,
     relegationZone: league.relegationZone,
+    groupStart: league.groupStart,
+    waitingFor: league.waitingFor,
     standings: [
       for (final placing in league.placings) _standingToDto(placing, league),
     ],
@@ -196,6 +198,8 @@ MyH2hLeagueDto myH2hMonthToDto(MyH2hMonth month) {
     relegationZone: base.relegationZone,
     standings: base.standings,
     daysLeft: month.daysLeft,
+    groupStart: base.groupStart,
+    waitingFor: base.waitingFor,
     rounds: [
       for (final round in base.rounds)
         H2hRoundViewDto(

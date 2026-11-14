@@ -76,6 +76,20 @@ Future<void> _runOnce(CompositionRoot root) async {
       Err<H2hAbsenceRun>(:final error) => Result<String?>.err(error),
     };
   });
+  // NK277: new players into the waiting group (0213), after the absence
+  // swaps; a group that fills starts from the next round not started.
+  await _job(root, 'h2h-newcomers', () async {
+    final result = await root.seatH2hNewcomers(now: now);
+    return switch (result) {
+      Ok<H2hNewcomersRun>(:final value) => Result<String?>.ok(
+        value.seated + value.opened + value.started == 0
+            ? null
+            : 'seated ${value.seated}, opened ${value.opened}, '
+                  'started ${value.started}',
+      ),
+      Err<H2hNewcomersRun>(:final error) => Result<String?>.err(error),
+    };
+  });
   // NK185: the Elite Cup (0190), after the rounds and the absence swaps:
   // it waits for the 19th round to be judged, then plays its stages on the
   // next qualifying days. Never blocks the month's close.

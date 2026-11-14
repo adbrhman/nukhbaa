@@ -49,6 +49,11 @@ final class PostgresH2hSheetReader implements H2hSheetReader, H2hOutcomeReader {
   /// round 1, then whoever a seat swap put in it from the swap's round; a
   /// holder's last round is the round before the next one's. A suspended
   /// holder is left out, so his seat plays the group average in his rounds.
+  ///
+  /// NK277 (migration 0213): a waiting group plays from the round it
+  /// started from, and none before it starts (round 20, after the month's
+  /// last: `H2hLeaguePolicy.waitingFromRound`). Any other group is read as
+  /// before.
   static const String membersSql = '''
 WITH seats AS (
   SELECT m.user_id, m.slot, m.joined_at, 1 AS from_round
@@ -68,13 +73,22 @@ held AS (
          lead(s.from_round) OVER (PARTITION BY s.slot ORDER BY s.from_round)
            - 1 AS until_round
   FROM seats s
+),
+gate AS (
+  SELECT CASE WHEN w.league_id IS NULL THEN 1
+              ELSE COALESCE(gs.from_round, 20)
+         END AS first_round
+  FROM (SELECT @league_id::uuid AS league_id) g
+  LEFT JOIN gamification.h2h_waiting_groups w ON w.league_id = g.league_id
+  LEFT JOIN gamification.h2h_group_starts gs ON gs.league_id = g.league_id
 )
 SELECT h.user_id::text AS user_id,
        h.slot          AS slot,
        h.joined_at     AS joined_at,
-       h.from_round    AS from_round,
+       GREATEST(h.from_round, gate.first_round) AS from_round,
        h.until_round   AS until_round
 FROM held h
+CROSS JOIN gate
 JOIN identity.users u ON u.id = h.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
 ORDER BY h.slot, h.from_round
 ''';

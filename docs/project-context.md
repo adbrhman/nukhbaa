@@ -8724,6 +8724,68 @@ tie-break of a pair stay as script 185 built them.
   absence rule in every group, a new player's immediate seat in a last
   group filling during the month.
 
+### New players and the waiting group (script 277, migration 0213, 2026-11-14)
+
+Decided by the owner on 2026-11-14, December 2026 on (every rule below is
+gated on `H2hLeaguePolicy.usesDecemberRules` in Dart and on
+`month_start >= 2026-12-01` in SQL; November and earlier read exactly as
+before). Marker `NK277`. The first of three batches (278: absence in every
+group and the vacant seat; 279: rounds running past the month's end), each
+approved by the owner on its own.
+
+- **Who joins** (`SeatH2hNewcomers`, scheduler job `h2h-newcomers` after
+  `h2h-absence`): a player with no seat in the month who made a prediction
+  on a real match (not hidden, not a test match) since the month was drawn,
+  his account neither suspended nor hidden: at his first real prediction,
+  not at registration. First prediction first. Nobody joins once the
+  month's last round has started, nor a pilot, an undrawn or a judged month.
+- **Where**: the month's waiting group (`gamification.h2h_waiting_groups`),
+  an extra group of twenty seats: the draw's last extra group when under
+  twenty (`H2hLeaguePolicy.eliteDraw(waitingRest:)`, no 21st member any
+  more), else one opened by the first new player. One open at a time.
+- **A waiting group is not a competing group**: `membersSql` reads its
+  players from round 20 (`H2hLeaguePolicy.waitingFromRound`) until it
+  starts, so no round, result or absence counts for them and they are
+  never a substitute for absence (`loadH2hAbsenceState` leaves them out).
+- **The start**: the twentieth player writes `h2h_group_starts` in the same
+  transaction, from the first round of the month not started (the database
+  refuses fewer than twenty and a round that has started). The groups
+  already playing are not touched.
+- **The month's end**: a group whose first round left fewer than seven
+  (`countsForMovement`: started after round 13, or never) takes no part in
+  NK275's carry: nobody up or down (`H2hEliteGroup.counted` false, outcome
+  `held`), its results kept; its players come after every other group, the
+  more committed first, then those who never played in the order they
+  joined. From December every `h2h_league_finished` event carries a
+  `reason`: `commitment` (up), `table` (down), `active_days` (not carried),
+  `not_counted`.
+- **The record**: `h2h_newcomer_seatings` (why a seat was taken after the
+  draw) and the read-only view `gamification.h2h_movements` (draw, new
+  player, group start, seat swap, month's end, each with its reason); the
+  owner reads it with `supabase/queries/h2h_movements.sql`.
+- **Rollback, each on its own**: `NUKHBA_H2H_NEWCOMERS=off` stops the job
+  and the draw's waiting group; `supabase/queries/h2h_newcomers_freeze.sql`
+  refuses new seats and starts in the database (nothing deleted),
+  `h2h_newcomers_unfreeze.sql` undoes it, `h2h_newcomers_check.sql` reads
+  the state. All tables are append-only, RLS on, nothing for anon or
+  authenticated.
+- `AddH2hGroups` is refused from December (`h2h.groups_by_newcomers`): it
+  would count the rounds played before the group. The admin's "run now"
+  does not run the new job; the scheduler runs it every five minutes.
+- The player's card (`H2hDivisionCard`) says how many a waiting group still
+  needs, or from which round a late group started (`MyH2hLeagueDto.
+  waitingFor`, `groupStart`, new optional fields; an older payload reads
+  as a group drawn at the start). December's rules tell both.
+- Tests: domain `h2h_waiting_groups_test.dart`; application
+  `h2h_waiting_groups_test.dart` (the job, the draw, the reads, the absence
+  state, the close, December and November); infrastructure
+  `postgres_h2h_newcomer_store_test.dart`; contracts
+  `h2h_league_waiting_dto_test.dart`; mobile `h2h_waiting_group_test.dart`;
+  SQL `0213_h2h_waiting_groups_test.sql` (every refusal, a player never in
+  two groups or seated twice, the playing group read the same after a
+  start, the freeze and the owner's files).
+- **Apply 0213 in the SQL Editor before pushing** (migration-drift).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

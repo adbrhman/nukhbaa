@@ -203,6 +203,33 @@ String h2hCountdownLabel(Duration left) {
 /// The opponent's name when the caller plays the group average.
 const String h2hAverageOpponent = 'متوسط المجموعة';
 
+// NK277 waiting group (owner, 2026-11-14)
+/// The last round a group may start from and still take part in the
+/// month's promotion and relegation: seven rounds or more left.
+const int h2hLastCountedStart = 13;
+
+/// Players in words, for the waiting group: `لاعب واحد`, `لاعبان`,
+/// `3 لاعبين`, `11 لاعبًا`.
+String h2hPlayersWords(int players) {
+  if (players == 1) return 'لاعب واحد';
+  if (players == 2) return 'لاعبان';
+  if (players >= 3 && players <= 10) return '$players لاعبين';
+  return '$players لاعبًا';
+}
+
+/// On the card of a waiting group: it plays once twenty have joined, and
+/// how many it still needs.
+String h2hWaitingLabel(int missing) =>
+    'مجموعتك في الانتظار: تبدأ مواجهاتها حين يكتمل 20 لاعبًا، '
+    'وباقي ${h2hPlayersWords(missing)}.';
+
+/// On the card of a group that started after round 1: from which round,
+/// and, with fewer than seven rounds left, that nobody moves up or down.
+String h2hGroupStartLabel(int round) => round > h2hLastCountedStart
+    ? 'بدأت مجموعتك من الجولة $round: نتائجها محفوظة، ولا صعود منها '
+          'ولا هبوط هذا الشهر.'
+    : 'بدأت مجموعتك من الجولة $round.';
+
 // NK216 walkover notes (owner's decision of 2026-11-07)
 /// Under the caller's match against an absent opponent: what the round gave
 /// the caller. [result] is the match's `result` (`win` or `draw`), null while
@@ -327,8 +354,13 @@ const List<String> h2hDecemberRules = <String>[
       'النتائج، أو بعد 3 أيام على الأكثر. والنتيجة المتأخرة بعد نهاية اليوم '
       'التالي للجولة لا تُحتسب لها.',
   'لتبقى في المجموعات الشهر التالي توقّع في 5 أيام مختلفة على الأقل خلال '
-      'الشهر، ومن لم يبلغها يخرج. واللاعب الجديد يدخل القرعة التالية في آخر '
-      'المجموعات بالشرط نفسه.',
+      'الشهر، ومن لم يبلغها يخرج.',
+  // NK277_rules
+  'اللاعب الجديد يدخل عند أول توقّع له مجموعة الانتظار، وهي آخر '
+      'المجموعات. لا تُلعب فيها جولات ولا يُحتسب فيها غياب حتى يكتمل 20 '
+      'لاعبًا، فتبدأ من أول جولة لم تبدأ بعد، ولا تتأثر المجموعات الأخرى.',
+  'المجموعة التي تبدأ وقد بقي لها أقل من 7 جولات تلعبها وتُحفظ نتائجها، '
+      'لكن لا يصعد منها أحد ولا يهبط في ذلك الشهر.',
 ];
 
 /// Rules of November 2026, the first month of the elite draw (NK182, NK183).

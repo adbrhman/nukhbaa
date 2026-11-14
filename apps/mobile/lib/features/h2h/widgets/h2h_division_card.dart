@@ -62,6 +62,13 @@ class H2hDivisionCard extends StatelessWidget {
         !promoted &&
         league.relegationZone > 0 &&
         league.myRank > count - league.relegationZone;
+    // NK277: what the server says of a waiting group or a late start.
+    final int? missing = league.waitingFor;
+    final String? waitingNote = missing != null
+        ? h2hWaitingLabel(missing)
+        : (league.groupStart > 1 && league.groupStart <= 19
+              ? h2hGroupStartLabel(league.groupStart)
+              : null);
     return Container(
       key: const Key('h2h.banner'),
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -235,6 +242,31 @@ class H2hDivisionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'شهر تجريبي: نتائجه لا تُحتسب',
+                    style: context.text.labelSmall?.copyWith(
+                      color: t.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          // NK277: a waiting group, or a group that started after round 1.
+          if (waitingNote != null) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              key: const Key('h2h.waiting'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.hourglass_empty_rounded,
+                  size: AppSizes.iconXs,
+                  color: t.textSecondary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    waitingNote,
+                    key: const Key('h2h.waiting.text'),
                     style: context.text.labelSmall?.copyWith(
                       color: t.textSecondary,
                     ),

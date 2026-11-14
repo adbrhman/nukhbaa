@@ -46,15 +46,22 @@ final class DrawH2hMonth {
     required H2hDrawSource source,
     required IdGenerator idGenerator,
     H2hControlStore? controls,
+    bool waitingGroups = true,
   }) : _leagues = leagues,
        _source = source,
        _ids = idGenerator,
-       _controls = controls;
+       _controls = controls,
+       _waitingGroups = waitingGroups;
 
   final H2hLeagueStore _leagues;
   final H2hDrawSource _source;
   final IdGenerator _ids;
   final H2hControlStore? _controls;
+
+  /// NK277: false when the host turned new players off
+  /// (`NUKHBA_H2H_NEWCOMERS=off`): the draw cuts its last group as before
+  /// script 277, with no waiting group.
+  final bool _waitingGroups;
 
   /// Draws the month containing [now] if it is due and not drawn yet.
   Future<Result<int>> call({required DateTime now}) async {
@@ -148,6 +155,7 @@ final class DrawH2hMonth {
       monthStart: month,
       isPilot: false,
       order: order,
+      waitingGroups: _waitingGroups,
     );
   }
 
@@ -159,11 +167,18 @@ final class DrawH2hMonth {
     required DateTime monthStart,
     required bool isPilot,
     required List<UserId> order,
+    bool waitingGroups = true,
   }) async {
     // NK182: from November 2026, four even elite groups of the first 80,
     // then extra groups of twenty (`H2hLeaguePolicy.eliteDraw`).
+    // NK277: from December 2026 the last extra group, under twenty, waits
+    // for its twentieth player instead of playing.
     final groups = H2hLeaguePolicy.usesEliteDraw(monthStart)
-        ? H2hLeaguePolicy.eliteDraw(order)
+        ? H2hLeaguePolicy.eliteDraw(
+            order,
+            waitingRest:
+                waitingGroups && H2hLeaguePolicy.usesDecemberRules(monthStart),
+          )
         : H2hLeaguePolicy.draw(H2hLeaguePolicy.cut(order));
     final drawn = <H2hDrawnGroup>[];
     for (final group in groups) {

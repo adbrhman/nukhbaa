@@ -53,6 +53,13 @@ INSERT INTO gamification.h2h_league_members
 VALUES (@league_id::uuid, @month::date, @user_id::uuid, @slot::smallint)
 ''';
 
+  /// NK277 (migration 0213): the draw's last extra group, under twenty, is
+  /// the month's waiting group.
+  static const String insertWaitingSql = '''
+INSERT INTO gamification.h2h_waiting_groups (league_id, month_start)
+VALUES (@league_id::uuid, @month::date)
+''';
+
   /// The seat a player holds now (NK183, migration 0189): his draw seat,
   /// or the seat of the latest swap that moved him.
   static const String seatSql = '''
@@ -194,6 +201,15 @@ ON CONFLICT (month_start) DO NOTHING
         );
         if (group is Err<List<Map<String, dynamic>>>) {
           return Result.err(group.error);
+        }
+        if (drawn.group.waiting) {
+          final waiting = await tx.query(
+            insertWaitingSql,
+            parameters: {'league_id': drawn.leagueId.value, 'month': month},
+          );
+          if (waiting is Err<List<Map<String, dynamic>>>) {
+            return Result.err(waiting.error);
+          }
         }
         for (final seat in drawn.group.seats) {
           final row = await tx.query(

@@ -198,6 +198,14 @@ final class CloseH2hMonth {
           division: group.division,
           groupIndex: group.groupIndex,
           placings: placings,
+          // NK277: from December 2026 a group that started with fewer than
+          // seven rounds left, or never started, takes no part.
+          counted:
+              !H2hLeaguePolicy.usesDecemberRules(month) ||
+              group.division == H2hLeaguePolicy.eliteDivision ||
+              H2hLeaguePolicy.countsForMovement(
+                H2hLeaguePolicy.groupStartOf(sheet.members),
+              ),
         ),
       );
       final current = book != null ? h2hCurrentMembers(sheet) : sheet.members;
@@ -246,6 +254,7 @@ final class CloseH2hMonth {
         H2hDivision? nextDivision,
         H2hLeagueOutcome outcome,
         int? nextOrder,
+        bool counted,
       })
     >
     finishes;
@@ -266,6 +275,7 @@ final class CloseH2hMonth {
             nextDivision: f.nextDivision,
             outcome: f.outcome,
             nextOrder: f.nextOrder,
+            counted: f.counted,
           ),
       ];
     } else {
@@ -281,6 +291,7 @@ final class CloseH2hMonth {
             nextDivision: f.nextDivision,
             outcome: f.outcome,
             nextOrder: null,
+            counted: true,
           ),
       ];
     }
@@ -304,6 +315,10 @@ final class CloseH2hMonth {
         outcome: finish.outcome,
         occurredAt: endsAt,
         nextOrder: finish.nextOrder,
+        // NK277: why, from December 2026.
+        reason: H2hLeaguePolicy.usesDecemberRules(month)
+            ? _reasonOf(finish.outcome, counted: finish.counted)
+            : null,
       );
       if (built is Err<GamificationEvent>) {
         return Result.err(built.error);
@@ -325,6 +340,22 @@ final class CloseH2hMonth {
       return Result.err(marked.error);
     }
     return const Result.ok(true);
+  }
+
+  /// NK277: the reason a December 2026+ month records with each finish:
+  /// `not_counted` for a group that took no part, `commitment` for a move
+  /// up, `table` for a move down, `active_days` for a player not carried,
+  /// none for a player who stays.
+  static String? _reasonOf(H2hLeagueOutcome outcome, {required bool counted}) {
+    if (!counted) {
+      return outcome == H2hLeagueOutcome.out ? 'active_days' : 'not_counted';
+    }
+    return switch (outcome) {
+      H2hLeagueOutcome.promoted => 'commitment',
+      H2hLeagueOutcome.relegated => 'table',
+      H2hLeagueOutcome.out => 'active_days',
+      H2hLeagueOutcome.held => null,
+    };
   }
 
   /// What each player did in his own rounds of [month] (NK275): the

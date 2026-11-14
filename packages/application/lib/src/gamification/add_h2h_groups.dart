@@ -94,6 +94,18 @@ final class AddH2hGroups {
       );
     }
     final month = H2hLeaguePolicy.monthStartOf(riyadhDayOf(_clock.nowUtc()));
+    // NK277: from December 2026 new players join the waiting group at their
+    // first prediction (SeatH2hNewcomers); a group added by hand would count
+    // the rounds played before it.
+    if (H2hLeaguePolicy.usesDecemberRules(month)) {
+      return const Result.err(
+        AppError.invariant(
+          'h2h.groups_by_newcomers',
+          'From December 2026 new players join the waiting group by '
+              'themselves',
+        ),
+      );
+    }
 
     final infoResult = await _leagues.monthOf(month);
     if (infoResult is Err<H2hMonthInfo?>) {

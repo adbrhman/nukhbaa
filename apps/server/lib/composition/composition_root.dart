@@ -171,6 +171,7 @@ final class CompositionRoot {
     required this.runH2hAbsence,
     required this.h2hAbsenceDesk,
     required this.runH2hCup,
+    required this.seatH2hNewcomers,
     required this.addH2hGroups,
     required this.evaluateBadges,
     required this.providerSyncMode,
@@ -405,6 +406,7 @@ final class CompositionRoot {
     RunH2hAbsence? runH2hAbsence,
     AdminH2hAbsence? h2hAbsenceDesk,
     RunH2hCup? runH2hCup,
+    SeatH2hNewcomers? seatH2hNewcomers,
     AddH2hGroups? addH2hGroups,
     EvaluateBadges? evaluateBadges,
     this.providerSyncMode = ProviderSyncMode.off,
@@ -686,6 +688,7 @@ final class CompositionRoot {
        runH2hAbsence = runH2hAbsence ?? _absentRunH2hAbsence(),
        h2hAbsenceDesk = h2hAbsenceDesk ?? _absentH2hAbsenceDesk(),
        runH2hCup = runH2hCup ?? _absentRunH2hCup(),
+       seatH2hNewcomers = seatH2hNewcomers ?? _absentSeatH2hNewcomers(),
        addH2hGroups = addH2hGroups ?? _absentAddH2hGroups(),
        evaluateBadges = evaluateBadges ?? _absentEvaluateBadges(),
        registerDeviceToken =
@@ -1624,6 +1627,14 @@ final class CompositionRoot {
     rounds: _unwiredH2h,
     leagues: _unwiredH2h,
     sheets: _unwiredH2h,
+    idGenerator: _unwiredIdGenerator,
+  );
+
+  /// Backs the "absent" [SeatH2hNewcomers] (0213): every port throws.
+  static SeatH2hNewcomers _absentSeatH2hNewcomers() => SeatH2hNewcomers(
+    newcomers: _UnwiredH2hNewcomers(),
+    leagues: _unwiredH2h,
+    rounds: _unwiredH2h,
     idGenerator: _unwiredIdGenerator,
   );
 
@@ -2581,6 +2592,13 @@ final class CompositionRoot {
   /// decisions and the titles. Driven by the scheduler, never by a request.
   /// Off when the host sets `NUKHBA_H2H_CUP=off`.
   final RunH2hCup runH2hCup;
+
+  /// New players and the waiting group (NK277, migration 0213): a player
+  /// joins at his first real prediction, into the waiting group, which
+  /// starts when it holds twenty. December 2026 on; driven by the
+  /// scheduler. Off when the host sets `NUKHBA_H2H_NEWCOMERS=off` (the draw
+  /// then opens no waiting group either).
+  final SeatH2hNewcomers seatH2hNewcomers;
 
   /// The admin's desk for relegation for absence: the watch list, the next
   /// substitutes, the swaps, a relegation by hand and a round excused.
@@ -3868,6 +3886,7 @@ final class CompositionRoot {
         source: PostgresH2hDrawSource(connection),
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
+        waitingGroups: env['NUKHBA_H2H_NEWCOMERS'] != 'off',
       ),
       // No owner for the round and player reads (script 261, reversing
       // script 221): nobody, the owner admin included, reads a round's
@@ -3972,6 +3991,13 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         controls: PostgresH2hControlStore(connection),
         enabled: env['NUKHBA_H2H_CUP'] != 'off',
+      ),
+      seatH2hNewcomers: SeatH2hNewcomers(
+        newcomers: PostgresH2hNewcomerStore(connection),
+        leagues: PostgresH2hLeagueStore(connection),
+        rounds: PostgresH2hRoundStore(connection),
+        idGenerator: idGenerator,
+        enabled: env['NUKHBA_H2H_NEWCOMERS'] != 'off',
       ),
       h2hAbsenceDesk: AdminH2hAbsence(
         leagues: PostgresH2hLeagueStore(connection),
@@ -6221,6 +6247,39 @@ final class _UnwiredH2hGroupExtension implements H2hGroupExtension {
     required DateTime monthStart,
     required List<H2hDrawnGroup> groups,
     required int capacity,
+  }) => _unwired();
+}
+
+/// Backs the "absent" seating of new players (0213): each port method
+/// throws if a test reaches it without wiring it.
+final class _UnwiredH2hNewcomers implements H2hNewcomerStore {
+  static Never _unwired() =>
+      throw StateError('New players were not wired into this test root');
+
+  @override
+  Future<Result<List<UserId>>> newcomersOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<H2hWaitingGroup?>> waitingGroupOf(DateTime monthStart) =>
+      _unwired();
+
+  @override
+  Future<Result<int>> nextExtraIndexOf(DateTime monthStart) => _unwired();
+
+  @override
+  Future<Result<void>> openWaitingGroup({
+    required DateTime monthStart,
+    required H2hLeagueId leagueId,
+    required int groupIndex,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> seat({
+    required DateTime monthStart,
+    required H2hLeagueId leagueId,
+    required UserId userId,
+    required int slot,
+    int? startFrom,
   }) => _unwired();
 }
 

@@ -424,6 +424,11 @@ Future<Result<H2hAbsenceState?>> loadH2hAbsenceState({
       continue;
     }
     for (final member in h2hCurrentMembers(sheet)) {
+      // NK277: a player of a waiting group that has not started plays no
+      // round: he is never a substitute.
+      if (member.waiting) {
+        continue;
+      }
       into.add(
         H2hHeldSeat(
           userId: member.userId,

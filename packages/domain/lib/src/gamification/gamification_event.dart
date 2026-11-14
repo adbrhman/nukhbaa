@@ -212,6 +212,7 @@ final class GamificationEvent {
     required H2hLeagueOutcome outcome,
     required DateTime occurredAt,
     int? nextOrder,
+    String? reason,
   }) {
     final idResult = GamificationEventId.tryParse(id);
     if (idResult is Err<GamificationEventId>) {
@@ -255,6 +256,9 @@ final class GamificationEvent {
           'outcome': outcome.wireName,
           // NK275: the place in the next month's drawing order.
           if (nextOrder != null) 'next_order': nextOrder,
+          // NK277: why the member moved, or did not (`not_counted`: his
+          // group started too late to take part).
+          if (reason != null) 'reason': reason,
         },
         ruleVersion: currentRuleVersion,
       ),

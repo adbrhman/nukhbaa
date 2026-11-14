@@ -20,6 +20,12 @@
 ///   many sends its least committed to the group below.
 /// * A member who predicted on too few days ([eligible]) is not carried
 ///   (outcome `out`); he may come back at the bottom as a new player.
+/// * **NK277 (December 2026 on): a group that did not take part**
+///   (`H2hEliteGroup.counted` false: it started with fewer than seven
+///   rounds left, or never started) sends nobody up or down. Its carried
+///   players come after every other group, its results kept: the more
+///   committed first, a player with no round played after them in the
+///   order he joined (`H2hEliteFinish.counted` false, outcome `held`).
 ///
 /// Pure: no clock, no I/O.
 library;
@@ -75,6 +81,7 @@ final class H2hEliteFinish {
     required this.nextDivision,
     required this.nextOrder,
     required this.outcome,
+    this.counted = true,
   });
 
   /// The member's place in his own group.
@@ -95,6 +102,10 @@ final class H2hEliteFinish {
 
   /// Up, the same level, down, or out.
   final H2hLeagueOutcome outcome;
+
+  /// NK277: false when his group took no part in the month's promotion
+  /// and relegation (the event's reason `not_counted`).
+  final bool counted;
 }
 
 /// One group of a judged elite month, as the closing job hands it in.
@@ -104,6 +115,7 @@ final class H2hEliteGroup {
     required this.division,
     required this.groupIndex,
     required this.placings,
+    this.counted = true,
   });
 
   /// `eliteDivision` or `extraDivision`.
@@ -114,6 +126,11 @@ final class H2hEliteGroup {
 
   /// The group's table, best first.
   final List<H2hPlacing> placings;
+
+  /// NK277: whether the group takes part in the month's promotion and
+  /// relegation (`H2hLeaguePolicy.countsForMovement`). An elite group
+  /// always does.
+  final bool counted;
 }
 
 /// The carry of an elite month (NK275).
@@ -166,7 +183,12 @@ abstract final class H2hEliteCarry {
     ]..sort((a, b) => a.groupIndex.compareTo(b.groupIndex));
     final extra = [
       for (final g in groups)
-        if (g.division != H2hLeaguePolicy.eliteDivision) g,
+        if (g.division != H2hLeaguePolicy.eliteDivision && g.counted) g,
+    ]..sort((a, b) => a.groupIndex.compareTo(b.groupIndex));
+    // NK277: the groups that took no part, in their order.
+    final aside = [
+      for (final g in groups)
+        if (g.division != H2hLeaguePolicy.eliteDivision && !g.counted) g,
     ]..sort((a, b) => a.groupIndex.compareTo(b.groupIndex));
 
     // Every member once, with his group and placing.
@@ -310,6 +332,39 @@ abstract final class H2hEliteCarry {
       tiers.add([...eliteDown]..sort(byCommitment));
     }
 
+    // NK277: the players of the groups that took no part, after every
+    // tier: each group in its order, the more committed first, then those
+    // with no round played in the order they joined.
+    final asideOrder = <UserId>[];
+    final asidePlacing = <UserId, H2hPlacing>{};
+    final asideGroup = <UserId, H2hEliteGroup>{};
+    for (final g in aside) {
+      final members = <H2hPlacing>[
+        for (final p in g.placings)
+          if (!placingOf.containsKey(p.standing.userId)) p,
+      ];
+      for (final p in members) {
+        asidePlacing[p.standing.userId] = p;
+        asideGroup[p.standing.userId] = g;
+      }
+      final carriedHere =
+          [
+            for (final p in members)
+              if (carried(p.standing.userId)) p,
+          ]..sort((a, b) {
+            final ka = commitment.containsKey(a.standing.userId);
+            final kb = commitment.containsKey(b.standing.userId);
+            if (ka && kb) {
+              return byCommitment(a.standing.userId, b.standing.userId);
+            }
+            if (ka != kb) {
+              return ka ? -1 : 1;
+            }
+            return a.standing.slot.compareTo(b.standing.slot);
+          });
+      asideOrder.addAll([for (final p in carriedHere) p.standing.userId]);
+    }
+
     // 4. The order: the elite ranked by the month, then the tiers.
     final eliteNext = <UserId>[
       for (final p in [
@@ -332,8 +387,28 @@ abstract final class H2hEliteCarry {
         nextLevel[u] = i + 1;
       }
     }
+    for (final u in asideOrder) {
+      orderOf[u] = position++;
+    }
 
     return <H2hEliteFinish>[
+      for (final entry in asidePlacing.entries)
+        H2hEliteFinish(
+          placing: entry.value,
+          division: asideGroup[entry.key]!.division,
+          groupNumber: H2hLeaguePolicy.groupNumberOf(
+            division: asideGroup[entry.key]!.division,
+            groupIndex: asideGroup[entry.key]!.groupIndex,
+          ),
+          nextDivision: orderOf[entry.key] == null
+              ? null
+              : H2hLeaguePolicy.extraDivision,
+          nextOrder: orderOf[entry.key],
+          outcome: orderOf[entry.key] == null
+              ? H2hLeagueOutcome.out
+              : H2hLeagueOutcome.held,
+          counted: false,
+        ),
       for (final entry in placingOf.entries)
         _finish(
           entry.value,
