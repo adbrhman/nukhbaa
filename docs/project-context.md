@@ -8562,6 +8562,44 @@ a 48 dp):
   `share_hit_test.dart` (one node per box). All fail on the code before
   this batch.
 
+### The month's turnover check (script 273, 2026-11-14)
+
+Asked by the owner on 2026-11-14 after the priorities review: a read-only
+check of where a month stands before its jobs close it, run from the 25th
+and again on the 1st (the report of 2026-10-30, item 7: the approved
+rounds and the days left).
+
+- **The query**: `supabase/queries/month_turnover_check.sql`, one SELECT
+  (nothing written; only 0199's stable read functions are called), pasted
+  into the SQL Editor. One line a check, with a status (سليم, معلومة,
+  تنبيه, توقف): (1) the head-to-head month drawn, the rounds approved /
+  locked / void of 19, the last one, the Riyadh days left for the rest
+  less the excluded days (rounds never pass the month's end:
+  `h2h_rounds_day_in_month`), the fixtures known a day ahead and the days
+  with six or more, the admin's settings; (2) the Elite Cup's qualifiers,
+  stages and titles, the qualifying days the league and the cup still
+  need, and whether the cup runs into the next month (whose rounds then
+  wait, 2026-11-10); (3) the month judged (`h2h_month_closures`, its
+  `h2h_league_finished` events) and the next month drawn; (4) the monthly
+  contest `MM/YYYY`: crowned, `month_crown_state` (waiting, left out,
+  rescore, the latest result write), a prize set ahead; (5) the month's
+  matches two hours past kickoff without a result.
+- **The script also copies it** to `/sdcard/Download/month_turnover_check.sql`
+  for the owner to paste.
+- **Open, found while writing it (for the owner's decision):** December's
+  carry of the elite groups (script 187 in the plan of 2026-10-31) is not
+  built. `DrawH2hMonth` answers `h2h.elite_carry_pending` for any month of
+  the elite draw that follows a drawn month, so December 2026 is not drawn;
+  and `CloseH2hMonth` judges November (due 1 December, after its grace)
+  with the old ladder (`H2hLeaguePolicy.monthEnd` over division 1, the four
+  elite groups, and division 2), writing its `h2h_league_finished` events.
+  Rounds cannot pass the month's end either. The check shows "الشهر التالي
+  مسحوب: لا" with توقف from the 1st.
+- Tests: `supabase/tests/month_turnover_check_test.sql` runs the query as
+  it is over a seeded month (twelve rounds, one void, an excluded day, the
+  fixtures known, a match waited for and one left out) against every
+  migration, and checks that nothing was written.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
