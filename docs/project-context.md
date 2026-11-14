@@ -8600,6 +8600,39 @@ rounds and the days left).
   fixtures known, a match waited for and one left out) against every
   migration, and checks that nothing was written.
 
+### Every write of a prediction kept (script 274, migration 0211, 2026-11-14)
+
+Decided by the owner on 2026-11-14, after a player said he had predicted
+5-1 on Morocco - Niger and that 5-0 was stored. `fixture_predictions`
+keeps the latest score only, with `created_at` / `updated_at`: the check
+showed two writes 23 seconds apart from his one device, the last one 5-0
+with the double, 161 minutes before kickoff, but not what the first held.
+
+- **Migration 0211** (additive): `prediction.fixture_prediction_changes`,
+  one row a write of a prediction (insert, update, delete): the score and
+  the double before and after, the match before when a merge moved it,
+  `clock_timestamp()`, and the statement that wrote it (`current_query()`,
+  200 characters: the app's own INSERT / UPDATE of
+  `PostgresFixturePredictionRepository`, `merge_fixture_copies`, or a
+  hand-written query). An AFTER row trigger
+  (`fixture_predictions_z_change_log`, security definer) writes it; the
+  log is append-only (a trigger refuses UPDATE and DELETE), RLS on,
+  nothing for anon or authenticated. A write that changes nothing is kept
+  too. No app or server change: every writer is caught at the table.
+- **Reading it**: `supabase/queries/prediction_changes.sql`, one SELECT for
+  the SQL Editor, the player's and a team's name in `params`: one line a
+  write (أول حفظ / تعديل / حذف, before, after, minutes before kickoff, who:
+  the app, a merge, or the statement), then the prediction as stored.
+  Writes before 0211 are not in the log.
+- **Kept with the account**: a deleted account keeps its predictions
+  (0178), so it keeps their log, under the anonymised participant. About
+  one row per save; no clean-up yet.
+- Tests: `supabase/tests/0211_prediction_change_log_test.sql` (the app's
+  own statements: first save 5-1, change to 5-0, the double, the same save
+  again, a delete; append-only; no client privilege; the owner's query
+  read back). The whole SQL suite (90 files) passes with it.
+- **Apply 0211 in the SQL Editor before pushing** (migration-drift).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
