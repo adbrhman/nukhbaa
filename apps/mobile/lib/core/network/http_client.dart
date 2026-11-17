@@ -1,4 +1,5 @@
-/// The ONE and ONLY place `apps/mobile` touches `package:http`.
+/// The ONE and ONLY place `apps/mobile` builds its `package:http` client (the
+/// two small `platform_client_*.dart` files beside it pick the platform's).
 ///
 /// `api_client`'s [ApiTransport] requires an injected `http.Client` (so it can
 /// be driven by a `MockClient` in its own tests). This file constructs the
@@ -15,6 +16,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../auth/install_id.dart';
+import 'platform_client_stub.dart'
+    if (dart.library.io) 'platform_client_io.dart'
+    as impl;
 
 /// This install's id once the secure store answered (script 200). A
 /// request never waits for the store: until it answers, requests go
@@ -25,10 +29,10 @@ String? _knownInstallId() => _installId;
 
 /// Creates the platform-default [http.Client].
 ///
-/// On native platforms this is the `dart:io`-backed client; on web it is the
-/// browser `fetch`-backed client — `package:http` selects the right one. The
-/// caller owns the returned client's lifecycle (it is closed when the owning
-/// provider is disposed).
+/// On native platforms this is the `dart:io`-backed client, with a bound on
+/// how long a new connection may take (`platform_client_io.dart`); on web it
+/// is the browser `fetch`-backed client. The caller owns the returned
+/// client's lifecycle (it is closed when the owning provider is disposed).
 ///
 /// Off the web it names this build on every request ([BuildHeaderClient],
 /// script 142), so the server can refuse a release too old to be served,
@@ -38,7 +42,7 @@ String? _knownInstallId() => _installId;
 /// change): it reloads to the newest release by itself, and the server lets
 /// a browser request through.
 http.Client createHttpClient() {
-  final http.Client client = http.Client();
+  final http.Client client = impl.createPlatformClient();
   if (kIsWeb) {
     return client;
   }
