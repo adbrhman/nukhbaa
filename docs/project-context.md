@@ -8921,6 +8921,34 @@ third of the three batches (277, 278, 279).
 - **Apply 0215 in the SQL Editor before pushing** (migration-drift), and
   before 2026-12-01.
 
+### The chat of each head-to-head group (script 280, migration 0216, 2026-11-15)
+
+Requested by the owner on 2026-11-15: every group of the head-to-head league
+gets a chat for its members only. The chat belongs to the group of one month
+(`h2h_leagues.id`): the next month's group gets its own chat, and the old one
+stays readable for the players who sat in it. First batch of the chat, the
+database only: nothing in the server or the app uses it yet.
+
+- **Migration 0216** (additive, no row written): schema `chat`, server-only
+  (RLS on, nothing for anon or authenticated): `h2h_messages` (1 to 500
+  trimmed characters; `hidden_at` / `hidden_by` for an admin hiding one),
+  `h2h_reads` (the unread marker), `muted_users` and `rules_acceptances`.
+  Reporting and blocking are not here: they stay script 225's system (a
+  report reaches the owner through the player's support chat, a block is kept
+  on the phone), and the chat uses it as it is.
+- **Who writes** is a database fact: the BEFORE INSERT guard
+  `chat.check_h2h_message` refuses a message from a player with no seat in the
+  group (`h2h_messages_member_only`), already seated in a later month
+  (`h2h_messages_group_closed`), muted (`h2h_messages_sender_muted`) or who has
+  not accepted the rules (`h2h_messages_rules_not_accepted`).
+- **A deleted account** (0178) takes its messages, reads, mute and rules
+  acceptance with it (`users_forget_group_chat`).
+- Tests: SQL `0216_h2h_group_chat_test.sql`.
+- **Apply 0216 in the SQL Editor** (migration-drift). The SQL was not run
+  where it was written (no Postgres there): push first, wait for db-tests to
+  pass, then apply; until it is applied, migration-drift fails and Release
+  Server keeps the server where it is.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
