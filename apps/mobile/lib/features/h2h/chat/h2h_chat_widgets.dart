@@ -128,7 +128,7 @@ class H2hChatBubble extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: text.labelMedium?.copyWith(
-                                color: tokens.primary,
+                                color: tokens.primaryText,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -259,7 +259,9 @@ class H2hChatRulesGate extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       '•',
-                      style: text.bodyLarge?.copyWith(color: tokens.primary),
+                      style: text.bodyLarge?.copyWith(
+                        color: tokens.primaryText,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
