@@ -8975,6 +8975,32 @@ Second batch of the chat of each head-to-head group (migration 0216, script
   `supabase/queries/h2h_chat_moderation.sql` reads a player's or a group's
   messages, hides one and mutes a player.
 
+### The group chat screen (script 282, 2026-11-15)
+
+Third batch of the chat of each head-to-head group (scripts 280 and 281 before
+it): the screen. A chat button (`h2h.chatButton`) sits in the المواجهات app
+bar while the player holds a seat (the league state is `open`) and opens
+`H2hChatScreen` (`features/h2h/chat/`).
+
+- A player accepts the rules (`H2hChatRulesGate`) before he reads or writes;
+  a send the server refuses for the rules or for a mute brings the gate or
+  the read-only strip back.
+- The newest 50 messages load at once; while the screen is open it asks for
+  those `?after=` the last id every 8 seconds, only while the app is in the
+  foreground, and marks the chat read when something new came.
+- **Report and block are script 225's system**, not a new one: a long press
+  on another player's message offers to report it (it goes to the player's own
+  support chat with the name, the sender's id, the message number and its
+  text) and to block the player (kept on the phone by name; his messages
+  disappear from the chat). The blocked list is emptied from the settings as
+  before.
+- The Arabic words are written in the files, like the support chat's; no
+  ARB change. Tests: `test/features/h2h/chat/` (the real screen, API client
+  and transport over a fake of the routes, rules, writing, mute, polling,
+  block, report, a narrow screen with large text).
+- Not in this feature yet: an unread badge, push notifications, older
+  messages beyond the newest 50, and the chats of past months.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

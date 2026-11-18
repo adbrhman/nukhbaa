@@ -25,6 +25,8 @@ import '../../core/ui/app_card.dart';
 import '../../core/ui/app_tab_header.dart';
 import '../../core/ui/segmented_pills.dart';
 import '../competition/widgets/async_list_view.dart';
+import 'chat/h2h_chat_screen.dart';
+import 'chat/h2h_chat_texts.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
 import 'widgets/h2h_division_card.dart';
@@ -72,6 +74,17 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
       appBar: AppTabHeader(
         title: const Text(h2hTitle, key: Key('h2h.title')),
         actions: <Widget>[
+          if (ref.watch(myH2hLeagueProvider).value?.state == 'open')
+            IconButton(
+              key: const Key('h2h.chatButton'),
+              tooltip: h2hChatTitle,
+              icon: const Icon(Icons.forum_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const H2hChatScreen(),
+                ),
+              ),
+            ),
           IconButton(
             key: const Key('h2h.rulesButton'),
             tooltip: 'كيف يعمل الدوري؟',
