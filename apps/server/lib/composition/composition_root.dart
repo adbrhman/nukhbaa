@@ -91,6 +91,7 @@ final class CompositionRoot {
     required this.adminAddTeam,
     required this.adminAddLeague,
     required this.sendSupportMessage,
+    required this.h2hChat,
     required this.getMySupportThread,
     required this.markMySupportRead,
     required this.getMySupportUnread,
@@ -326,6 +327,7 @@ final class CompositionRoot {
     AdminAddTeam? adminAddTeam,
     AdminAddLeague? adminAddLeague,
     SendSupportMessage? sendSupportMessage,
+    H2hChat? h2hChat,
     GetMySupportThread? getMySupportThread,
     MarkMySupportRead? markMySupportRead,
     GetMySupportUnread? getMySupportUnread,
@@ -576,6 +578,7 @@ final class CompositionRoot {
        adminAddTeam = adminAddTeam ?? _absentAdminAddTeam(),
        adminAddLeague = adminAddLeague ?? _absentAdminAddLeague(),
        sendSupportMessage = sendSupportMessage ?? _absentSendSupportMessage(),
+       h2hChat = h2hChat ?? _absentH2hChat(),
        getMySupportThread = getMySupportThread ?? _absentGetMySupportThread(),
        markMySupportRead = markMySupportRead ?? _absentMarkMySupportRead(),
        getMySupportUnread = getMySupportUnread ?? _absentGetMySupportUnread(),
@@ -1233,6 +1236,11 @@ final class CompositionRoot {
     chats: _UnwiredSupportChatRepository(),
     clock: _unwiredClock,
   );
+
+  /// Backs the "absent" group chat (script 281): throws if a test reaches
+  /// the chat it never wired.
+  static H2hChat _absentH2hChat() =>
+      H2hChat(chats: _UnwiredH2hChatRepository(), clock: _unwiredClock);
 
   static GetMySupportThread _absentGetMySupportThread() =>
       GetMySupportThread(chats: _UnwiredSupportChatRepository());
@@ -2258,6 +2266,10 @@ final class CompositionRoot {
   /// A player writes to Nukhbaa support (backs `POST /me/support/messages`,
   /// script 165, migration 0187).
   final SendSupportMessage sendSupportMessage;
+
+  /// The chat of the caller's head-to-head group (backs
+  /// `/me/h2h-league/chat`, script 281, migration 0216).
+  final H2hChat h2hChat;
 
   /// A page of the caller's own support chat (backs
   /// `GET /me/support/messages`, script 165).
@@ -4303,6 +4315,10 @@ final class CompositionRoot {
       // both sides; the push after a message goes to the admins' or the
       // player's phones.
       sendSupportMessage: SendSupportMessage(chats: supportChats, clock: clock),
+      h2hChat: H2hChat(
+        chats: PostgresH2hChatRepository(connection),
+        clock: clock,
+      ),
       getMySupportThread: GetMySupportThread(chats: supportChats),
       markMySupportRead: MarkMySupportRead(chats: supportChats, clock: clock),
       getMySupportUnread: GetMySupportUnread(chats: supportChats),
@@ -4710,6 +4726,39 @@ final class _UnwiredSupportImageRepository implements SupportImageRepository {
   Future<Result<SupportImage?>> conversationImage({
     required SupportConversationId conversationId,
     required int messageId,
+  }) => _unwired();
+}
+
+/// Backs the "absent" group chat (script 281): throws if a test reaches the
+/// chat it never wired.
+final class _UnwiredH2hChatRepository implements H2hChatRepository {
+  static Never _unwired() =>
+      throw StateError('The group chat was not wired into this test root');
+
+  @override
+  Future<Result<H2hChatPage>> page({
+    required UserId playerId,
+    required int? afterId,
+    required int limit,
+  }) => _unwired();
+
+  @override
+  Future<Result<H2hChatMessage>> send({
+    required UserId playerId,
+    required H2hChatBody body,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> markRead({
+    required UserId playerId,
+    required DateTime at,
+  }) => _unwired();
+
+  @override
+  Future<Result<void>> acceptRules({
+    required UserId playerId,
+    required DateTime at,
   }) => _unwired();
 }
 

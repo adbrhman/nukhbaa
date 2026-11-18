@@ -48,6 +48,7 @@ export 'src/build_header_client.dart' show BuildHeaderClient;
 export 'src/competition_api.dart' show CompetitionApi;
 export 'src/fixture_schedule_api.dart' show FixtureScheduleApi;
 export 'src/groups_api.dart' show GroupsApi;
+export 'src/h2h_chat_api.dart' show H2hChatApi;
 export 'src/leaderboards_api.dart' show LeaderboardsApi;
 export 'src/leagues_api.dart' show LeaguesApi;
 export 'src/ledger_api.dart' show LedgerApi;

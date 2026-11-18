@@ -39,6 +39,7 @@ export 'src/group_invitation_dto.dart';
 export 'src/h2h_absence_dto.dart';
 export 'src/h2h_admin_controls_dto.dart';
 export 'src/h2h_admin_dto.dart';
+export 'src/h2h_chat_dto.dart';
 export 'src/h2h_group_round_dto.dart';
 export 'src/h2h_groups_added_dto.dart';
 export 'src/h2h_league_dto.dart';

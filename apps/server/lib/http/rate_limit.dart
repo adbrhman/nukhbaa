@@ -131,6 +131,10 @@ enum PlayerAppend {
   /// 0188), up to 512 KB each; 20 a day keeps one account from filling the
   /// free database plan.
   supportImage,
+
+  /// `POST /me/h2h-league/chat`: a player's message to his group (migration
+  /// 0216); 60 an hour holds a lively evening, not a flood.
+  h2hChatMessage,
 }
 
 final RateLimiter _frameReportLimiter = RateLimiter(
@@ -153,6 +157,11 @@ final RateLimiter _supportMessageLimiter = RateLimiter(
   window: const Duration(hours: 1),
 );
 
+final RateLimiter _h2hChatMessageLimiter = RateLimiter(
+  limit: 60,
+  window: const Duration(hours: 1),
+);
+
 final RateLimiter _supportImageLimiter = RateLimiter(
   limit: 20,
   window: const Duration(hours: 24),
@@ -170,6 +179,7 @@ Response? limitPlayerAppend(PlayerAppend kind, AuthenticatedUser principal) {
     PlayerAppend.screenViews => _screenViewsLimiter,
     PlayerAppend.supportMessage => _supportMessageLimiter,
     PlayerAppend.supportImage => _supportImageLimiter,
+    PlayerAppend.h2hChatMessage => _h2hChatMessageLimiter,
   };
   final wait = limiter.hit(principal.userId.value);
   return wait == null ? null : tooManyRequests(wait);

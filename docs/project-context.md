@@ -8949,6 +8949,32 @@ database only: nothing in the server or the app uses it yet.
   pass, then apply; until it is applied, migration-drift fails and Release
   Server keeps the server where it is.
 
+### The group chat, from the database to the client API (script 281, 2026-11-15)
+
+Second batch of the chat of each head-to-head group (migration 0216, script
+280 for the database). The server and the clients' API; no screen yet.
+
+- **Domain** (`h2h_chat.dart`): `H2hChatBody` (trimmed, 1 to 500 characters,
+  Arabic refusals).
+- **Application**: the port `H2hChatRepository` and one holder of the
+  use-cases, `H2hChat` (as `AdminH2hControls` is): `page`, `send`,
+  `markRead` and `acceptRules`. Every method works on the caller's own group,
+  the newest one he sits in; no group id ever comes from a request.
+- **Infrastructure**: `PostgresH2hChatRepository`; every statement finds the
+  caller's group itself. The guard of 0216 speaks in constraint names, which
+  become Arabic answers (`h2h.chat_muted`, `h2h.chat_rules_not_accepted`,
+  `h2h.chat_closed`). Its statements run against Postgres in
+  `supabase/tests/0216_h2h_chat_queries_test.sql`.
+- **Routes** under `/me/h2h-league/chat`: `GET` and `POST` (a page, newest 50
+  and at most 100, or those `?after=` an id; a message, 60 an hour), `POST
+  read` and `POST rules`. `CompositionRoot.h2hChat` wires it.
+- **Contracts and client**: `h2h_chat_dto.dart`, `H2hChatApi`.
+- **Reporting and blocking** are script 225's system, not the server's: a
+  report reaches the owner through the support chat, a block is kept on the
+  phone. **Moderation** of the messages themselves is by hand for now:
+  `supabase/queries/h2h_chat_moderation.sql` reads a player's or a group's
+  messages, hides one and mutes a player.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
