@@ -303,6 +303,11 @@ final class _Owner implements OwnerNotices {
   @override
   Future<Result<UserId?>> ownerId() async => Result.ok(id);
 
+  // NK285_07
+  @override
+  Future<Result<bool>> isOwner(UserId user) async =>
+      Result.ok(id != null && id == user);
+
   @override
   Future<Result<void>> tell({
     required String title,

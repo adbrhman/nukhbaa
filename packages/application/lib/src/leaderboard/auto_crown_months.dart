@@ -603,7 +603,7 @@ final class AutoCrownMonths {
       return const Result.err(
         AppError.invariant(
           'champion.owner_missing',
-          'No active admin account has the owner e-mail',
+          'No owner seat is held by an active admin account',
         ),
       );
     }

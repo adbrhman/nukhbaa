@@ -3314,17 +3314,19 @@ final class CompositionRoot {
               identities: syncStore,
               dayFixtures: PostgresH2hRoundStore(connection).dayFixtures,
               log: PostgresDailySelectionLog(connection),
+              // The owner seats, by account id (script 285, migration 0217).
               alert: OwnerShortDayAlert(
-                email: dailyShortfallRecipient,
-                users: userAdminRepository,
-                announcements: announcementRepository,
-                notify: CreateNotification(
-                  notifications: notificationRepository,
+                owner: OwnerInbox(
+                  owners: PostgresOwnerRegistry(connection),
+                  announcements: announcementRepository,
+                  notify: CreateNotification(
+                    notifications: notificationRepository,
+                    idGenerator: idGenerator,
+                    clock: clock,
+                  ),
                   idGenerator: idGenerator,
                   clock: clock,
                 ),
-                idGenerator: idGenerator,
-                clock: clock,
               ),
             );
       syncProviderFixtures = SyncProviderFixtures(
@@ -3628,8 +3630,7 @@ final class CompositionRoot {
             const _UnwiredCrestFiles(),
         baseUrl: crestBase,
         owner: OwnerInbox(
-          email: dailyShortfallRecipient,
-          users: userAdminRepository,
+          owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
           notify: CreateNotification(
             notifications: notificationRepository,
@@ -3645,8 +3646,7 @@ final class CompositionRoot {
       ownerPersonLinks: OwnerPersonLinks(
         store: PostgresPersonLinkStore(connection),
         owner: OwnerInbox(
-          email: dailyShortfallRecipient,
-          users: userAdminRepository,
+          owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
           notify: CreateNotification(
             notifications: notificationRepository,
@@ -3663,8 +3663,7 @@ final class CompositionRoot {
       ownerHiddenAccounts: OwnerHiddenAccounts(
         store: PostgresHiddenAccountStore(connection),
         owner: OwnerInbox(
-          email: dailyShortfallRecipient,
-          users: userAdminRepository,
+          owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
           notify: CreateNotification(
             notifications: notificationRepository,
@@ -3706,8 +3705,7 @@ final class CompositionRoot {
         ),
         rescore: rescoreFixture,
         owner: OwnerInbox(
-          email: dailyShortfallRecipient,
-          users: userAdminRepository,
+          owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
           notify: CreateNotification(
             notifications: notificationRepository,

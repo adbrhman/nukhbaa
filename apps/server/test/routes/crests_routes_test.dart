@@ -25,6 +25,11 @@ final class _Owner implements OwnerNotices {
   @override
   Future<Result<UserId?>> ownerId() async => const Result.ok(UserId(kAdminId));
 
+  // NK285_07
+  @override
+  Future<Result<bool>> isOwner(UserId user) async =>
+      Result.ok(user == const UserId(kAdminId));
+
   @override
   Future<Result<void>> tell({
     required String title,

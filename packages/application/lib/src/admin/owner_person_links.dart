@@ -15,7 +15,7 @@ import 'package:shared/shared.dart';
 /// still signs in and predicts. Setting the person again, or unlinking it,
 /// shows again what the link hid; nothing is deleted.
 ///
-/// Only the owner admin ([OwnerNotices.ownerId]) reads or changes it; any
+/// Only an owner seat ([OwnerNotices.isOwner]) reads or changes it; any
 /// other admin is refused (`admin.owner_only`), a plain player by the role
 /// gate first. It fails closed. The owner's own account is never hidden by
 /// a link.
@@ -67,7 +67,7 @@ final class OwnerPersonLinks {
       if (parsed is Err<UserId>) return Result.err(parsed.error);
       others.add((parsed as Ok<UserId>).value);
     }
-    if (others.contains(owner)) {
+    if (await _anySeat(others)) {
       return const Result.err(
         AppError.invariant(
           'admin.cannot_hide_owner',
@@ -122,19 +122,32 @@ final class OwnerPersonLinks {
     return _store.unlink((main as Ok<UserId>).value);
   }
 
-  /// The owner admin's id when [principal] is he; refused otherwise.
+  /// Whether any of [users] holds an owner seat; a failed lookup counts as
+  /// yes, so an owner is never hidden by a fault.
+  Future<bool> _anySeat(List<UserId> users) async {
+    for (final UserId user in users) {
+      final bool seated = switch (await _owner.isOwner(user)) {
+        Ok<bool>(:final value) => value,
+        Err<bool>() => true,
+      };
+      if (seated) return true;
+    }
+    return false;
+  }
+
+  /// The id of [principal] when he holds an owner seat; refused otherwise.
   Future<Result<UserId>> _ownerOnly(AuthenticatedUser principal) async {
     final Result<AuthenticatedUser> role = Authorization.requireRole(
       principal,
       PlatformRole.admin,
     );
     if (role is Err<AuthenticatedUser>) return Result.err(role.error);
-    final Result<UserId?> found = await _owner.ownerId();
-    final UserId? owner = switch (found) {
-      Ok<UserId?>(:final value) => value,
-      Err<UserId?>() => null,
+    // NK285_05
+    final bool seated = switch (await _owner.isOwner(principal.userId)) {
+      Ok<bool>(:final value) => value,
+      Err<bool>() => false,
     };
-    if (owner == null || owner != principal.userId) {
+    if (!seated) {
       return const Result.err(
         AppError.invariant(
           'admin.owner_only',
@@ -142,6 +155,6 @@ final class OwnerPersonLinks {
         ),
       );
     }
-    return Result.ok(owner);
+    return Result.ok(principal.userId);
   }
 }

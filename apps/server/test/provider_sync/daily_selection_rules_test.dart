@@ -52,7 +52,6 @@ void main() {
     expect(dailySelectionPolicy.target, 15);
     expect(dailySelectionPolicy.busyTarget, 20);
     expect(dailySelectionPolicy.busyLeagues, hasLength(4));
-    expect(dailyShortfallRecipient, 'adbrhmanm@gmail.com');
   });
 
   test('every big club is a provider team ref', () {

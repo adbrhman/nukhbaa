@@ -162,10 +162,11 @@ Future<bool> _isOwnerAdmin(
   if (owner == null) {
     return false;
   }
-  final found = await owner.ownerId();
+  // NK285_06
+  final found = await owner.isOwner(principal.userId);
   return switch (found) {
-    Ok<UserId?>(:final value) => value != null && value == principal.userId,
-    Err<UserId?>() => false,
+    Ok<bool>(:final value) => value,
+    Err<bool>() => false,
   };
 }
 

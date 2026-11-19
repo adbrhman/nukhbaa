@@ -7559,9 +7559,9 @@ choices of his three questions).
 - **When:** the fixtures sync now runs at 00:05 and 12:05 Riyadh time
   (`untilNextFixturesRun`), plus 3 minutes after a boot. In the first run of
   the day before a day, a day still under 10 is told to the owner once
-  (`OwnerShortDayAlert`): an in-app notification to the active admin
-  account of `adbrhmanm@gmail.com` alone (never every admin), kept as an
-  announcement addressed to him, no push: the count, what is missing, and to
+  (`OwnerShortDayAlert`): an in-app notification to each owner seat that
+  can act (`OwnerInbox`, script 285; never every admin), kept as an
+  announcement addressed to them, no push: the count, what is missing, and to
   add matches of other competitions before the day's first kickoff. A day
   not read for every league is told in the 12:05 run.
 - **Modes** (`NUKHBA_DAILY_MINIMUM`): unset or `shadow` is the trial week:
@@ -9049,6 +9049,34 @@ migration, no ARB change.
 - Tests: `h2h_vacant_seat_wording_test.dart` (new: the rule, the note,
   the match card for December and November); `h2h_round_screen_test.dart`
   and `h2h_share_cards_test.dart` (a December empty seat).
+
+### The owner seats, by account id (script 285, migration 0217, 2026-11-20)
+
+Decision Q01 of the owner's report (approved 2026-11-19): the owner is known
+by his account id, never by an e-mail written in the code. This batch is the
+server half; the `/owner/*` routes that answer 404, the owner audit log and
+the app's owner flag (`GET /me`) follow in their own batches.
+
+- **`admin.platform_owners`** (0217): one row per seat, `primary` or
+  `backup`, at most one primary (`platform_owners_one_primary`), the account
+  kept (`on delete restrict`). **`admin.active_owners`**: the seats whose
+  account is an active admin that was not erased. No client role reads
+  either. The owner fills the seats in the SQL Editor by the e-mail he types
+  there, so no e-mail is in the repository.
+- **`OwnerRegistry`** (port) / **`PostgresOwnerRegistry`**: the seats that
+  can act, the primary first.
+- **`OwnerNotices`**: `ownerId()` is the owner the server acts as (the
+  primary, else the first backup: the month's crowning); `isOwner(user)`
+  (new) is any seat; `tell` reaches every seat once. `OwnerInbox` reads the
+  registry instead of an e-mail; `OwnerShortDayAlert` goes through it.
+- **Owner-only tools** (hidden accounts, person links, crests): any seat,
+  primary or backup; no seat is ever hidden, and a failed lookup refuses.
+- **Removed**: `dailyShortfallRecipient` (`phase_one_rules.dart`). The
+  app's `ownerAdminEmail` goes with the app batch.
+- Tests: `owner_inbox_test.dart` and `postgres_owner_registry_test.dart`
+  (new), `owner_short_day_alert_test.dart` (both seats, over the real
+  inbox), `0217_platform_owners_test.sql`; every `OwnerNotices` fake gains
+  `isOwner`.
 
 ## 3. Version-Verification Log
 

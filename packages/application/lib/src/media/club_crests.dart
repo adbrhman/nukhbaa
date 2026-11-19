@@ -117,7 +117,7 @@ final class CrestState {
 /// complainant when there is one. A hidden or deleted crest leaves the
 /// phones at their next start.
 ///
-/// Only the owner admin ([OwnerNotices.ownerId]); any other admin is refused
+/// Only an owner seat ([OwnerNotices.isOwner]); any other admin is refused
 /// (`admin.owner_only`), a player by the role gate. Never throws.
 final class OwnerCrests {
   /// Creates the use-case over its collaborators.
@@ -325,19 +325,19 @@ final class OwnerCrests {
     'حالة الشعار لا تسمح بهذا: قد يكون مخفياً أو محذوفاً بالفعل.',
   );
 
-  /// The owner admin's id when [principal] is he; refused otherwise.
+  /// The id of [principal] when he holds an owner seat; refused otherwise.
   Future<Result<UserId>> _ownerOnly(AuthenticatedUser principal) async {
     final Result<AuthenticatedUser> role = Authorization.requireRole(
       principal,
       PlatformRole.admin,
     );
     if (role is Err<AuthenticatedUser>) return Result.err(role.error);
-    final Result<UserId?> found = await _owner.ownerId();
-    final UserId? owner = switch (found) {
-      Ok<UserId?>(:final value) => value,
-      Err<UserId?>() => null,
+    // NK285_05
+    final bool seated = switch (await _owner.isOwner(principal.userId)) {
+      Ok<bool>(:final value) => value,
+      Err<bool>() => false,
     };
-    if (owner == null || owner != principal.userId) {
+    if (!seated) {
       return const Result.err(
         AppError.invariant(
           'admin.owner_only',
@@ -345,6 +345,6 @@ final class OwnerCrests {
         ),
       );
     }
-    return Result.ok(owner);
+    return Result.ok(principal.userId);
   }
 }

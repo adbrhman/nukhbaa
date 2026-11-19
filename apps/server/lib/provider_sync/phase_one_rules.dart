@@ -228,7 +228,3 @@ const Set<String> dailySelectionBigClubs = {
   ..._ittihad,
   ..._ahli,
 };
-
-/// The only account told about a day short of matches (decided by the
-/// owner on 2026-11-01): his own, never every admin.
-const String dailyShortfallRecipient = 'adbrhmanm@gmail.com';

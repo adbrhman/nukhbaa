@@ -8,11 +8,11 @@ import 'package:shared/shared.dart';
 /// the owner on 2026-11-11): first the account Google Play's reviewers sign
 /// in with.
 ///
-/// Only the owner admin -- the active admin account with the owner's e-mail
-/// ([OwnerNotices.ownerId]) -- lists, hides or shows an account. Any other
-/// admin is refused (`admin.owner_only`) and reads nothing; a plain player
-/// is refused by the role gate first. It fails closed: no owner found, or a
-/// failed lookup, refuses. The owner never hides himself.
+/// Only an owner -- an active admin holding an owner seat, primary or
+/// backup ([OwnerNotices.isOwner], script 285) -- lists, hides or shows an
+/// account. Any other admin is refused (`admin.owner_only`) and reads
+/// nothing; a plain player is refused by the role gate first. It fails
+/// closed: a failed lookup refuses. No owner seat is ever hidden.
 ///
 /// Never throws.
 final class OwnerHiddenAccounts {
@@ -54,12 +54,10 @@ final class OwnerHiddenAccounts {
   }) async {
     final Result<UserId> gate = await _ownerOnly(principal);
     if (gate is Err<UserId>) return Result.err(gate.error);
-    final UserId owner = (gate as Ok<UserId>).value;
-
     final Result<UserId> parsed = UserId.tryParse(targetUserId);
     if (parsed is Err<UserId>) return Result.err(parsed.error);
     final UserId target = (parsed as Ok<UserId>).value;
-    if (hidden && target == owner) {
+    if (hidden && await _holdsSeat(target)) {
       return const Result.err(
         AppError.invariant(
           'admin.cannot_hide_owner',
@@ -80,19 +78,27 @@ final class OwnerHiddenAccounts {
     return const Result.ok(null);
   }
 
-  /// The owner admin's id when [principal] is he; refused otherwise.
+  /// Whether [user] holds an owner seat; a failed lookup counts as yes,
+  /// so an owner is never hidden by a fault.
+  Future<bool> _holdsSeat(UserId user) async =>
+      switch (await _owner.isOwner(user)) {
+        Ok<bool>(:final value) => value,
+        Err<bool>() => true,
+      };
+
+  /// The id of [principal] when he holds an owner seat; refused otherwise.
   Future<Result<UserId>> _ownerOnly(AuthenticatedUser principal) async {
     final Result<AuthenticatedUser> role = Authorization.requireRole(
       principal,
       PlatformRole.admin,
     );
     if (role is Err<AuthenticatedUser>) return Result.err(role.error);
-    final Result<UserId?> found = await _owner.ownerId();
-    final UserId? owner = switch (found) {
-      Ok<UserId?>(:final value) => value,
-      Err<UserId?>() => null,
+    // NK285_05
+    final bool seated = switch (await _owner.isOwner(principal.userId)) {
+      Ok<bool>(:final value) => value,
+      Err<bool>() => false,
     };
-    if (owner == null || owner != principal.userId) {
+    if (!seated) {
       return const Result.err(
         AppError.invariant(
           'admin.owner_only',
@@ -100,6 +106,6 @@ final class OwnerHiddenAccounts {
         ),
       );
     }
-    return Result.ok(owner);
+    return Result.ok(principal.userId);
   }
 }

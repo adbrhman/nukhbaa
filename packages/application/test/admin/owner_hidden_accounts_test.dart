@@ -19,6 +19,12 @@ final class _Owner implements OwnerNotices {
       ? const Result.err(AppError.transient('db.down', 'down'))
       : Result.ok(id);
 
+  // NK285_07
+  @override
+  Future<Result<bool>> isOwner(UserId user) async => fails
+      ? const Result.err(AppError.transient('db.down', 'down'))
+      : Result.ok(id != null && id == user);
+
   @override
   Future<Result<void>> tell({
     required String title,
