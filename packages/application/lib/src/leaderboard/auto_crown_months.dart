@@ -3,6 +3,7 @@
 library;
 
 import 'package:application/src/leaderboard/admin_crown_month_champions.dart';
+import 'package:application/src/leaderboard/crowning_guard.dart';
 import 'package:application/src/leaderboard/month_final_board.dart';
 import 'package:application/src/leaderboard/month_podium.dart';
 import 'package:application/src/leaderboard/ports/account_age_reader.dart';
@@ -37,6 +38,11 @@ enum AutoCrownStep {
 
   /// Already crowned, and a later result changed the first three.
   changed,
+
+  /// Ready to be looked at, but the owners' crowning switch is off
+  /// ([CrowningGuard], script 286): nothing is scored again or crowned, and
+  /// the owners are told once.
+  held,
 }
 
 /// One month's line of a run, for the server log.
@@ -86,6 +92,11 @@ final class AutoCrownOutcome {
 ///
 /// Admins play and are crowned like everyone else (decided 2026-11-02).
 ///
+/// While the owners' crowning switch is off ([CrowningGuard], script 286),
+/// a month not crowned yet is held: no rescoring, no crowning, the owners
+/// told once. A switch that cannot be read holds it too, as a failure. A
+/// month already crowned goes on as above.
+///
 /// One month failing does not stop the others; the first failure is
 /// returned after the rest were tried. Never throws.
 final class AutoCrownMonths {
@@ -99,6 +110,7 @@ final class AutoCrownMonths {
     required FixtureRescorer rescore,
     required OwnerNotices owner,
     AccountAgeReader? accountAges,
+    CrowningGuard? guard,
   }) : _store = store,
        _champions = champions,
        _board = board,
@@ -106,7 +118,8 @@ final class AutoCrownMonths {
        _setPodium = setPodium,
        _rescore = rescore,
        _owner = owner,
-       _accountAges = accountAges;
+       _accountAges = accountAges,
+       _guard = guard;
 
   final MonthCrownStore _store;
   final MonthChampionRepository _champions;
@@ -119,6 +132,9 @@ final class AutoCrownMonths {
   /// When each account was created, to decide a tie for first place; null
   /// leaves every such tie to the owner.
   final AccountAgeReader? _accountAges;
+
+  /// The owners' stop on the crowning; null crowns as before it existed.
+  final CrowningGuard? _guard;
 
   /// The latest result write already compared with each crowned month's
   /// first three, so an unchanged month is not read again every run.
@@ -157,7 +173,7 @@ final class AutoCrownMonths {
     for (final month in (due as Ok<List<CrownDueMonth>>).value) {
       final DateTime? crownedAt = month.crownedAt;
       final Result<AutoCrownOutcome> step = crownedAt == null
-          ? await _crownIfReady(month, nowUtc)
+          ? await _crownUnlessHeld(month, nowUtc)
           : await _afterCrowning(month, crownedAt, nowUtc);
       switch (step) {
         case Ok<AutoCrownOutcome>(:final value):
@@ -172,6 +188,41 @@ final class AutoCrownMonths {
       return Result.err(failure);
     }
     return Result.ok(List<AutoCrownOutcome>.unmodifiable(out));
+  }
+
+  // NK286_03
+  Future<Result<AutoCrownOutcome>> _crownUnlessHeld(
+    CrownDueMonth month,
+    DateTime now,
+  ) async {
+    final CrowningGuard? guard = _guard;
+    if (guard == null) {
+      return _crownIfReady(month, now);
+    }
+    final Result<bool> on = await guard.isOn();
+    if (on is Err<bool>) {
+      return Result.err(on.error);
+    }
+    if ((on as Ok<bool>).value) {
+      return _crownIfReady(month, now);
+    }
+    final told = await _tellOnce(
+      month,
+      kind: 'held',
+      signature: 'held',
+      title: 'شهر ${month.label} ينتظر: التتويج موقوف',
+      body:
+          'انتهى شهر ${month.label} والتتويج موقوف بمفتاح المالك، فلم '
+          'يُتوَّج ولم يُعَد احتساب شيء. يُتوَّج تلقائيًا بعد إعادة تشغيل '
+          'التتويج خلال ثلاثة أيام من نهاية الشهر، أو توِّج يدويًا من لوحة '
+          'المشرف ← تتويج الشهر.',
+    );
+    if (told is Err<void>) {
+      return Result.err(told.error);
+    }
+    return Result.ok(
+      AutoCrownOutcome(label: month.label, step: AutoCrownStep.held),
+    );
   }
 
   Future<Result<AutoCrownOutcome>> _crownIfReady(

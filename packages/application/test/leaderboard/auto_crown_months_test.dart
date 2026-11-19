@@ -26,6 +26,29 @@ const _playerPrincipal = AuthenticatedUser(
   role: PlatformRole.user,
 );
 
+/// An admin who holds no owner seat (script 286).
+const _adminPrincipal = AuthenticatedUser(
+  userId: UserId('00000000-0000-4000-8204-0000000000cc'),
+  role: PlatformRole.admin,
+);
+
+/// The owners' switches (script 286): [on] is the crowning's; [fails]
+/// makes every read fail.
+final class _Switches implements OwnerSwitches {
+  bool on = true;
+  bool fails = false;
+  int reads = 0;
+
+  @override
+  Future<Result<bool>> isOn(OwnerSwitch which) async {
+    reads++;
+    if (fails) {
+      return const Result.err(AppError.transient('db.down', 'down'));
+    }
+    return Result.ok(which == OwnerSwitch.crowning ? on : true);
+  }
+}
+
 /// November 2026 ends at 00:00 Riyadh on 1 December.
 final DateTime _monthEnd = DateTime.utc(2026, 11, 30, 21);
 
@@ -346,6 +369,8 @@ final class _World {
   final _Totals totals = _Totals();
   final _Participants participants = _Participants();
   final _Owner owner = _Owner();
+  // NK286_05
+  final _Switches switches = _Switches();
   final _Clock clock;
   late final _Store store;
   final List<String> rescored = [];
@@ -361,10 +386,13 @@ final class _World {
     participantReader: participants,
   );
 
+  CrowningGuard get guard => CrowningGuard(switches: switches, owners: owner);
+
   AdminCrownMonthChampions get crown => AdminCrownMonthChampions(
     champions: champions,
     board: board,
     clock: clock,
+    guard: guard,
   );
 
   late final AutoCrownMonths auto = AutoCrownMonths(
@@ -384,6 +412,7 @@ final class _World {
     },
     owner: owner,
     accountAges: withAges ? ages : null,
+    guard: guard,
   );
 
   Future<List<AutoCrownStep>> run([DateTime? at]) async {
@@ -797,6 +826,115 @@ void main() {
         'champion.already_crowned',
       );
       expect(world.store.prizesSet, isEmpty);
+    });
+  });
+
+  // Script 286 (decision Q04): the owners' stop on the crowning.
+  group('the crowning switch', () {
+    test(
+      'off: nothing is scored again or crowned, the owners told once',
+      () async {
+        final world = _World();
+        world.switches.on = false;
+        world.store
+          ..state = const MonthCrownState(waiting: 0, skipped: 0, rescore: 1)
+          ..rescoreIds = const [FixtureRef(_f1)];
+
+        expect(await world.run(), [AutoCrownStep.held]);
+        expect(await world.run(), [AutoCrownStep.held]);
+
+        expect(world.champions.rows, isEmpty);
+        expect(world.rescored, isEmpty);
+        expect(world.owner.told, hasLength(1), reason: 'told once');
+        expect(world.owner.told.single.$1, contains('التتويج موقوف'));
+        expect(world.switches.reads, 2, reason: 'read on every run');
+      },
+    );
+
+    test('back on: the month is crowned on the next run', () async {
+      final world = _World();
+      world.switches.on = false;
+      expect(await world.run(), [AutoCrownStep.held]);
+
+      world.switches.on = true;
+      expect(await world.run(), [AutoCrownStep.crowned]);
+      expect(world.champions.rows, hasLength(1));
+    });
+
+    test('a switch that cannot be read crowns nothing', () async {
+      final world = _World();
+      world.switches.fails = true;
+
+      final result = await world.auto(now: _later);
+
+      expect(_codeOf(result), 'db.down');
+      expect(world.champions.rows, isEmpty);
+      expect(world.owner.told, isEmpty);
+    });
+
+    test('a month already crowned goes on while it is off', () async {
+      final world = _World();
+      expect(await world.run(), [AutoCrownStep.crowned]);
+
+      world.switches.on = false;
+      expect(await world.run(), [AutoCrownStep.settled]);
+    });
+
+    test('off: an admin is refused by hand, an owner crowns', () async {
+      final world = _World();
+      world.switches.on = false;
+
+      final refused = await world.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: true,
+      );
+      expect(_codeOf(refused), 'champion.crowning_paused');
+      expect(world.champions.rows, isEmpty);
+
+      final crowned = await world.crown(
+        principal: _ownerPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: true,
+      );
+      expect(_codeOf(crowned), isNull);
+      expect(world.champions.rows, hasLength(1));
+    });
+
+    test('unreadable: only an owner crowns by hand', () async {
+      final world = _World();
+      world.switches.fails = true;
+
+      final refused = await world.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: true,
+      );
+      expect(_codeOf(refused), 'champion.crowning_paused');
+
+      final crowned = await world.crown(
+        principal: _ownerPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: true,
+      );
+      expect(_codeOf(crowned), isNull);
+    });
+
+    test('on: any admin crowns by hand as before', () async {
+      final world = _World();
+
+      final crowned = await world.crown(
+        principal: _adminPrincipal,
+        seasonId: _season,
+        userIds: const [_u1],
+        force: true,
+      );
+      expect(_codeOf(crowned), isNull);
+      expect(world.champions.rows, hasLength(1));
     });
   });
 }

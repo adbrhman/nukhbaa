@@ -3679,6 +3679,21 @@ final class CompositionRoot {
       // 0199); the owner alone is told, in his inbox. The board is read
       // uncached, as for a crowning by hand.
       autoCrownMonths: AutoCrownMonths(
+        // The owners' stop on the crowning, read every run (script 286).
+        guard: CrowningGuard(
+          switches: PostgresOwnerSwitches(connection),
+          owners: OwnerInbox(
+            owners: PostgresOwnerRegistry(connection),
+            announcements: announcementRepository,
+            notify: CreateNotification(
+              notifications: notificationRepository,
+              idGenerator: idGenerator,
+              clock: clock,
+            ),
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+        ),
         accountAges: PostgresAccountAgeReader(connection),
         store: PostgresMonthCrownStore(connection),
         champions: PostgresMonthChampionRepository(connection),
@@ -3772,6 +3787,21 @@ final class CompositionRoot {
           participantReader: participantReader,
         ),
         clock: clock,
+        // While the crowning is off, only an owner crowns (script 286).
+        guard: CrowningGuard(
+          switches: PostgresOwnerSwitches(connection),
+          owners: OwnerInbox(
+            owners: PostgresOwnerRegistry(connection),
+            announcements: announcementRepository,
+            notify: CreateNotification(
+              notifications: notificationRepository,
+              idGenerator: idGenerator,
+              clock: clock,
+            ),
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+        ),
       ),
       adminSetChampionPhoto: AdminSetChampionPhoto(
         champions: PostgresMonthChampionRepository(connection),

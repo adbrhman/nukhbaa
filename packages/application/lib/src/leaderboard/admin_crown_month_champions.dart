@@ -4,6 +4,7 @@ library;
 
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/leaderboard/crowning_guard.dart';
 import 'package:application/src/leaderboard/month_final_board.dart';
 import 'package:application/src/leaderboard/ports/month_champion_repository.dart';
 import 'package:domain/domain.dart';
@@ -23,6 +24,10 @@ import 'package:shared/shared.dart';
 /// L-29, decided 2026-11-02); a player not level with the first can never
 /// be chosen.
 ///
+/// While the owners' crowning switch is off ([CrowningGuard], script 286),
+/// only an owner seat crowns; any other admin is refused
+/// (`champion.crowning_paused`), told only that the crowning is paused.
+///
 /// The final figures are frozen into the record as they stood. Never throws;
 /// returns a typed [Result] carrying the month's champions.
 final class AdminCrownMonthChampions {
@@ -31,13 +36,18 @@ final class AdminCrownMonthChampions {
     required MonthChampionRepository champions,
     required MonthFinalBoard board,
     required Clock clock,
+    CrowningGuard? guard,
   }) : _champions = champions,
        _board = board,
-       _clock = clock;
+       _clock = clock,
+       _guard = guard;
 
   final MonthChampionRepository _champions;
   final MonthFinalBoard _board;
   final Clock _clock;
+
+  /// The owners' stop on the crowning; null crowns as before it existed.
+  final CrowningGuard? _guard;
 
   /// The most champions one month can have.
   static const int maxChampions = 2;
@@ -58,6 +68,16 @@ final class AdminCrownMonthChampions {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
+    }
+    // NK286_04
+    final CrowningGuard? guard = _guard;
+    if (guard != null && !await guard.admitsByHand(principal)) {
+      return const Result.err(
+        AppError.invariant(
+          'champion.crowning_paused',
+          'تتويج الشهر موقوف مؤقتًا. حاول لاحقًا.',
+        ),
+      );
     }
     final idResult = SeasonId.tryParse(seasonId);
     if (idResult is Err<SeasonId>) {

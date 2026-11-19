@@ -9078,6 +9078,35 @@ the app's owner flag (`GET /me`) follow in their own batches.
   inbox), `0217_platform_owners_test.sql`; every `OwnerNotices` fake gains
   `isOwner`.
 
+### The crowning switch (script 286, migration 0218, 2026-11-20)
+
+Decision Q04 of the owner's report: the crowning has a stop in the owners'
+hands, tested before 1 December 2026. Decided by the owner on 2026-11-20:
+while it is off, no admin crowns by hand either; an owner seat still may.
+
+- **`ops.owner_switches`** (0218): one row per switch, on by default, with
+  its reason, who changed it (null from the SQL Editor) and when. Only
+  `crowning` for now; the predictions and chat switches come with their own
+  batches. `competition.month_crown_notices` takes the kind `held`.
+- **`OwnerSwitches`** (port, `OwnerSwitch.crowning`) /
+  **`PostgresOwnerSwitches`**: read on every call, nothing cached; a switch
+  without its row is on.
+- **`CrowningGuard`** (switches + owner seats): `isOn()`, and
+  `admitsByHand(principal)`: any admin while on, only an owner seat while
+  off or unreadable.
+- **`AutoCrownMonths`**: a month not crowned yet is held while the switch
+  is off (`AutoCrownStep.held`): no rescoring, no crowning, the owners told
+  once («شهر … ينتظر: التتويج موقوف»). Unreadable: the run fails, nothing
+  crowned. A month already crowned goes on (podium, changes). Back on, the
+  month is crowned on the next run within its three days.
+- **`AdminCrownMonthChampions`**: refuses a non-owner admin while off
+  (`champion.crowning_paused`, «تتويج الشهر موقوف مؤقتًا»), naming no owner.
+- **Until the owner's page has its button**: `supabase/queries/
+  crowning_pause.sql` and `crowning_resume.sql` (reason required).
+- Tests: `auto_crown_months_test.dart` (the switch group, every world now
+  guarded), `postgres_owner_switches_test.dart`,
+  `0218_owner_switches_test.sql`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
