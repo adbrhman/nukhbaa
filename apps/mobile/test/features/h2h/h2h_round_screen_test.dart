@@ -28,70 +28,71 @@ http.Response _okJson(Map<String, Object?> body) => http.Response(
 /// Round 2, being played: f1 finished (both picks shown), f2 not started
 /// (the opponent's withheld -- and this server wrongly sends it anyway),
 /// f3 moved off the day.
-MyH2hRoundDto _detail({bool average = false}) => MyH2hRoundDto(
-  round: 2,
-  day: '2026-11-04',
-  status: 'live',
-  fixtureCount: 3,
-  firstKickoff: '2026-11-04T12:00:00.000Z',
-  opponentUserId: average ? null : 'u-b',
-  opponentName: average ? null : 'نورة',
-  myPoints: 6,
-  opponentPoints: 0,
-  result: 'win',
-  mine: const H2hSideTotalsDto(predicted: 2, exact: 1, doubles: 1),
-  theirs: average
-      ? null
-      : const H2hSideTotalsDto(predicted: 1, exact: 0, doubles: 0),
-  fixtures: <H2hRoundFixtureDto>[
-    H2hRoundFixtureDto(
-      fixtureId: 'f1',
-      // As the feed may send them: shown in Arabic (audit L-07).
-      homeTeam: 'Al Hilal',
-      awayTeam: 'Al Nassr',
-      kickoffAt: '2026-11-04T12:00:00.000Z',
-      state: 'finished',
-      homeGoals: 2,
-      awayGoals: 1,
-      mine: const H2hPickDto(
-        homeGoals: 2,
-        awayGoals: 1,
-        isDouble: true,
-        points: 6,
-        exact: true,
-      ),
+MyH2hRoundDto _detail({bool average = false, String day = '2026-11-04'}) =>
+    MyH2hRoundDto(
+      round: 2,
+      day: day,
+      status: 'live',
+      fixtureCount: 3,
+      firstKickoff: '2026-11-04T12:00:00.000Z',
+      opponentUserId: average ? null : 'u-b',
+      opponentName: average ? null : 'نورة',
+      myPoints: 6,
+      opponentPoints: 0,
+      result: 'win',
+      mine: const H2hSideTotalsDto(predicted: 2, exact: 1, doubles: 1),
       theirs: average
           ? null
-          : const H2hPickDto(
-              homeGoals: 0,
-              awayGoals: 3,
-              isDouble: false,
-              points: 0,
-            ),
-      theirsHidden: false,
-    ),
-    H2hRoundFixtureDto(
-      fixtureId: 'f2',
-      homeTeam: 'الاتحاد',
-      awayTeam: 'الأهلي',
-      kickoffAt: '2026-11-04T15:00:00.000Z',
-      state: 'not_started',
-      mine: const H2hPickDto(homeGoals: 1, awayGoals: 0, isDouble: false),
-      theirs: average
-          ? null
-          : const H2hPickDto(homeGoals: 7, awayGoals: 7, isDouble: true),
-      theirsHidden: !average,
-    ),
-    H2hRoundFixtureDto(
-      fixtureId: 'f3',
-      homeTeam: 'الشباب',
-      awayTeam: 'الفتح',
-      kickoffAt: '2026-11-05T18:00:00.000Z',
-      state: 'void',
-      theirsHidden: !average,
-    ),
-  ],
-);
+          : const H2hSideTotalsDto(predicted: 1, exact: 0, doubles: 0),
+      fixtures: <H2hRoundFixtureDto>[
+        H2hRoundFixtureDto(
+          fixtureId: 'f1',
+          // As the feed may send them: shown in Arabic (audit L-07).
+          homeTeam: 'Al Hilal',
+          awayTeam: 'Al Nassr',
+          kickoffAt: '2026-11-04T12:00:00.000Z',
+          state: 'finished',
+          homeGoals: 2,
+          awayGoals: 1,
+          mine: const H2hPickDto(
+            homeGoals: 2,
+            awayGoals: 1,
+            isDouble: true,
+            points: 6,
+            exact: true,
+          ),
+          theirs: average
+              ? null
+              : const H2hPickDto(
+                  homeGoals: 0,
+                  awayGoals: 3,
+                  isDouble: false,
+                  points: 0,
+                ),
+          theirsHidden: false,
+        ),
+        H2hRoundFixtureDto(
+          fixtureId: 'f2',
+          homeTeam: 'الاتحاد',
+          awayTeam: 'الأهلي',
+          kickoffAt: '2026-11-04T15:00:00.000Z',
+          state: 'not_started',
+          mine: const H2hPickDto(homeGoals: 1, awayGoals: 0, isDouble: false),
+          theirs: average
+              ? null
+              : const H2hPickDto(homeGoals: 7, awayGoals: 7, isDouble: true),
+          theirsHidden: !average,
+        ),
+        H2hRoundFixtureDto(
+          fixtureId: 'f3',
+          homeTeam: 'الشباب',
+          awayTeam: 'الفتح',
+          kickoffAt: '2026-11-05T18:00:00.000Z',
+          state: 'void',
+          theirsHidden: !average,
+        ),
+      ],
+    );
 
 const MyH2hLeagueDto _month = MyH2hLeagueDto(
   state: 'open',
@@ -301,6 +302,27 @@ void main() {
           .data,
       '—',
     );
+  });
+
+  // NK283: from December an empty seat is a vacant seat on the round page.
+  testWidgets('a December empty seat reads as a vacant seat, twice', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const H2hRoundScreen(round: 2),
+      detail: _detail(average: true, day: '2026-12-04'),
+    );
+
+    expect(
+      _inside('h2h.detail.card', find.text(h2hVacantSeat)),
+      findsOneWidget,
+    );
+    expect(
+      _inside('h2h.detail.totals', find.text(h2hVacantSeat)),
+      findsOneWidget,
+    );
+    expect(find.text(h2hAverageOpponent), findsNothing);
   });
 
   testWidgets('a round of the list opens its page', (tester) async {

@@ -528,6 +528,7 @@ class _GroupRound extends ConsumerWidget {
                       title: groupTitle,
                       status: data.status,
                       matches: data.matches,
+                      day: data.day,
                     ),
                   ],
                 ),
@@ -541,7 +542,7 @@ class _GroupRound extends ConsumerWidget {
               '${m.homeName.isEmpty ? h2hUnnamed : m.homeName} '
               '${m.homePoints ?? '-'} × '
               '${m.awayPoints == null ? '-' : h2hPointsLabel(m.awayPoints!)} '
-              '${m.awayUserId == null ? h2hAverageOpponent : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
+              '${m.awayUserId == null ? h2hEmptySeatName(data.day) : ((m.awayName ?? '').isEmpty ? h2hUnnamed : m.awayName!)}'
               // NK216_18
               '${m.awayAbsent ? ' · غاب الخصم' : ''}'
               '${_winnerNote(m.winner)}',
@@ -673,11 +674,7 @@ class _LateSeatDialogState extends ConsumerState<_LateSeatDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                'يلعب من الجولة التالية لانضمامه، ومقعده يلعب متوسط المجموعة '
-                'قبل ذلك.',
-                style: _muted(context),
-              ),
+              Text(h2hLateSeatNote(widget.monthStart), style: _muted(context)),
               const SizedBox(height: AppSpacing.sm),
               AdminTextField(
                 key: const Key('admin.h2h.seat.search'),
@@ -945,7 +942,7 @@ class _PlayerMonth extends ConsumerWidget {
               '${r.opponentHidden
                   ? h2hSecretOpponent
                   : r.opponentUserId == null
-                  ? h2hAverageOpponent
+                  ? h2hEmptySeatName(r.day)
                   : ((r.opponentName ?? '').isEmpty ? h2hUnnamed : r.opponentName!)}'
               '${r.myPoints == null ? '' : ' · ${r.myPoints} - ${r.opponentPoints == null ? '-' : h2hPointsLabel(r.opponentPoints!)}'}'
               '${r.result == null ? '' : ' · ${h2hResultLabel(r.result!)}'}'

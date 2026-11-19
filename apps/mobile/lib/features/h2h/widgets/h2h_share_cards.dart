@@ -80,6 +80,7 @@ final class H2hShareMatches {
     required this.title,
     required this.status,
     required this.matches,
+    required this.day,
   });
 
   /// اسم المجموعة.
@@ -90,6 +91,9 @@ final class H2hShareMatches {
 
   /// المواجهات كما أرسلها الخادم.
   final List<H2hGroupMatchDto> matches;
+
+  /// يوم الجولة بتوقيت الرياض، ومنه اسم المقعد الفارغ (NK283).
+  final String day;
 }
 
 /// مباراة حقيقية من يوم الجولة على البطاقة.
@@ -625,7 +629,7 @@ class _MatchesBlock extends StatelessWidget {
     final bool average = m.awayUserId == null;
     final String home = h2hNameOf(m.homeName);
     final String away = average
-        ? h2hAverageOpponent
+        ? h2hEmptySeatName(group.day)
         : '${h2hNameOf(m.awayName)}${m.awayAbsent ? ' (غائب)' : ''}';
     final String homePoints = m.homePoints == null
         ? '–'

@@ -9026,6 +9026,30 @@ Play: the three pages the Play listing and Data safety point to
   `h2` closed, and nothing else changed. `check_mirror.mjs` still checks the
   three pages answer 200 after Deploy Web.
 
+### The vacant seat in every place it shows (script 283, 2026-11-19)
+
+From the checkpoint of 2026-11-19: the home card named a December empty
+seat «مقعد شاغر» (`h2hOpponentOf`, NK278), but six other places still
+wrote «متوسط المجموعة» for any empty seat. Text only; no server change, no
+migration, no ARB change.
+
+- **One rule**: `h2hEmptySeatName(day)` (`h2h_texts.dart`): a vacant seat
+  for a round on or after 2026-12-01 (`h2hUsesDecemberRules`, so a December
+  cycle's rounds in January too), else the group average. `h2hOpponentOf`
+  uses it.
+- **Player**: the round page's card and totals (`detail.day`); the
+  group's match card (`H2hPairCard` takes `day`, from `group.day`; its
+  «فوز المتوسط» is November's only).
+- **Share picture**: `H2hShareMatches` takes `day` (`read.day` /
+  `data.day` at the two admin call sites).
+- **Admin**: a group's round lines (`data.day`), a player's round lines
+  (`r.day`), and the late-seat dialog's note, `h2hLateSeatNote(monthStart)`:
+  December's seat is vacant before the late player joins.
+- November keeps «متوسط المجموعة» everywhere (its tests unchanged).
+- Tests: `h2h_vacant_seat_wording_test.dart` (new: the rule, the note,
+  the match card for December and November); `h2h_round_screen_test.dart`
+  and `h2h_share_cards_test.dart` (a December empty seat).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

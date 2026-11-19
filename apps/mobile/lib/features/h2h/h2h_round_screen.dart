@@ -246,7 +246,7 @@ class _MatchCard extends StatelessWidget {
                   name: secret
                       ? h2hSecretOpponent
                       : average
-                      ? h2hAverageOpponent
+                      ? h2hEmptySeatName(detail.day)
                       : h2hNameOf(detail.opponentName),
                   avatarUrl: detail.opponentAvatarUrl,
                   average: average,
@@ -351,7 +351,7 @@ class _Totals extends StatelessWidget {
                         ? h2hSecretOpponent
                         // NK216_24: an absent opponent keeps his name.
                         : detail.opponentUserId == null
-                        ? h2hAverageOpponent
+                        ? h2hEmptySeatName(detail.day)
                         // NK172_055
                         : h2hNameOf(detail.opponentName),
                     textAlign: TextAlign.center,

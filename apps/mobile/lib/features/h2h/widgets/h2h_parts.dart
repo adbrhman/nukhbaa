@@ -35,7 +35,7 @@ String h2hNameOf(String? name) =>
 String h2hOpponentOf(H2hRoundViewDto round) {
   if (round.opponentHidden) return h2hSecretOpponent;
   if (round.opponentUserId != null) return h2hNameOf(round.opponentName);
-  return h2hUsesDecemberRules(round.day) ? h2hVacantSeat : h2hAverageOpponent;
+  return h2hEmptySeatName(round.day);
 }
 
 /// The round that matters now: the one being played, else the next one

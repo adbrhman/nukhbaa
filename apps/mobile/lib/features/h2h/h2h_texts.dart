@@ -215,6 +215,22 @@ const String h2hAverageOpponent = 'متوسط المجموعة';
 /// its opponent plays an absent opponent, never the group average.
 const String h2hVacantSeat = 'مقعد شاغر';
 
+// NK283 vacant seat wording
+/// The name of an empty seat's side in a round of [day]: from December 2026
+/// a vacant seat, whose opponent plays an absent opponent (NK278); before
+/// it the group average. A December cycle's rounds played in January are
+/// vacant seats too.
+String h2hEmptySeatName(String day) =>
+    h2hUsesDecemberRules(day) ? h2hVacantSeat : h2hAverageOpponent;
+
+/// The admin's note when seating a late player in [monthStart]'s group:
+/// what his seat plays before he joins.
+String h2hLateSeatNote(String monthStart) => h2hUsesDecemberRules(monthStart)
+    ? 'يلعب من الجولة التالية لانضمامه، ومقعده قبل ذلك شاغر: من يواجهه '
+          'يعامل معاملة خصم غائب.'
+    : 'يلعب من الجولة التالية لانضمامه، ومقعده يلعب متوسط المجموعة '
+          'قبل ذلك.';
+
 // NK277 waiting group (owner, 2026-11-14)
 /// The last round a group may start from and still take part in the
 /// month's promotion and relegation: seven rounds or more left.

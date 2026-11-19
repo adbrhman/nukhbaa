@@ -211,6 +211,7 @@ class _H2hGroupMatchesState extends ConsumerState<H2hGroupMatches> {
                   match: group.matches[i],
                   status: group.status,
                   round: group.round,
+                  day: group.day,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -239,6 +240,7 @@ class H2hPairCard extends StatelessWidget {
     required this.match,
     required this.status,
     required this.round,
+    required this.day,
     super.key,
   });
 
@@ -251,6 +253,9 @@ class H2hPairCard extends StatelessWidget {
   /// The round's number, to open the caller's own match.
   final int round;
 
+  /// The round's Riyadh day: it names an empty seat (NK283).
+  final String day;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
@@ -261,7 +266,7 @@ class H2hPairCard extends StatelessWidget {
     // NK172_056
     final String homeName = h2hNameOf(m.homeName);
     final String awayName = average
-        ? h2hAverageOpponent
+        ? h2hEmptySeatName(day)
         : h2hNameOf(m.awayName);
     final String homePoints = m.homePoints == null
         ? '–'
@@ -274,7 +279,10 @@ class H2hPairCard extends StatelessWidget {
       'voided' => 'ملغاة',
       'settled' => switch (m.winner) {
         'home' => 'فوز $homeName',
-        'away' => average ? 'فوز المتوسط' : 'فوز $awayName',
+        'away' =>
+          average && !h2hUsesDecemberRules(day)
+              ? 'فوز المتوسط'
+              : 'فوز $awayName',
         'draw' => 'تعادل',
         'home_point' => 'نقطة لـ $homeName',
         'away_point' => 'نقطة لـ $awayName',

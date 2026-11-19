@@ -258,6 +258,7 @@ void main() {
           H2hShareMatches(
             title: 'المجموعة 1',
             status: 'settled',
+            day: '2026-11-08',
             matches: const <H2hGroupMatchDto>[
               H2hGroupMatchDto(
                 homeUserId: 'u-1',
@@ -299,6 +300,38 @@ void main() {
     expect(find.text('خالد (غائب)'), findsOneWidget);
     expect(find.text(h2hAverageOpponent), findsOneWidget);
     expect(find.text('6.5'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  // NK283: a December round's empty seat leaves the app as a vacant seat.
+  testWidgets('the matches card names a December empty seat vacant', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      H2hMatchesShareCard(
+        heading: 'مواجهات الجولة 3',
+        subheading: '4 ديسمبر · المجموعة 1',
+        groups: <H2hShareMatches>[
+          H2hShareMatches(
+            title: 'المجموعة 1',
+            status: 'settled',
+            day: '2026-12-04',
+            matches: const <H2hGroupMatchDto>[
+              H2hGroupMatchDto(
+                homeUserId: 'u-5',
+                homeName: 'ليلى',
+                homePoints: 2,
+                winner: 'home',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text(h2hVacantSeat), findsOneWidget);
+    expect(find.text(h2hAverageOpponent), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

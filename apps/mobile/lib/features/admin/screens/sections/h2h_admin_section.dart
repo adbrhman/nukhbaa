@@ -286,6 +286,7 @@ class _H2hAdminSectionState extends ConsumerState<H2hAdminSection> {
             ),
             status: read.status,
             matches: read.matches,
+            day: read.day,
           ),
         );
       }
