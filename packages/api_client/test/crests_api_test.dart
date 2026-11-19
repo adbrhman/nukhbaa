@@ -70,7 +70,7 @@ void main() {
     expect(result, const Result<String>.ok('hidden'));
     final sent = ctx.captured.single;
     expect(sent.method, 'POST');
-    expect(sent.url.path, '/admin/crests/arsenal');
+    expect(sent.url.path, '/owner/crests/arsenal');
     expect(jsonDecode(sent.body), <String, Object?>{
       'action': 'hide',
       'reason': 'شكوى',
@@ -106,6 +106,6 @@ void main() {
     final result = await AdminApi(ctx.transport).adminCrests();
 
     expect((result as Ok<AdminCrestsDto>).value.crests.single.slug, 'arsenal');
-    expect(ctx.captured.single.url.path, '/admin/crests');
+    expect(ctx.captured.single.url.path, '/owner/crests');
   });
 }

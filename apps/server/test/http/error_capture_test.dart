@@ -260,4 +260,35 @@ void main() {
       );
     });
   });
+
+  // NK287_07
+  // Script 287: the owners' page is kept out of the admins' error log and
+  // its alerts.
+  test('a failure under /owner is answered, never kept', () async {
+    final log = _MemoryErrorLog();
+
+    final response = await _call(
+      (_) => throw StateError('the owner page failed'),
+      log,
+      url: 'http://localhost/owner/crests',
+    );
+
+    expect(response.statusCode, HttpStatus.internalServerError);
+    expect(log.kept, isEmpty);
+    final body = jsonDecode(await response.body()) as Map<String, Object?>;
+    expect(body['code'], 'server.unexpected');
+    expect(body.containsKey('problem_code'), isFalse);
+  });
+
+  test('a path that only begins like /owner is kept as any other', () async {
+    final log = _MemoryErrorLog();
+
+    await _call(
+      (_) => throw StateError('broke'),
+      log,
+      url: 'http://localhost/ownership',
+    );
+
+    expect(log.kept, hasLength(1));
+  });
 }

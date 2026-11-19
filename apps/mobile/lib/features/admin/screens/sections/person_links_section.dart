@@ -23,7 +23,7 @@ import '../../../../core/providers.dart';
 import '../../../../core/ui/app_dialog.dart';
 import '../../widgets/admin_ui_kit.dart';
 
-/// `GET /admin/person-links`.
+/// `GET /owner/person-links`.
 final adminPersonLinksProvider = FutureProvider.autoDispose<PersonLinksDto>((
   ref,
 ) async {

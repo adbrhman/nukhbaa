@@ -205,20 +205,20 @@ final class AdminApi {
     );
   }
 
-  /// `GET /admin/hidden-accounts` -- the accounts the owner admin hid from
+  /// `GET /owner/hidden-accounts` -- the accounts the owner admin hid from
   /// every board, the most recently hidden first (script 258). The owner
   /// admin alone: any other admin is refused (`admin.owner_only`).
   Future<Result<HiddenAccountsDto>> hiddenAccounts() {
     return _transport.getObject<HiddenAccountsDto>(
-      '/admin/hidden-accounts',
+      '/owner/hidden-accounts',
       parse: HiddenAccountsDto.fromJson,
     );
   }
 
-  /// `POST` (hide) or `DELETE` (show again) `/admin/hidden-accounts/{id}`
+  /// `POST` (hide) or `DELETE` (show again) `/owner/hidden-accounts/{id}`
   /// (script 258): answers whether the account [userId] is now hidden.
   Future<Result<bool>> setAccountHidden(String userId, {required bool hidden}) {
-    final String path = '/admin/hidden-accounts/${Uri.encodeComponent(userId)}';
+    final String path = '/owner/hidden-accounts/${Uri.encodeComponent(userId)}';
     bool parse(Map<String, Object?> json) => json['hidden'] == true;
     return hidden
         ? _transport.postObject<bool>(
@@ -229,16 +229,16 @@ final class AdminApi {
         : _transport.deleteObject<bool>(path, parse: parse);
   }
 
-  /// `GET /admin/crests` -- every club crest, the switch and the latest
+  /// `GET /owner/crests` -- every club crest, the switch and the latest
   /// changes (script 265). The owner admin alone.
   Future<Result<AdminCrestsDto>> adminCrests() {
     return _transport.getObject<AdminCrestsDto>(
-      '/admin/crests',
+      '/owner/crests',
       parse: AdminCrestsDto.fromJson,
     );
   }
 
-  /// `POST /admin/crests/{slug}` -- [action] `hide`, `show` or `delete`
+  /// `POST /owner/crests/{slug}` -- [action] `hide`, `show` or `delete`
   /// on club crest [slug], for [reason]; a delete needs [confirm], the slug
   /// typed. Answers the crest's new status.
   Future<Result<String>> actOnCrest(
@@ -249,7 +249,7 @@ final class AdminApi {
     String? confirm,
   }) {
     return _transport.postObject<String>(
-      '/admin/crests/${Uri.encodeComponent(slug)}',
+      '/owner/crests/${Uri.encodeComponent(slug)}',
       body: <String, Object?>{
         'action': action,
         'reason': ?reason,
@@ -260,30 +260,30 @@ final class AdminApi {
     );
   }
 
-  /// `PUT /admin/crests` -- turns every club crest on or off, for
+  /// `PUT /owner/crests` -- turns every club crest on or off, for
   /// [reason] (script 265).
   Future<Result<bool>> setClubCrestsEnabled(
     bool enabled, {
     required String reason,
   }) {
     return _transport.putObject<bool>(
-      '/admin/crests',
+      '/owner/crests',
       body: <String, Object?>{'clubs_enabled': enabled, 'reason': reason},
       parse: (json) => json['clubs_enabled'] == true,
     );
   }
 
-  /// `GET /admin/person-links` -- every person the owner admin linked,
+  /// `GET /owner/person-links` -- every person the owner admin linked,
   /// each with its accounts, the main one first (script 263). The owner
   /// admin alone; another admin is `admin.owner_only`.
   Future<Result<PersonLinksDto>> personLinks() {
     return _transport.getObject<PersonLinksDto>(
-      '/admin/person-links',
+      '/owner/person-links',
       parse: PersonLinksDto.fromJson,
     );
   }
 
-  /// `PUT /admin/person-links/{mainId}` -- [mainId] and [secondId] (none
+  /// `PUT /owner/person-links/{mainId}` -- [mainId] and [secondId] (none
   /// when null) count, [otherIds] are hidden from every board (script 263).
   Future<Result<bool>> setPerson(
     String mainId, {
@@ -291,7 +291,7 @@ final class AdminApi {
     required List<String> otherIds,
   }) {
     return _transport.putObject<bool>(
-      '/admin/person-links/${Uri.encodeComponent(mainId)}',
+      '/owner/person-links/${Uri.encodeComponent(mainId)}',
       body: SetPersonRequestDto(
         secondId: secondId,
         otherIds: otherIds,
@@ -300,11 +300,11 @@ final class AdminApi {
     );
   }
 
-  /// `DELETE /admin/person-links/{mainId}` -- unlinks the person, showing
+  /// `DELETE /owner/person-links/{mainId}` -- unlinks the person, showing
   /// again what the link hid; answers how many accounts were linked.
   Future<Result<int>> unlinkPerson(String mainId) {
     return _transport.deleteObject<int>(
-      '/admin/person-links/${Uri.encodeComponent(mainId)}',
+      '/owner/person-links/${Uri.encodeComponent(mainId)}',
       parse: (json) => (json['unlinked'] as int?) ?? 0,
     );
   }

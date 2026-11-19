@@ -9,9 +9,9 @@ import 'package:test/test.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a
 // relative import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
-import '../../routes/admin/hidden-accounts/[id]/index.dart' as hidden_account;
+import '../../routes/owner/hidden-accounts/[id]/index.dart' as hidden_account;
 // ignore: always_use_package_imports
-import '../../routes/admin/hidden-accounts/index.dart' as hidden_accounts;
+import '../../routes/owner/hidden-accounts/index.dart' as hidden_accounts;
 import 'competition_route_harness.dart';
 
 const _otherAdmin = '0b0b0b0b-0b0b-4b0b-8b0b-0b0b0b0b0b0b';

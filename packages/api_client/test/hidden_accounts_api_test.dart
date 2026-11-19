@@ -30,7 +30,7 @@ void main() {
 
     expect(result, Result<HiddenAccountsDto>.ok(dto));
     expect(ctx.captured.single.method, 'GET');
-    expect(ctx.captured.single.url.path, '/admin/hidden-accounts');
+    expect(ctx.captured.single.url.path, '/owner/hidden-accounts');
   });
 
   test('setAccountHidden posts to hide and deletes to show', () async {
@@ -48,6 +48,6 @@ void main() {
     expect(show, const Result<bool>.ok(false));
     expect(ctx.captured.first.method, 'POST');
     expect(ctx.captured.last.method, 'DELETE');
-    expect(ctx.captured.last.url.path, '/admin/hidden-accounts/$player');
+    expect(ctx.captured.last.url.path, '/owner/hidden-accounts/$player');
   });
 }

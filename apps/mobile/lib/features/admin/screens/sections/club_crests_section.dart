@@ -26,7 +26,7 @@ import '../../../../core/providers.dart';
 import '../../../../core/ui/app_button.dart';
 import '../../widgets/admin_ui_kit.dart';
 
-/// `GET /admin/crests`.
+/// `GET /owner/crests`.
 final adminCrestsProvider = FutureProvider.autoDispose<AdminCrestsDto>((
   ref,
 ) async {

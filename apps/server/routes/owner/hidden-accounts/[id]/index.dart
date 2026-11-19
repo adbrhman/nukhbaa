@@ -6,12 +6,13 @@ import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
-/// `POST /admin/hidden-accounts/{id}` hides the account from every board;
+// NK287_01
+/// `POST /owner/hidden-accounts/{id}` hides the account from every board;
 /// `DELETE` shows it again with the same points (`OwnerHiddenAccounts`,
-/// script 258, migration 0207). The owner admin alone: any other admin is
-/// `409 admin.owner_only`, a player is refused by the admin gate; the owner
-/// never hides himself (`409 admin.cannot_hide_owner`); an unknown account
-/// is `409 admin.user_not_found`. Answers `{"hidden": true|false}`. `405`
+/// script 258, migration 0207). An owner seat alone: anyone else gets the
+/// owner gate's `404` (script 287); no owner seat is ever hidden
+/// (`409 admin.cannot_hide_owner`); an unknown account is
+/// `409 admin.user_not_found`. Answers `{"hidden": true|false}`. `405`
 /// on any other method.
 Future<Response> onRequest(RequestContext context, String id) async {
   final HttpMethod method = context.request.method;

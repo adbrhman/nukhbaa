@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:server/http/owner_path.dart';
 import 'package:server/http/request_scope.dart';
 import 'package:shared/shared.dart';
 
@@ -84,7 +85,21 @@ Handler captureServerErrors(
         ).toJson(),
       );
     }
-    if (response.statusCode >= HttpStatus.internalServerError && !scope.shed) {
+    // NK287_06
+    final bool ownerPage = isOwnerPath(context.request.uri.path);
+    if (response.statusCode >= HttpStatus.internalServerError && ownerPage) {
+      // The owners' page is kept out of the admins' error log and its
+      // alerts (script 287): its failures go to the container log only.
+      // ignore: avoid_print
+      print(
+        '[owner] ${response.statusCode} ${context.request.method.value} '
+        '${context.request.uri.path} (${scope.requestId})'
+        '${thrown == null ? '' : ': $thrown'}',
+      );
+    }
+    if (response.statusCode >= HttpStatus.internalServerError &&
+        !scope.shed &&
+        !ownerPage) {
       final report = _reportFor(
         context.request,
         response.statusCode,

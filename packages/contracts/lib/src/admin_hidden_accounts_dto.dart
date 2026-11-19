@@ -1,6 +1,6 @@
 import 'package:contracts/src/admin_dto.dart';
 
-/// One account in `GET /admin/hidden-accounts` (script 258): an account the
+/// One account in `GET /owner/hidden-accounts` (script 258): an account the
 /// owner admin hid from every board.
 final class HiddenAccountDto {
   /// Creates the line.
@@ -36,7 +36,7 @@ final class HiddenAccountDto {
   int get hashCode => Object.hash(user, hiddenAt);
 }
 
-/// The wire shape of `GET /admin/hidden-accounts` (script 258): the hidden
+/// The wire shape of `GET /owner/hidden-accounts` (script 258): the hidden
 /// accounts, the most recently hidden first. The owner admin alone reads it.
 final class HiddenAccountsDto {
   /// Creates the DTO.

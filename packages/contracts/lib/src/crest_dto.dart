@@ -1,6 +1,6 @@
 /// The club crests (script 265, migration 0210): the list the app reads on
 /// every start (`GET /crests`) and the owner admin's page
-/// (`/admin/crests`).
+/// (`/owner/crests`).
 library;
 
 Map<String, Object?> _map(Object? value) =>
@@ -152,7 +152,7 @@ final class CrestEventDto {
   };
 }
 
-/// `GET /admin/crests`: every club crest, the switch and the latest changes.
+/// `GET /owner/crests`: every club crest, the switch and the latest changes.
 final class AdminCrestsDto {
   /// Creates the page.
   const AdminCrestsDto({

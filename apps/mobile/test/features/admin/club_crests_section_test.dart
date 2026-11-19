@@ -34,7 +34,7 @@ final class _Server {
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
     final String path = request.url.path;
-    if (path == '/admin/crests' && request.method == 'GET') {
+    if (path == '/owner/crests' && request.method == 'GET') {
       return _json({
         'schema_version': 1,
         'clubs_enabled': enabled,
@@ -58,14 +58,14 @@ final class _Server {
         ],
       });
     }
-    if (path == '/admin/crests' && request.method == 'PUT') {
+    if (path == '/owner/crests' && request.method == 'PUT') {
       final Map<String, Object?> body = (jsonDecode(request.body) as Map)
           .cast<String, Object?>();
       enabled = body['clubs_enabled'] == true;
       return _json({'clubs_enabled': enabled});
     }
-    if (path.startsWith('/admin/crests/')) {
-      final String slug = path.substring('/admin/crests/'.length);
+    if (path.startsWith('/owner/crests/')) {
+      final String slug = path.substring('/owner/crests/'.length);
       final Map<String, Object?> body = (jsonDecode(request.body) as Map)
           .cast<String, Object?>();
       final String next = switch (body['action']) {
@@ -81,7 +81,7 @@ final class _Server {
 
   List<Map<String, Object?>> posts(String slug) => [
     for (final r in requests)
-      if (r.url.path == '/admin/crests/$slug')
+      if (r.url.path == '/owner/crests/$slug')
         (jsonDecode(r.body) as Map).cast<String, Object?>(),
   ];
 }

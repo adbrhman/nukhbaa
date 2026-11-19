@@ -203,6 +203,8 @@ final class CompositionRoot {
     this.ownerPersonLinks,
     this.getCrestManifest,
     this.ownerCrests,
+    this.ownerNotices,
+    this.ownerAuditLog,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -438,6 +440,8 @@ final class CompositionRoot {
     this.ownerPersonLinks,
     this.getCrestManifest,
     this.ownerCrests,
+    this.ownerNotices,
+    this.ownerAuditLog,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2686,7 +2690,7 @@ final class CompositionRoot {
   final AdminListNewPlayers? adminListNewPlayers;
 
   /// The accounts the owner admin hid from every board
-  /// (`/admin/hidden-accounts`, script 258, migration 0207), the owner
+  /// (`/owner/hidden-accounts`, script 258, migration 0207), the owner
   /// admin alone. Null in tests that do not provide one.
   final OwnerHiddenAccounts? ownerHiddenAccounts;
 
@@ -2697,7 +2701,7 @@ final class CompositionRoot {
   final SupportPeekPredictions? supportPeekPredictions;
 
   /// One person's accounts, linked by the owner admin alone: the main and
-  /// the second count, the others are hidden (`/admin/person-links`,
+  /// the second count, the others are hidden (`/owner/person-links`,
   /// script 263, migration 0209). Null in tests that do not provide one.
   final OwnerPersonLinks? ownerPersonLinks;
 
@@ -2706,9 +2710,21 @@ final class CompositionRoot {
   /// provide one.
   final GetCrestManifest? getCrestManifest;
 
-  /// The club crests, managed by the owner admin alone (`/admin/crests`,
-  /// script 265). Null in tests that do not provide one.
+  /// The club crests, managed by an owner seat alone (`/owner/crests`,
+  /// script 265, moved by script 287). Null in tests that do not provide
+  /// one.
   final OwnerCrests? ownerCrests;
+
+  /// The owner seats, for the `/owner` gate (script 287, migration 0217):
+  /// anyone else gets the answer of a path with no route. Null in tests
+  /// that do not provide one, and then nobody passes the gate.
+  // NK287_05
+  final OwnerNotices? ownerNotices;
+
+  /// The owners' own audit log (script 287, migration 0219): every change
+  /// made under `/owner`, apart from the admins' log. Null in tests that do
+  /// not provide one.
+  final OwnerAuditLog? ownerAuditLog;
 
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
@@ -3623,6 +3639,19 @@ final class CompositionRoot {
         catalog: crestCatalog,
         baseUrl: crestBase,
       ),
+      // The /owner gate's seats and the owners' own audit log (script 287).
+      ownerNotices: OwnerInbox(
+        owners: PostgresOwnerRegistry(connection),
+        announcements: announcementRepository,
+        notify: CreateNotification(
+          notifications: notificationRepository,
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      ownerAuditLog: PostgresOwnerAuditLog(connection),
       ownerCrests: OwnerCrests(
         catalog: crestCatalog,
         files:

@@ -9,11 +9,11 @@ import 'package:server/http/admin_dto_mapper.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
-/// `GET /admin/hidden-accounts` -- the accounts the owner admin hid from
+// NK287_01
+/// `GET /owner/hidden-accounts` -- the accounts the owner admin hid from
 /// every board, the most recently hidden first (`OwnerHiddenAccounts`,
-/// script 258, migration 0207). The owner admin alone: any other admin is
-/// `409 admin.owner_only`, a player is refused by the admin gate. `405` on
-/// any non-GET method.
+/// script 258, migration 0207). An owner seat alone: anyone else gets the
+/// owner gate's `404` (script 287). `405` on any non-GET method.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);

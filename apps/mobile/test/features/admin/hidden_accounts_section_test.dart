@@ -60,7 +60,7 @@ final class _Server {
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
     final String path = request.url.path;
-    if (path == '/admin/hidden-accounts') {
+    if (path == '/owner/hidden-accounts') {
       return _json({
         'schema_version': 1,
         'accounts': [
@@ -86,7 +86,7 @@ final class _Server {
         ],
       });
     }
-    if (path.startsWith('/admin/hidden-accounts/')) {
+    if (path.startsWith('/owner/hidden-accounts/')) {
       final String id = path.split('/').last;
       final bool hide = request.method == 'POST';
       if (hide) {
@@ -195,7 +195,7 @@ void main() {
     expect(find.text('مراجع التطبيق'), findsOneWidget);
     await _tapVisible(tester, const Key('admin.hidden.show.$_reviewer'));
 
-    final sent = server.to('/admin/hidden-accounts/$_reviewer').single;
+    final sent = server.to('/owner/hidden-accounts/$_reviewer').single;
     expect(sent.method, 'DELETE');
     expect(find.text('ظهر «مراجع التطبيق» ونقاطه في اللوحات'), findsOneWidget);
     expect(find.text('لا يوجد حساب مخفي'), findsOneWidget);
@@ -227,7 +227,7 @@ void main() {
     );
     await _tapVisible(tester, const Key('admin.hidden.hide.$_player'));
 
-    final sent = server.to('/admin/hidden-accounts/$_player').single;
+    final sent = server.to('/owner/hidden-accounts/$_player').single;
     expect(sent.method, 'POST');
     expect(find.text('أُخفي «خالد» من كل اللوحات'), findsOneWidget);
     expect(find.text('حسابات مخفية: 2'), findsOneWidget);

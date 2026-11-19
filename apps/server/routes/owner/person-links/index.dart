@@ -9,11 +9,11 @@ import 'package:server/http/admin_dto_mapper.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:shared/shared.dart';
 
-/// `GET /admin/person-links` -- every person the owner admin linked, each
+// NK287_01
+/// `GET /owner/person-links` -- every person the owner admin linked, each
 /// with its accounts, the main one first (`OwnerPersonLinks`, script 263,
-/// migration 0209). The owner admin alone: any other admin is
-/// `409 admin.owner_only`, a player is refused by the admin gate. `405` on
-/// any non-GET method.
+/// migration 0209). An owner seat alone: anyone else gets the
+/// owner gate's `404` (script 287). `405` on any non-GET method.
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return Response(statusCode: HttpStatus.methodNotAllowed);

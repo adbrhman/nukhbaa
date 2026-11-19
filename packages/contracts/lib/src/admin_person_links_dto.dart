@@ -1,6 +1,6 @@
 import 'package:contracts/src/admin_dto.dart';
 
-/// One account of a person in `GET /admin/person-links` (script 263).
+/// One account of a person in `GET /owner/person-links` (script 263).
 final class LinkedAccountDto {
   /// Creates the line.
   const LinkedAccountDto({
@@ -90,7 +90,7 @@ final class LinkedPersonDto {
   int get hashCode => Object.hash(mainId, Object.hashAll(accounts));
 }
 
-/// The wire shape of `GET /admin/person-links` (script 263, migration
+/// The wire shape of `GET /owner/person-links` (script 263, migration
 /// 0209): every person the owner admin linked. The owner admin alone reads
 /// it.
 final class PersonLinksDto {
@@ -143,7 +143,7 @@ final class PersonLinksDto {
   int get hashCode => Object.hash(schemaVersion, Object.hashAll(people));
 }
 
-/// The body of `PUT /admin/person-links/{mainId}`: the second account that
+/// The body of `PUT /owner/person-links/{mainId}`: the second account that
 /// also counts (none when null) and the other accounts, which are hidden.
 final class SetPersonRequestDto {
   /// Creates the request.

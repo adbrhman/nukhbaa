@@ -38,7 +38,7 @@ void main() {
     final result = await AdminApi(ctx.transport).personLinks();
 
     expect(result, const Result<PersonLinksDto>.ok(dto));
-    expect(ctx.captured.single.url.path, '/admin/person-links');
+    expect(ctx.captured.single.url.path, '/owner/person-links');
   });
 
   test('setPerson puts the second and the others', () async {
@@ -53,7 +53,7 @@ void main() {
     expect(result, const Result<bool>.ok(true));
     final sent = ctx.captured.single;
     expect(sent.method, 'PUT');
-    expect(sent.url.path, '/admin/person-links/$main');
+    expect(sent.url.path, '/owner/person-links/$main');
     expect(jsonDecode(sent.body), <String, Object?>{
       'second_id': second,
       'other_ids': <Object?>[other],

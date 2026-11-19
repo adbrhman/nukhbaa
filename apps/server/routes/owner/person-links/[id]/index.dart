@@ -8,7 +8,8 @@ import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
 import 'package:shared/shared.dart';
 
-/// `/admin/person-links/{mainId}` -- one person's accounts, linked by the
+// NK287_01
+/// `/owner/person-links/{mainId}` -- one person's accounts, linked by the
 /// owner admin alone (`OwnerPersonLinks`, script 263, migration 0209).
 ///
 /// * `PUT` `{"second_id": "...", "other_ids": ["..."]}` -- the main account
@@ -18,7 +19,8 @@ import 'package:shared/shared.dart';
 /// * `DELETE` -- unlinks the person, showing again what the link hid.
 ///   Answers `{"unlinked": n}`.
 ///
-/// Any other admin is `409 admin.owner_only`; under two accounts is
+/// Anyone but an owner seat gets the owner gate's `404` (script 287);
+/// under two accounts is
 /// `400 admin.person_too_few`; an account named twice is
 /// `400 admin.person_duplicate`; an unknown account is
 /// `409 admin.user_not_found`; one linked to another person is

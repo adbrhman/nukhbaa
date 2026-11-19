@@ -9107,6 +9107,40 @@ while it is off, no admin crowns by hand either; an owner seat still may.
   guarded), `postgres_owner_switches_test.dart`,
   `0218_owner_switches_test.sql`.
 
+### The owners' page answers as nothing to anyone else (script 287, migration 0219, 2026-11-20)
+
+Decision Q01 of the owner's report: the owners' page is unknown to the
+admins. The owner chose (2026-11-19/20) that no admin sees any trace of it.
+
+- **`/owner`** (`routes/owner/_middleware.dart`, `ownerGate()` in
+  `http/owner_gate.dart`): only an owner seat (`OwnerNotices.isOwner`)
+  reaches a route there. Anyone else -- an admin, a player, no token or a
+  bad one, a seat that cannot be read -- gets `404 Route not found`, the
+  very answer dart_frog 1.2.6 gives a path with no route
+  (`Router.routeNotFound`); never `401` or `409`.
+- **Moved**: `/admin/hidden-accounts` -> `/owner/hidden-accounts`,
+  `/admin/person-links` -> `/owner/person-links`, `/admin/crests` ->
+  `/owner/crests` (the old paths are gone; the public `/crests` manifest is
+  unchanged). `admin_api.dart` calls the new paths. The Play build 855
+  still calls the old ones: its three owner tabs fail until the next AAB.
+- **`admin.owner_audit_log`** (0219): one row per change an owner seat made
+  under `/owner` (a write answered below 400): actor, method, path, status,
+  time. Append-only (trigger), read by no admin route and no client role.
+  `OwnerAuditLog` / `PostgresOwnerAuditLog`; the gate appends after the
+  route answers; a failure to append is printed.
+- **Errors**: a 5xx under `/owner` is answered as before but never enters
+  the admins' error log or its alerts (`error_capture.dart`,
+  `isOwnerPath`); it is printed to the container log.
+- `CompositionRoot.ownerNotices` and `.ownerAuditLog` (null in tests that
+  do not wire them: then nobody passes the gate).
+- Tests: `owner_gate_test.dart` (the real gate: an owner passes and his
+  change is kept; a read or a refused change is not; an admin, a player, a
+  bad token, an unreadable seat and an unwired root all get exactly
+  `Router.routeNotFound`), `error_capture_test.dart` (a failure under
+  `/owner` is not kept; `/ownership` is), `postgres_owner_audit_log_test.dart`,
+  `0219_owner_audit_log_test.sql`; the three route tests import the moved
+  handlers; the api_client and app tests call the new paths.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

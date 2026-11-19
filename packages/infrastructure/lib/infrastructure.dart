@@ -9,6 +9,7 @@ export 'src/admin/postgres_audit_log_repository.dart';
 export 'src/admin/postgres_duplicate_name_reader.dart';
 export 'src/admin/postgres_hidden_account_store.dart';
 export 'src/admin/postgres_new_player_reader.dart';
+export 'src/admin/postgres_owner_audit_log.dart';
 export 'src/admin/postgres_owner_registry.dart';
 export 'src/admin/postgres_owner_switches.dart';
 export 'src/admin/postgres_person_link_store.dart';

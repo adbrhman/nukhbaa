@@ -9,7 +9,8 @@ import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
 import 'package:shared/shared.dart';
 
-/// `/admin/crests` -- the club crests, for the owner admin alone
+// NK287_01
+/// `/owner/crests` -- the club crests, for the owner admin alone
 /// (`OwnerCrests`, script 265, migration 0210).
 ///
 /// * `GET` -- every crest (its status, its URL until deleted, why), the
@@ -17,7 +18,8 @@ import 'package:shared/shared.dart';
 /// * `PUT` `{"clubs_enabled": bool, "reason": "..."}` -- turns every club
 ///   crest on or off. Answers `{"clubs_enabled": bool}`.
 ///
-/// Any other admin is `409 admin.owner_only`; a blank reason is
+/// Anyone but an owner seat gets the owner gate's `404` (script 287);
+/// a blank reason is
 /// `400 crest.reason_required`. `405` on any other method.
 Future<Response> onRequest(RequestContext context) async {
   final HttpMethod method = context.request.method;

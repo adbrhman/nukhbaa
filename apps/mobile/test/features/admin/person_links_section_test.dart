@@ -41,7 +41,7 @@ final class _Server {
   Future<http.Response> handle(http.Request request) async {
     requests.add(request);
     final String path = request.url.path;
-    if (path == '/admin/person-links') {
+    if (path == '/owner/person-links') {
       return _json({
         'schema_version': 1,
         'people': [
@@ -74,7 +74,7 @@ final class _Server {
         ],
       });
     }
-    if (path.startsWith('/admin/person-links/')) {
+    if (path.startsWith('/owner/person-links/')) {
       if (request.method == 'DELETE') {
         linked = false;
         return _json({'unlinked': 2});
@@ -159,7 +159,7 @@ void main() {
     await _tap(tester, const Key('admin.people.role.$_b.hidden'));
     await _tap(tester, const Key('admin.people.save'));
 
-    final sent = server.to('/admin/person-links/$_c').single;
+    final sent = server.to('/owner/person-links/$_c').single;
     expect(sent.method, 'PUT');
     expect(jsonDecode(sent.body), {
       'second_id': _a,
@@ -180,7 +180,7 @@ void main() {
     await _tap(tester, const Key('admin.people.role.$_c.main'));
     await _tap(tester, const Key('admin.people.save'));
 
-    expect(jsonDecode(server.to('/admin/person-links/$_c').single.body), {
+    expect(jsonDecode(server.to('/owner/person-links/$_c').single.body), {
       'other_ids': [_a],
     });
   });
@@ -197,7 +197,7 @@ void main() {
     expect(find.text('اختر الحساب الأساسي'), findsOneWidget);
     expect(
       server.requests.where(
-        (r) => r.url.path.startsWith('/admin/person-links/'),
+        (r) => r.url.path.startsWith('/owner/person-links/'),
       ),
       isEmpty,
     );
@@ -211,7 +211,7 @@ void main() {
     await _tap(tester, const Key('admin.people.draftRole.$_b.second'));
     await _tap(tester, const Key('admin.people.save'));
 
-    expect(jsonDecode(server.to('/admin/person-links/$_a').single.body), {
+    expect(jsonDecode(server.to('/owner/person-links/$_a').single.body), {
       'second_id': _b,
       'other_ids': <Object?>[],
     });
@@ -226,7 +226,7 @@ void main() {
     await tester.tap(find.text('فك الربط').last);
     await tester.pumpAndSettle();
 
-    expect(server.to('/admin/person-links/$_a').single.method, 'DELETE');
+    expect(server.to('/owner/person-links/$_a').single.method, 'DELETE');
     expect(find.text('لا يوجد شخص مربوط'), findsOneWidget);
   });
 

@@ -9,9 +9,9 @@ import 'package:test/test.dart';
 // dart_frog routes have no `package:` URI (they live outside `lib/`); a
 // relative import is the documented way to unit-test the handler in isolation.
 // ignore: always_use_package_imports
-import '../../routes/admin/crests/[slug]/index.dart' as admin_crest;
+import '../../routes/owner/crests/[slug]/index.dart' as admin_crest;
 // ignore: always_use_package_imports
-import '../../routes/admin/crests/index.dart' as admin_crests;
+import '../../routes/owner/crests/index.dart' as admin_crests;
 // ignore: always_use_package_imports
 import '../../routes/crests/index.dart' as manifest_route;
 import 'competition_route_harness.dart';
@@ -189,7 +189,7 @@ void main() {
     });
   });
 
-  group('/admin/crests', () {
+  group('/owner/crests', () {
     test('the owner reads every crest, its URL and the log', () async {
       final response = await admin_crests.onRequest(
         wireContext(

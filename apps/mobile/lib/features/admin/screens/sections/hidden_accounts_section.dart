@@ -36,7 +36,7 @@ bool isOwnerAdminSession(SessionState? session) => switch (session) {
   _ => false,
 };
 
-/// `GET /admin/hidden-accounts`.
+/// `GET /owner/hidden-accounts`.
 final adminHiddenAccountsProvider =
     FutureProvider.autoDispose<HiddenAccountsDto>((ref) async {
       return switch (await ref.watch(adminApiProvider).hiddenAccounts()) {

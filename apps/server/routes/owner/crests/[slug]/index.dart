@@ -7,14 +7,16 @@ import 'package:server/http/error_envelope.dart';
 import 'package:server/http/json_body.dart';
 import 'package:shared/shared.dart';
 
-/// `POST /admin/crests/{slug}` `{"action": "hide" | "show" | "delete",
+// NK287_01
+/// `POST /owner/crests/{slug}` `{"action": "hide" | "show" | "delete",
 /// "reason": "...", "complainant": "...", "confirm": "<slug>"}` -- the
 /// owner admin alone hides a club crest from every phone, shows it again,
 /// or deletes it for good, its file erased (`confirm` must be the slug,
 /// typed) (`OwnerCrests`, script 265, migration 0210). Answers
 /// `{"status": "hidden" | "active" | "deleted"}`.
 ///
-/// Any other admin is `409 admin.owner_only`; a blank reason is
+/// Anyone but an owner seat gets the owner gate's `404` (script 287);
+/// a blank reason is
 /// `400 crest.reason_required`; a mistyped name `400 crest.confirm_mismatch`;
 /// an unknown crest `409 crest.not_found`; a crest not in a state for it
 /// `409 crest.state`; an unknown action `400 crest.action_invalid`. `405` on

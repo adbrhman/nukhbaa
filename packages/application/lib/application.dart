@@ -23,6 +23,7 @@ export 'src/admin/ports/audit_log_repository.dart';
 export 'src/admin/ports/duplicate_name_reader.dart';
 export 'src/admin/ports/hidden_account_store.dart';
 export 'src/admin/ports/new_player_reader.dart';
+export 'src/admin/ports/owner_audit_log.dart';
 export 'src/admin/ports/owner_registry.dart';
 export 'src/admin/ports/owner_switches.dart';
 export 'src/admin/ports/person_link_store.dart';
