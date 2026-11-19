@@ -273,6 +273,31 @@ final class AdminApi {
     );
   }
 
+  // NK289_09
+  /// `GET /owner/switches` -- the owners' switches, each with its state and
+  /// its last change (script 289). An owner seat alone.
+  Future<Result<OwnerSwitchesDto>> ownerSwitches() {
+    return _transport.getObject<OwnerSwitchesDto>(
+      '/owner/switches',
+      parse: OwnerSwitchesDto.fromJson,
+    );
+  }
+
+  /// `PUT /owner/switches/{key}` -- turns the owners' switch [key] on or
+  /// off ([on]) for [reason] (script 289). Answers the switch as it now
+  /// stands.
+  Future<Result<OwnerSwitchDto>> setOwnerSwitch(
+    String key, {
+    required bool on,
+    required String reason,
+  }) {
+    return _transport.putObject<OwnerSwitchDto>(
+      '/owner/switches/${Uri.encodeComponent(key)}',
+      body: <String, Object?>{'is_on': on, 'reason': reason},
+      parse: OwnerSwitchDto.fromJson,
+    );
+  }
+
   /// `GET /owner/person-links` -- every person the owner admin linked,
   /// each with its accounts, the main one first (script 263). The owner
   /// admin alone; another admin is `admin.owner_only`.

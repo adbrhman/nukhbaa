@@ -18,6 +18,7 @@ export 'src/admin/list_audit_log.dart';
 export 'src/admin/list_users.dart';
 export 'src/admin/owner_hidden_accounts.dart';
 export 'src/admin/owner_person_links.dart';
+export 'src/admin/owner_switch_board.dart';
 export 'src/admin/ports/account_name_directory.dart';
 export 'src/admin/ports/audit_log_repository.dart';
 export 'src/admin/ports/duplicate_name_reader.dart';

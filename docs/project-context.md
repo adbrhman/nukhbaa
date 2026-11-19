@@ -9164,6 +9164,34 @@ no other admin sees any trace of it. No e-mail is written in the app.
   `hidden_accounts_section_test.dart` (the owner page's three tools; no
   owner tab in the players section; nothing for another admin).
 
+### The owners' switches on their page (script 289, 2026-11-20)
+
+Item 3 of the owner's report, with decision Q04: the crowning switch of
+script 286 is turned from «الإدارة العامة للمالك», no longer from the SQL
+editor. No migration: `ops.owner_switches` (0218) already keeps `reason`,
+`changed_by` and `changed_at`.
+
+- **Port** `OwnerSwitchSettings` (beside `OwnerSwitches`, which the guards
+  read): `all()` and `set(which, on, reason, by)`, both implemented by
+  `PostgresOwnerSwitches` (an upsert on `switch_key`). `OwnerSwitch.byKey`.
+- **Use-case** `OwnerSwitchBoard`: an owner seat alone (`admin.owner_only`
+  otherwise, a failed seat read refuses); a reason of 1 to 200 characters
+  (`owner.reason_required`); an unknown key `owner.switch_unknown`.
+- **Routes** (behind the `/owner` gate): `GET /owner/switches`;
+  `PUT /owner/switches/{key}` `{"is_on": bool, "reason": "..."}` answers the
+  switch as it stands. `changed_by` on the wire is `you`, `other` or `sql`
+  (no seat, a reason: the SQL editor), null before any change. The PUT is
+  kept in `admin.owner_audit_log` by the gate.
+- **App**: tab «المفاتيح», first in `OwnerGeneralSection`
+  (`OwnerSwitchesSection`): each switch with its state, its last change
+  and a dialog that asks the reason before turning it.
+  `supabase/queries/crowning_pause.sql` and `crowning_resume.sql` still
+  work, and show as `sql`.
+- Tests: `owner_switch_board_test.dart` (with the `CrowningGuard` reading
+  what it writes), `postgres_owner_switches_test.dart`,
+  `owner_switches_route_test.dart`, `owner_switches_dto_test.dart`,
+  `owner_switches_api_test.dart`, `owner_switches_section_test.dart`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

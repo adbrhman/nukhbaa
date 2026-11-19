@@ -1,4 +1,5 @@
 import 'package:application/application.dart';
+import 'package:domain/domain.dart';
 import 'package:infrastructure/src/admin/postgres_owner_switches.dart';
 import 'package:infrastructure/src/db/postgres_connection.dart';
 import 'package:shared/shared.dart';
@@ -96,5 +97,122 @@ void main() {
     ).isOn(OwnerSwitch.crowning);
 
     expect((result as Err<bool>).error.code, 'db.down');
+  });
+
+  // NK289_08
+  group('the owners\' hands on them (script 289)', () {
+    const String owner = '11111111-2222-4333-8444-555555555555';
+
+    test('reads every known switch and its last change', () async {
+      final connection = _Connection([
+        Result.ok([
+          {
+            'switch_key': 'crowning',
+            'is_on': false,
+            'reason': 'مراجعة',
+            'changed_by': owner,
+            'changed_at': DateTime.utc(2026, 11, 30, 18),
+          },
+          {
+            'switch_key': 'later',
+            'is_on': true,
+            'reason': null,
+            'changed_by': null,
+            'changed_at': DateTime.utc(2026, 11, 20),
+          },
+        ]),
+      ]);
+
+      final result = await PostgresOwnerSwitches(connection).all();
+
+      final OwnerSwitchState state =
+          (result as Ok<List<OwnerSwitchState>>).value.single;
+      expect(state.which, OwnerSwitch.crowning);
+      expect(state.isOn, isFalse);
+      expect(state.reason, 'مراجعة');
+      expect(state.changedBy, const UserId(owner));
+      expect(state.changedAt, DateTime.utc(2026, 11, 30, 18));
+      expect(connection.sql.single, contains('ops.owner_switches'));
+    });
+
+    test('a switch never changed has no author', () async {
+      final connection = _Connection([
+        const Result.ok([
+          {
+            'switch_key': 'crowning',
+            'is_on': true,
+            'reason': null,
+            'changed_by': null,
+            'changed_at': '2026-11-20T00:00:00Z',
+          },
+        ]),
+      ]);
+
+      final result = await PostgresOwnerSwitches(connection).all();
+
+      final OwnerSwitchState state =
+          (result as Ok<List<OwnerSwitchState>>).value.single;
+      expect(state.isOn, isTrue);
+      expect(state.changedBy, isNull);
+      expect(state.reason, isNull);
+    });
+
+    test('a row that is not a flag is corrupt', () async {
+      final connection = _Connection([
+        const Result.ok([
+          {
+            'switch_key': 'crowning',
+            'is_on': 'no',
+            'reason': null,
+            'changed_by': null,
+            'changed_at': '2026-11-20T00:00:00Z',
+          },
+        ]),
+      ]);
+
+      final result = await PostgresOwnerSwitches(connection).all();
+
+      expect(
+        (result as Err<List<OwnerSwitchState>>).error.code,
+        'ops.row_corrupt',
+      );
+    });
+
+    test('writes the switch, its reason and its owner', () async {
+      final connection = _Connection([
+        const Result.ok([
+          {'switch_key': 'crowning'},
+        ]),
+      ]);
+
+      final result = await PostgresOwnerSwitches(connection).set(
+        which: OwnerSwitch.crowning,
+        on: false,
+        reason: 'مراجعة',
+        by: const UserId(owner),
+      );
+
+      expect(result, isA<Ok<void>>());
+      expect(connection.sql.single, contains('ON CONFLICT (switch_key)'));
+      expect(connection.parameters.single, {
+        'key': 'crowning',
+        'on': false,
+        'reason': 'مراجعة',
+        'by': owner,
+      });
+    });
+
+    test('a write that returns no row is corrupt', () async {
+      final connection = _Connection([const Result.ok([])]);
+
+      final result = await PostgresOwnerSwitches(connection).set(
+        which: OwnerSwitch.crowning,
+        on: true,
+        reason: 'x',
+        by: const UserId(owner),
+      );
+
+      expect((result as Err<void>).error.code, 'ops.row_corrupt');
+    });
   });
 }

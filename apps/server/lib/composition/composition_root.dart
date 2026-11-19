@@ -205,6 +205,7 @@ final class CompositionRoot {
     this.ownerCrests,
     this.ownerNotices,
     this.ownerAuditLog,
+    this.ownerSwitchBoard,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -442,6 +443,7 @@ final class CompositionRoot {
     this.ownerCrests,
     this.ownerNotices,
     this.ownerAuditLog,
+    this.ownerSwitchBoard,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2726,6 +2728,12 @@ final class CompositionRoot {
   /// not provide one.
   final OwnerAuditLog? ownerAuditLog;
 
+  /// The owners' switches and their hands on them (`/owner/switches`,
+  /// script 289, migration 0218): first the month's crowning. Null in tests
+  /// that do not provide one.
+  // NK289_07
+  final OwnerSwitchBoard? ownerSwitchBoard;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -3652,6 +3660,22 @@ final class CompositionRoot {
         clock: clock,
       ),
       ownerAuditLog: PostgresOwnerAuditLog(connection),
+      // The owners' switch board (script 289): the same rows the crowning
+      // guard reads on every run.
+      ownerSwitchBoard: OwnerSwitchBoard(
+        settings: PostgresOwnerSwitches(connection),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
       ownerCrests: OwnerCrests(
         catalog: crestCatalog,
         files:
