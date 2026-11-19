@@ -12,6 +12,10 @@ import 'package:flutter/material.dart';
 /// القسم مجالٌ إداري لا إجراء: إضافة المباراة وتعديلها وحذفها وإخفاؤها
 /// أزرار داخل `fixtures` («المباريات»)، لا أقسام مستقلة.
 enum AdminSection {
+  // NK288_05
+  // «الإدارة العامة للمالك» (script 288): the owner seats alone see it, and
+  // it opens first for them.
+  owner(icon: Icons.admin_panel_settings_rounded),
   dashboard(icon: Icons.dashboard_rounded),
   monthlyCompetitions(icon: Icons.calendar_month_rounded),
   fixtures(icon: Icons.sports_soccer_rounded),

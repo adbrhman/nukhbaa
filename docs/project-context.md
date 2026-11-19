@@ -9141,6 +9141,29 @@ admins. The owner chose (2026-11-19/20) that no admin sees any trace of it.
   `0219_owner_audit_log_test.sql`; the three route tests import the moved
   handlers; the api_client and app tests call the new paths.
 
+### «الإدارة العامة للمالك» and the owner flag (script 288, 2026-11-20)
+
+Decision Q01, with the owner's choice of 2026-11-20: entering the admin
+panel, an owner seat lands first on «الإدارة العامة للمالك», which holds
+every owner tool, and reaches every other admin section from the same menu;
+no other admin sees any trace of it. No e-mail is written in the app.
+
+- **`GET /me`**: `AuthenticatedUserDto.isOwner`, sent as `is_owner: true`
+  to an owner seat alone (`OwnerNotices.isOwner`); anyone else's payload
+  does not name the key. No seats wired or a failed read: no flag.
+- **App**: `isOwnerAdminSession` is `role == 'admin' && user.isOwner`;
+  `ownerAdminEmail` is gone. `AdminSection.owner` («الإدارة العامة
+  للمالك»), the first tile of `AdminNavList` when `owner` is true and absent
+  otherwise; `AdminHubScreen` opens on it, and back returns to it, for an
+  owner seat. `OwnerGeneralSection`: tabs «الشعارات», «المخفيون»,
+  «الأشخاص», moved from «المسابقات» and «اللاعبون»; it draws nothing for
+  anyone else. «المخفيون» never offers the signed-in owner to hide.
+- Tests: `me_test.dart` (the flag for a seat; absent for an admin, a failed
+  read, no seats), `me_dto_test.dart`, `admin_nav_list_test.dart` (the
+  owner tile first for an owner, none for an admin),
+  `hidden_accounts_section_test.dart` (the owner page's three tools; no
+  owner tab in the players section; nothing for another admin).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

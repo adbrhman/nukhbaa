@@ -9,7 +9,11 @@ import 'package:mobile/features/admin/admin_sections.dart';
 import 'package:mobile/features/admin/admin_shell.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
-Future<List<AdminSection>> _open(WidgetTester tester) async {
+// NK288_10
+Future<List<AdminSection>> _open(
+  WidgetTester tester, {
+  bool owner = true,
+}) async {
   // Tall enough that the whole menu is built at once: no tile is left out
   // of the lazy list because it sits below the fold.
   tester.view.physicalSize = const Size(600, 3000);
@@ -25,6 +29,7 @@ Future<List<AdminSection>> _open(WidgetTester tester) async {
         body: AdminNavList(
           selected: AdminSection.dashboard,
           onSelect: tapped.add,
+          owner: owner,
         ),
       ),
     ),
@@ -51,7 +56,7 @@ void main() {
   testWidgets('user names and counted matches are tabs, not tiles (124)', (
     tester,
   ) async {
-    final List<AdminSection> tapped = await _open(tester);
+    final List<AdminSection> tapped = await _open(tester, owner: false);
 
     expect(find.byKey(const Key('admin.shell.nav.userNames')), findsNothing);
     expect(
@@ -66,5 +71,30 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tapped, <AdminSection>[AdminSection.users]);
+  });
+
+  // Script 288: «الإدارة العامة للمالك» is listed for an owner seat alone,
+  // first; any other admin's menu has no trace of it.
+  testWidgets('the owners page is the first tile, for an owner alone', (
+    tester,
+  ) async {
+    await _open(tester);
+    expect(find.byType(ListTile), findsNWidgets(15));
+    expect(
+      tester.getTopLeft(find.byKey(const Key('admin.shell.nav.owner'))).dy,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const Key('admin.shell.nav.dashboard')))
+            .dy,
+      ),
+    );
+    expect(find.text('الإدارة العامة للمالك'), findsOneWidget);
+  });
+
+  testWidgets('another admin never sees it', (tester) async {
+    await _open(tester, owner: false);
+    expect(find.byKey(const Key('admin.shell.nav.owner')), findsNothing);
+    expect(find.text('الإدارة العامة للمالك'), findsNothing);
+    expect(find.byType(ListTile), findsNWidgets(14));
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
@@ -65,6 +66,11 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
+  // The owner flag, sent to the owner seats alone (script 288): anyone
+  // else's payload does not even name it.
+  final bool isOwner =
+      result is Ok<User> && await _holdsSeat(root, result.value.id);
+
   return switch (result) {
     Ok<User>(:final value) => Response.json(
       body: MeResponseDto(
@@ -75,11 +81,26 @@ Future<Response> onRequest(RequestContext context) async {
           email: value.email,
           displayName: value.displayName,
           avatarUrl: avatarUrlFor(value),
+          isOwner: isOwner,
         ),
       ).toJson(),
     ),
     // A transient directory failure maps to 503 via the shared envelope so the
     // client can retry; no other error kind is expected on this path.
     Err<User>(:final error) => errorResponse(error),
+  };
+}
+
+/// Whether [user] holds an owner seat (migration 0217); no seats wired or a
+/// failed read is no.
+// NK288_03
+Future<bool> _holdsSeat(CompositionRoot root, UserId user) async {
+  final OwnerNotices? owners = root.ownerNotices;
+  if (owners == null) {
+    return false;
+  }
+  return switch (await owners.isOwner(user)) {
+    Ok<bool>(:final value) => value,
+    Err<bool>() => false,
   };
 }

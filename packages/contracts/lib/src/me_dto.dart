@@ -15,6 +15,7 @@ final class AuthenticatedUserDto {
     this.email,
     this.displayName = '',
     this.avatarUrl,
+    this.isOwner = false,
   });
 
   /// Deserializes from a JSON map, tolerating older schema versions by reading
@@ -27,6 +28,7 @@ final class AuthenticatedUserDto {
       email: json['email'] as String?,
       displayName: (json['display_name'] as String?) ?? '',
       avatarUrl: json['avatar_url'] as String?,
+      isOwner: json['is_owner'] == true,
     );
   }
 
@@ -52,7 +54,13 @@ final class AuthenticatedUserDto {
   /// or how to build that address.
   final String? avatarUrl;
 
-  /// Serializes to a JSON-encodable map.
+  /// Whether this account holds an owner seat (script 288, migration 0217):
+  /// the server sends `is_owner` to the owners alone, so no other account's
+  /// payload even names it. False for payloads without it.
+  // NK288_01
+  final bool isOwner;
+
+  /// Serializes to a JSON-encodable map; `is_owner` only when true.
   Map<String, Object?> toJson() => {
     'user_id': userId,
     'role': role,
@@ -60,6 +68,7 @@ final class AuthenticatedUserDto {
     'email': email,
     'display_name': displayName,
     'avatar_url': avatarUrl,
+    if (isOwner) 'is_owner': true,
   };
 
   @override
@@ -70,11 +79,12 @@ final class AuthenticatedUserDto {
       other.status == status &&
       other.email == email &&
       other.displayName == displayName &&
-      other.avatarUrl == avatarUrl;
+      other.avatarUrl == avatarUrl &&
+      other.isOwner == isOwner;
 
   @override
   int get hashCode =>
-      Object.hash(userId, role, status, email, displayName, avatarUrl);
+      Object.hash(userId, role, status, email, displayName, avatarUrl, isOwner);
 }
 
 /// The response body of `GET /me`: the current principal plus a schema version

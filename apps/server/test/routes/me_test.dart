@@ -56,6 +56,29 @@ final class _FakeUserDirectory implements UserDirectory {
       throw StateError('findUser not wired in this test fake');
 }
 
+/// The owner seats (script 288): [_uuid] holds one when [seated]; a read
+/// fails when [fails].
+final class _Seats implements OwnerNotices {
+  _Seats({this.seated = true, this.fails = false});
+
+  final bool seated;
+  final bool fails;
+
+  @override
+  Future<Result<UserId?>> ownerId() async => const Result.ok(null);
+
+  @override
+  Future<Result<bool>> isOwner(UserId user) async => fails
+      ? const Result.err(AppError.transient('db.down', 'down'))
+      : Result.ok(seated && user == const UserId(_uuid));
+
+  @override
+  Future<Result<void>> tell({
+    required String title,
+    required String body,
+  }) async => const Result.ok(null);
+}
+
 class _MockRequestContext extends Mock implements RequestContext {}
 
 class _MockRequest extends Mock implements Request {}
@@ -74,10 +97,12 @@ _MockRequestContext _wire({
   required Result<User> directoryResponse,
   HttpMethod method = HttpMethod.get,
   AuthenticatedUser? principal,
+  OwnerNotices? owners,
 }) {
   final root = Future<CompositionRoot>.value(
     CompositionRoot.forTesting(
       getCurrentUser: GetCurrentUser(_FakeUserDirectory(directoryResponse)),
+      ownerNotices: owners,
     ),
   );
 
@@ -123,6 +148,49 @@ void main() {
       expect(user['role'], 'admin'); // authoritative platform value
       expect(user['status'], 'active');
       expect(user['email'], 'a@example.com');
+    });
+
+    // NK288_04
+    // Script 288: the owner flag reaches the owner seats alone.
+    group('the owner flag', () {
+      const admin = User(
+        id: UserId(_uuid),
+        email: 'a@example.com',
+        displayName: 'Human',
+        role: PlatformRole.admin,
+        status: UserStatus.active,
+      );
+
+      Future<Map<String, Object?>> userOf(OwnerNotices? owners) async {
+        final response = await route.onRequest(
+          _wire(directoryResponse: const Result.ok(admin), owners: owners),
+        );
+        expect(response.statusCode, HttpStatus.ok);
+        final body = await _decodeBody(response);
+        return (body['user']! as Map).cast<String, Object?>();
+      }
+
+      test('an owner seat is told so', () async {
+        expect((await userOf(_Seats()))['is_owner'], isTrue);
+      });
+
+      test('an admin without a seat is never told the flag exists', () async {
+        expect(
+          (await userOf(_Seats(seated: false))).containsKey('is_owner'),
+          isFalse,
+        );
+      });
+
+      test('a seat that cannot be read is no owner', () async {
+        expect(
+          (await userOf(_Seats(fails: true))).containsKey('is_owner'),
+          isFalse,
+        );
+      });
+
+      test('no seats wired is no owner', () async {
+        expect((await userOf(null)).containsKey('is_owner'), isFalse);
+      });
     });
 
     test('returns 503 when the directory fails transiently', () async {

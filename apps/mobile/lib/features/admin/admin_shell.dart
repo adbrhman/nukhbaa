@@ -35,6 +35,7 @@ import 'screens/sections/user_sanction_section.dart';
 
 String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
   return switch (section) {
+    AdminSection.owner => 'الإدارة العامة للمالك',
     AdminSection.dashboard => l10n.adminDashboardTab,
     AdminSection.monthlyCompetitions => l10n.adminMonthlyCompetitionsTab,
     AdminSection.fixtures => 'المباريات',
@@ -60,6 +61,8 @@ String adminSectionLabel(AdminSection section, AppLocalizations l10n) {
 /// with no group title, then matches, competitions, players, the system.
 /// No group holds a single entry.
 const List<({String? title, List<AdminSection> sections})> _adminNavGroups = [
+  // script 288: the owners' page, first, for the owner seats alone.
+  (title: null, sections: [AdminSection.owner]),
   (title: null, sections: [AdminSection.dashboard]),
   // script 124: fourteen entries. The calls sit with the matches they are
   // for; user names and counted matches are tabs of their partners.
@@ -107,10 +110,17 @@ class AdminNavList extends StatelessWidget {
     required this.selected,
     required this.onSelect,
     this.counts = const <AdminSection, int>{},
+    this.owner = false,
   });
 
   final AdminSection selected;
   final ValueChanged<AdminSection> onSelect;
+
+  /// Whether the signed-in admin holds an owner seat
+  /// ([isOwnerAdminSession]): only then is «الإدارة العامة للمالك» listed.
+  /// Any other admin's menu has no trace of it (script 288).
+  // NK288_07
+  final bool owner;
 
   /// How many things wait in each section ([adminNavCountsProvider]);
   /// an entry with no count shows none.
@@ -125,55 +135,56 @@ class AdminNavList extends StatelessWidget {
       key: const Key('admin.shell.navList'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       children: [
-        for (final group in _adminNavGroups) ...[
-          if (group.title != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.xs,
-              ),
-              // 12px and no tracking: letter spacing pulls joined Arabic
-              // letters apart (app_typography.dart, UI-38), and 11px was too
-              // small to read (UI-37).
-              child: Text(
-                group.title!,
-                style: context.text.labelMedium?.copyWith(
-                  color: t.textSecondary,
-                  fontWeight: FontWeight.w800,
+        for (final group in _adminNavGroups)
+          if (owner || !group.sections.contains(AdminSection.owner)) ...[
+            if (group.title != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                ),
+                // 12px and no tracking: letter spacing pulls joined Arabic
+                // letters apart (app_typography.dart, UI-38), and 11px was too
+                // small to read (UI-37).
+                child: Text(
+                  group.title!,
+                  style: context.text.labelMedium?.copyWith(
+                    color: t.textSecondary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
-          for (final AdminSection section in group.sections)
-            ListTile(
-              key: Key('admin.shell.nav.${section.name}'),
-              leading: Icon(
-                section.icon,
-                color: section == selected ? t.primary : t.textSecondary,
-              ),
-              title: Text(
-                adminSectionLabel(section, l10n),
-                style: context.text.bodyMedium?.copyWith(
-                  color: section == selected ? t.primaryText : t.textPrimary,
-                  fontWeight: section == selected
-                      ? FontWeight.w700
-                      : FontWeight.w400,
+            for (final AdminSection section in group.sections)
+              ListTile(
+                key: Key('admin.shell.nav.${section.name}'),
+                leading: Icon(
+                  section.icon,
+                  color: section == selected ? t.primary : t.textSecondary,
                 ),
+                title: Text(
+                  adminSectionLabel(section, l10n),
+                  style: context.text.bodyMedium?.copyWith(
+                    color: section == selected ? t.primaryText : t.textPrimary,
+                    fontWeight: section == selected
+                        ? FontWeight.w700
+                        : FontWeight.w400,
+                  ),
+                ),
+                selected: section == selected,
+                selectedTileColor: t.primary.withValues(alpha: 0.08),
+                trailing: (counts[section] ?? 0) > 0
+                    ? Badge(
+                        key: Key('admin.shell.nav.${section.name}.count'),
+                        label: Text(
+                          counts[section]! > 99 ? '99+' : '${counts[section]}',
+                        ),
+                      )
+                    : null,
+                onTap: () => onSelect(section),
               ),
-              selected: section == selected,
-              selectedTileColor: t.primary.withValues(alpha: 0.08),
-              trailing: (counts[section] ?? 0) > 0
-                  ? Badge(
-                      key: Key('admin.shell.nav.${section.name}.count'),
-                      label: Text(
-                        counts[section]! > 99 ? '99+' : '${counts[section]}',
-                      ),
-                    )
-                  : null,
-              onTap: () => onSelect(section),
-            ),
-        ],
+          ],
       ],
     );
   }
@@ -234,9 +245,12 @@ class AdminShell extends StatelessWidget {
 
   Widget _bodyFor(AdminSection section) {
     return switch (section) {
+      // script 288: the owners' page; its body is empty for anyone else.
+      AdminSection.owner => const OwnerGeneralSection(),
       AdminSection.dashboard => AdminHomeSection(onNavigate: onSelect),
-      // script 266: the club crests, a tab for the owner admin alone.
-      AdminSection.monthlyCompetitions => const AdminCompetitionsSection(),
+      // script 288: the club crests moved to the owners' page.
+      AdminSection.monthlyCompetitions =>
+        const AdminMonthlyCompetitionsSection(),
       AdminSection.audit => const AuditLogSection(),
       AdminSection.errorLog => const ErrorLogSection(),
       AdminSection.analytics => const AdminAnalyticsSection(),
@@ -294,6 +308,9 @@ class AdminShell extends StatelessWidget {
                 selected: selected,
                 onSelect: onSelect,
                 counts: ref.watch(adminNavCountsProvider),
+                owner: isOwnerAdminSession(
+                  ref.watch(sessionControllerProvider).value,
+                ),
               ),
             ),
           ),
@@ -305,56 +322,50 @@ class AdminShell extends StatelessWidget {
   }
 }
 
-/// The competitions section; for the owner admin alone, with a second tab:
-/// the club crests the app may show (script 266). Any other admin sees the
-/// competitions as before, and the server refuses him the crests anyway
-/// (`admin.owner_only`).
-class AdminCompetitionsSection extends ConsumerWidget {
+/// «الإدارة العامة للمالك» (script 288, decision Q01): the owner seats'
+/// own page, the first section they see. It holds the owner's tools,
+/// moved here from the competitions and players sections: the club crests,
+/// the hidden accounts and the linked people. More of the owner's report
+/// joins it batch by batch. For anyone else it draws nothing, and the
+/// server answers its routes as paths with no route.
+class OwnerGeneralSection extends ConsumerWidget {
   /// Creates the section.
-  const AdminCompetitionsSection({super.key});
+  const OwnerGeneralSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool owner = isOwnerAdminSession(
-      ref.watch(sessionControllerProvider).value,
-    );
-    if (!owner) return const AdminMonthlyCompetitionsSection();
+    if (!isOwnerAdminSession(ref.watch(sessionControllerProvider).value)) {
+      return const SizedBox.shrink(key: Key('admin.owner.none'));
+    }
     return const AdminTabbedSection(
-      name: 'competitions',
+      name: 'owner',
       tabs: <(String, Widget)>[
-        ('المسابقات', AdminMonthlyCompetitionsSection()),
         ('الشعارات', ClubCrestsSection()),
+        ('المخفيون', HiddenAccountsSection()),
+        ('الأشخاص', PersonLinksSection()),
       ],
     );
   }
 }
 
 /// The users section's tabs: the accounts, their names, the shared phones
-/// and the new players; and for the owner admin alone, the accounts he hid
-/// (script 259) and the people he linked (script 264). Any other admin
-/// never sees those tabs, and the server refuses him anyway
-/// (`admin.owner_only`).
-class AdminUsersSection extends ConsumerWidget {
+/// and the new players. The owner's hidden accounts and linked people moved
+/// to «الإدارة العامة للمالك» (script 288).
+class AdminUsersSection extends StatelessWidget {
   /// Creates the section.
   const AdminUsersSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bool owner = isOwnerAdminSession(
-      ref.watch(sessionControllerProvider).value,
-    );
-    return AdminTabbedSection(
+  Widget build(BuildContext context) {
+    return const AdminTabbedSection(
       name: 'users',
       tabs: <(String, Widget)>[
-        ('الحسابات', const UserSanctionSection()),
-        ('الأسماء', const UserNamesSection()),
+        ('الحسابات', UserSanctionSection()),
+        ('الأسماء', UserNamesSection()),
         // script 200: the phones played with several accounts.
-        ('الأجهزة', const SharedDevicesSection()),
+        ('الأجهزة', SharedDevicesSection()),
         // script 202: who joined this week, and a message to each.
-        ('الجدد', const NewPlayersSection()),
-        if (owner) ('المخفيون', const HiddenAccountsSection()),
-        // script 264: one person behind several accounts, linked by him.
-        if (owner) ('الأشخاص', const PersonLinksSection()),
+        ('الجدد', NewPlayersSection()),
       ],
     );
   }

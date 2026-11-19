@@ -24,6 +24,29 @@ void main() {
       expect(decoded, dto);
       expect(decoded.email, isNull);
     });
+
+    // NK288_02
+    // Script 288: the owner flag reaches the owners alone.
+    test('an owner seat round-trips its flag', () {
+      const dto = AuthenticatedUserDto(
+        userId: '11111111-2222-3333-4444-555555555555',
+        role: 'admin',
+        status: 'active',
+        isOwner: true,
+      );
+      expect(dto.toJson()['is_owner'], isTrue);
+      expect(AuthenticatedUserDto.fromJson(dto.toJson()), dto);
+    });
+
+    test('anyone else\'s payload does not even name the flag', () {
+      const dto = AuthenticatedUserDto(
+        userId: '11111111-2222-3333-4444-555555555555',
+        role: 'admin',
+        status: 'active',
+      );
+      expect(dto.toJson().containsKey('is_owner'), isFalse);
+      expect(AuthenticatedUserDto.fromJson(dto.toJson()).isOwner, isFalse);
+    });
   });
 
   group('MeResponseDto', () {

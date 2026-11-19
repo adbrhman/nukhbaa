@@ -1,6 +1,7 @@
 /// The owner admin's hidden accounts (script 259) through the real
 /// providers and the real `AdminApi`, over the auth harness's fake server:
-/// the users section shows the tab to the owner admin alone; the tab lists
+/// «الإدارة العامة للمالك» shows the tab to an owner seat alone, known by
+/// the server's `is_owner` flag (script 288), never by an e-mail; the tab lists
 /// the hidden accounts, shows one again, and hides an account found by
 /// name. Also drawn at 360px with text x2.
 library;
@@ -22,11 +23,13 @@ import '../../support/auth_harness.dart';
 const String _reviewer = '11111111-1111-4111-8111-111111111111';
 const String _player = '22222222-2222-4222-8222-222222222222';
 
+// NK288_09
 const AuthenticatedUserDto _owner = AuthenticatedUserDto(
-  userId: 'u-owner',
+  userId: 'u-owner-id',
   role: 'admin',
   status: 'active',
-  email: 'Adbrhmanm@gmail.com',
+  email: 'owner@example.com',
+  isOwner: true,
 );
 
 const AuthenticatedUserDto _otherAdmin = AuthenticatedUserDto(
@@ -82,7 +85,7 @@ final class _Server {
         'schema_version': 1,
         'users': [
           _user(_player, 'خالد', 'k@t.io'),
-          _user('u-owner-id', 'عبدالرحمن', 'adbrhmanm@gmail.com'),
+          _user('u-owner-id', 'عبدالرحمن', 'owner@example.com'),
         ],
       });
     }
@@ -147,7 +150,7 @@ Future<void> _tapVisible(WidgetTester tester, Key key) async {
 }
 
 void main() {
-  test('only the owner admin is the owner', () {
+  test('only an admin the server calls an owner is one', () {
     expect(isOwnerAdminSession(const SessionAuthenticated(_owner)), isTrue);
     expect(
       isOwnerAdminSession(const SessionAuthenticated(_otherAdmin)),
@@ -160,7 +163,7 @@ void main() {
             userId: 'u-x',
             role: 'user',
             status: 'active',
-            email: 'adbrhmanm@gmail.com',
+            isOwner: true,
           ),
         ),
       ),
@@ -170,21 +173,28 @@ void main() {
     expect(isOwnerAdminSession(const SessionUnauthenticated()), isFalse);
   });
 
-  testWidgets('the owner admin sees the hidden accounts tab', (tester) async {
-    await _open(tester, _Server(), const AdminUsersSection());
+  testWidgets('an owner seat sees his three tools on his page', (tester) async {
+    await _open(tester, _Server(), const OwnerGeneralSection());
 
+    expect(find.text('الشعارات'), findsOneWidget);
     expect(find.text('المخفيون'), findsOneWidget);
-    // Script 264: the people he linked, for him alone too.
     expect(find.text('الأشخاص'), findsOneWidget);
-    expect(find.text('الجدد'), findsOneWidget);
   });
 
-  testWidgets('another admin does not', (tester) async {
-    await _open(tester, _Server(me: _otherAdmin), const AdminUsersSection());
+  testWidgets('the players section keeps no owner tab', (tester) async {
+    await _open(tester, _Server(), const AdminUsersSection());
 
     expect(find.text('الجدد'), findsOneWidget);
     expect(find.text('المخفيون'), findsNothing);
     expect(find.text('الأشخاص'), findsNothing);
+  });
+
+  testWidgets('another admin\'s owner page draws nothing', (tester) async {
+    await _open(tester, _Server(me: _otherAdmin), const OwnerGeneralSection());
+
+    expect(find.byKey(const Key('admin.owner.none')), findsOneWidget);
+    expect(find.text('المخفيون'), findsNothing);
+    expect(find.text('الشعارات'), findsNothing);
   });
 
   testWidgets('lists the hidden accounts and shows one again', (tester) async {

@@ -6,8 +6,8 @@
 /// ترتيب ولا في قرعة المواجهات ولا كأس النخبة ولا التتويج (الهجرة 0207).
 /// والإظهار يعيد نقاطه كما هي، فلا يُحذف شيء.
 ///
-/// التبويب لا يظهر إلا لحساب المالك (`ownerAdminEmail`)؛ والخادم يرفض أي
-/// مشرف آخر في كل حال (`admin.owner_only`).
+/// التبويب داخل «الإدارة العامة للمالك» لمقاعد المالك وحدها (السكربت 288،
+/// علامة `is_owner` من `GET /me`)؛ والخادم يجيب غيرها بمسار غير موجود.
 library;
 
 import 'dart:async';
@@ -21,18 +21,15 @@ import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/providers.dart';
+import '../../../auth/session_controller.dart';
 import '../../../auth/session_state.dart';
 import '../../widgets/admin_ui_kit.dart';
 
-/// The owner admin's e-mail: the one account that sees this tab, as the
-/// server's owner (`OwnerNotices`) is found by it.
-const String ownerAdminEmail = 'adbrhmanm@gmail.com';
-
-/// Whether [session] is the owner admin's.
+/// Whether [session] holds an owner seat: an admin the server told so in
+/// `GET /me` (`is_owner`, script 288). No e-mail is written in the app.
+// NK288_06
 bool isOwnerAdminSession(SessionState? session) => switch (session) {
-  SessionAuthenticated(:final user) =>
-    user.role == 'admin' &&
-        (user.email ?? '').trim().toLowerCase() == ownerAdminEmail,
+  SessionAuthenticated(:final user) => user.role == 'admin' && user.isOwner,
   _ => false,
 };
 
@@ -129,6 +126,11 @@ class _HiddenAccountsSectionState extends ConsumerState<HiddenAccountsSection> {
     final AsyncValue<HiddenAccountsDto> hidden = ref.watch(
       adminHiddenAccountsProvider,
     );
+    // The owner never offers himself to hide; the server refuses any seat.
+    final String? me = switch (ref.watch(sessionControllerProvider).value) {
+      SessionAuthenticated(:final user) => user.userId,
+      _ => null,
+    };
     final Set<String> hiddenIds = <String>{
       for (final HiddenAccountDto a
           in hidden.value?.accounts ?? const <HiddenAccountDto>[])
@@ -244,7 +246,7 @@ class _HiddenAccountsSectionState extends ConsumerState<HiddenAccountsSection> {
               ],
               for (final UserSummaryDto user
                   in found ?? const <UserSummaryDto>[])
-                if ((user.email ?? '').trim().toLowerCase() != ownerAdminEmail)
+                if (user.id != me)
                   _AccountRow(
                     key: Key('admin.hidden.found.${user.id}'),
                     user: user,
