@@ -9001,6 +9001,31 @@ bar while the player holds a seat (the league state is `open`) and opens
 - Not in this feature yet: an unread badge, push notifications, older
   messages beyond the newest 50, and the chats of past months.
 
+### The public pages before production (script 284, 2026-11-19)
+
+Asked by the owner on 2026-11-19, before applying for production on Google
+Play: the three pages the Play listing and Data safety point to
+(`/privacy/`, `/rules/`, `/delete-account/`) said nothing of what scripts
+274-282 added. Text only; no code, no migration, nothing in the app.
+
+- **Privacy** (dated 19 November 2026): the prediction change log (0211)
+  under the game data; the group chat (0216: messages, the rules accepted,
+  the read marker) under what a player writes, who reads it (his group of
+  that month alone), reporting a message, hiding it and muting its writer;
+  the chat messages in what a deletion erases, the change log in what it
+  keeps without a name.
+- **Delete account** (19 November 2026): the chat messages and the rules
+  acceptance erased (`chat.forget_deleted_player`), the change log kept.
+- **Rules** (19 November 2026): the chat's messages in the conduct list and
+  the sanctions; reporting and blocking from a long press in the chat; a
+  section «دردشة المجموعة» with the seven rules of `h2hChatRules` word for
+  word; a section «دوري المواجهات من ديسمبر 2026» from `h2hDecemberRules`
+  (NK275-NK279), which replaces what contradicts it above, so the public
+  terms say before 1 December what the app already shows.
+- Checked by the script: each page parses with every `ul`, `li`, `p` and
+  `h2` closed, and nothing else changed. `check_mirror.mjs` still checks the
+  three pages answer 200 after Deploy Web.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
