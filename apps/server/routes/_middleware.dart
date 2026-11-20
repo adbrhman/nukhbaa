@@ -73,7 +73,17 @@ Handler middleware(Handler handler) {
   // answers the players' refused requests with its Arabic message, after
   // the update message and before any route; the admins pass to test.
   final maintained = maintenanceGate(
-    cache: () async => (await CompositionRoot.instance()).appModeCache,
+    // NK295_01
+    // A root that cannot be built (no configuration, as in the middleware
+    // tests) has no mode: nothing is refused here, and the route answers
+    // as it would have.
+    cache: () async {
+      try {
+        return (await CompositionRoot.instance()).appModeCache;
+      } on Object {
+        return null;
+      }
+    },
     authenticate: (header) async =>
         (await CompositionRoot.instance()).authenticateRequest(header),
   )(captured);

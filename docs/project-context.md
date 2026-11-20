@@ -9302,6 +9302,15 @@ signed out from the owners' page, always for a reason, no longer by SQL.
   `owner_admins_dto_test.dart`, `owner_admins_api_test.dart`,
   `0223_admin_role_changes_test.sql`.
 
+### The mode gate with no composition root (script 295, 2026-11-20)
+
+Build Verification #874 failed on `build_gate_test.dart`: the root
+middleware test has no configuration, and the gate of script 292 built the
+composition root to read the mode, which threw. The gate now reads no mode
+when the root cannot be built, so nothing is refused there and the route
+answers as before; in production a root that cannot be built fails the
+request anyway.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
