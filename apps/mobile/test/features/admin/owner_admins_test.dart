@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/admin/screens/sections/owner_admins_section.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -61,6 +62,9 @@ final class _Server {
       return _json({'action': action, 'sessions_ended': 1});
     }
     if (path == '/admin/users') {
+      if (request.url.queryParameters['search'] == 'لا أحد') {
+        return _json({'schema_version': 1, 'users': <Object?>[]});
+      }
       return _json({
         'schema_version': 1,
         'users': [
@@ -95,6 +99,9 @@ Future<void> _open(WidgetTester tester, _Server server) async {
     ProviderScope(
       overrides: harness.overrides,
       child: MaterialApp(
+        // NK296_02
+        // script 296: the real theme, whose buttons fill the width.
+        theme: AppTheme.dark,
         locale: const Locale('ar'),
         home: const Scaffold(body: OwnerAdminsSection()),
         supportedLocales: AppLocalizations.supportedLocales,
@@ -162,5 +169,18 @@ void main() {
       find.byKey(const Key('admin.admins.promote.$_player')),
       findsNothing,
     );
+  });
+
+  testWidgets('a search with no player says so', (tester) async {
+    await _open(tester, _Server());
+
+    await tester.enterText(
+      find.byKey(const Key('admin.admins.searchField')),
+      'لا أحد',
+    );
+    await _tap(tester, const Key('admin.admins.search'));
+
+    expect(find.byKey(const Key('admin.admins.none')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -9311,6 +9311,16 @@ when the root cannot be built, so nothing is refused there and the route
 answers as before; in production a root that cannot be built fails the
 request anyway.
 
+### The promotion search shows its players (script 296, 2026-11-20)
+
+The owner's test on the web, 2026-11-20: «المشرفون» found a player and drew
+nothing. Each found player sat in a `Row` beside its button, and the app's
+theme gives every outlined button the whole width (`Size.fromHeight(52)`),
+which a `Row` cannot give; the test drew it with the default theme and
+missed it. Each player is now a line with the button under it, as in
+«المخفيون»; one already an admin reads «مشرف من قبل»; a search with no
+player says so. `owner_admins_test.dart` draws with `AppTheme.dark`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

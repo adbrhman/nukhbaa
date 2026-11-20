@@ -286,22 +286,46 @@ class _OwnerAdminsSectionState extends ConsumerState<OwnerAdminsSection> {
                     loading: _searching,
                     onPressed: _searching ? null : () => unawaited(_find()),
                   ),
+                  // NK296_01
+                  // script 296: one line under the other, as in «المخفيون»:
+                  // the theme's buttons fill the width (52px high, any
+                  // width), which a Row cannot give, so a Row drew nothing.
+                  if (_found != null && found.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        'لا يوجد لاعب بهذا الاسم أو البريد',
+                        key: Key('admin.admins.none'),
+                      ),
+                    ),
                   for (final UserSummaryDto user in found)
-                    if (!adminIds.contains(user.id))
-                      Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.sm),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                user.displayName.isEmpty
-                                    ? (user.email ?? user.id)
-                                    : user.displayName,
-                              ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.md),
+                      child: Column(
+                        key: Key('admin.admins.found.${user.id}'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Text(
+                            <String>[
+                              if (user.displayName.isNotEmpty) user.displayName,
+                              ?user.email,
+                            ].join(' · '),
+                            style: context.text.bodyMedium?.copyWith(
+                              color: tokens.textPrimary,
                             ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          if (adminIds.contains(user.id))
+                            Text(
+                              'مشرف من قبل',
+                              style: context.text.bodySmall?.copyWith(
+                                color: tokens.textSecondary,
+                              ),
+                            )
+                          else
                             AdminSecondaryButton(
                               key: Key('admin.admins.promote.${user.id}'),
-                              label: 'رقِّ',
+                              label: 'رقِّ إلى مشرف',
                               semanticsLabel: 'رقِّ: ${user.displayName}',
                               icon: Icons.person_add_rounded,
                               onPressed: _busyId != null
@@ -314,9 +338,9 @@ class _OwnerAdminsSectionState extends ConsumerState<OwnerAdminsSection> {
                                       ),
                                     ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
+                    ),
                 ],
               ),
             ),
