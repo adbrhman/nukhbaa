@@ -321,6 +321,31 @@ final class AdminApi {
     );
   }
 
+  // NK294_08
+  /// `GET /owner/admins` -- every admin, whether each holds an owner seat,
+  /// and the latest changes (script 294). An owner seat alone.
+  Future<Result<OwnerAdminsDto>> ownerAdmins() {
+    return _transport.getObject<OwnerAdminsDto>(
+      '/owner/admins',
+      parse: OwnerAdminsDto.fromJson,
+    );
+  }
+
+  /// `POST /owner/admins/{userId}` -- [action] `promote`, `revoke` or
+  /// `end_sessions` on the account [userId], for [reason] (script 294).
+  /// Answers how many sessions ended.
+  Future<Result<int>> actOnAdmin(
+    String userId,
+    String action, {
+    required String reason,
+  }) {
+    return _transport.postObject<int>(
+      '/owner/admins/${Uri.encodeComponent(userId)}',
+      body: <String, Object?>{'action': action, 'reason': reason},
+      parse: (json) => (json['sessions_ended'] as int?) ?? 0,
+    );
+  }
+
   /// `GET /owner/person-links` -- every person the owner admin linked,
   /// each with its accounts, the main one first (script 263). The owner
   /// admin alone; another admin is `admin.owner_only`.

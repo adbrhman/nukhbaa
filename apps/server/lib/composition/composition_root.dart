@@ -212,6 +212,7 @@ final class CompositionRoot {
     this.ownerAuditLog,
     this.ownerSwitchBoard,
     this.ownerSwitches,
+    this.ownerAdmins,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -455,6 +456,7 @@ final class CompositionRoot {
     this.ownerAuditLog,
     this.ownerSwitchBoard,
     this.ownerSwitches,
+    this.ownerAdmins,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2728,6 +2730,11 @@ final class CompositionRoot {
   /// script 263, migration 0209). Null in tests that do not provide one.
   final OwnerPersonLinks? ownerPersonLinks;
 
+  /// The owners' hand on the admins (`/owner/admins`, script 294,
+  /// migration 0223). Null in tests that do not provide one.
+  // NK294_07
+  final OwnerAdmins? ownerAdmins;
+
   /// The club crests the app may show (`GET /crests`, script 265,
   /// migration 0210), any signed-in user. Null in tests that do not
   /// provide one.
@@ -3738,6 +3745,21 @@ final class CompositionRoot {
             const _UnwiredCrestFiles(),
         baseUrl: crestBase,
         owner: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
+      // The owners' hand on the admins (script 294, migration 0223).
+      ownerAdmins: OwnerAdmins(
+        roster: PostgresAdminRoster(connection),
+        owners: OwnerInbox(
           owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
           notify: CreateNotification(

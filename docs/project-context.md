@@ -9276,6 +9276,32 @@ now shows the same card under the switches, so an owner reaches it in an
 emergency. No server change: the floors stay the admins' as well.
 - Test: `owner_build_floor_test.dart` (the APK floor cleared from the tab).
 
+### The owners' hand on the admins (script 294, 2026-11-20)
+
+Item 4 of the owner's report and decision Q01: an admin is made, revoked or
+signed out from the owners' page, always for a reason, no longer by SQL.
+
+- **Migration 0223**: `admin.role_changes` (append-only: promote, revoke,
+  end_sessions, reason, by, sessions ended) and
+  `admin.end_user_sessions(uuid)` (security definer: the account's refresh
+  tokens and sessions, as `identity.delete_account` does). A token already
+  given lives an hour at most, but the role and status are read on every
+  request, so a revoked admin is a player from his next request.
+- **Application**: port `AdminRoster` (`PostgresAdminRoster`);
+  `OwnerAdmins` (owner seat alone; reason 1 to 200 characters; an owner
+  seat is never revoked, a failed seat read counts as a seat, so the last
+  owner can never be disabled: `owner.cannot_revoke_owner`; revoking ends
+  the sessions too).
+- **Routes**: `GET /owner/admins`; `POST /owner/admins/{id}`
+  `{"action": "promote"|"revoke"|"end_sessions", "reason": "..."}`.
+- **App**: tab «المشرفون» (`OwnerAdminsSection`), with a player search for
+  the promotion and the log; the owners' tabs now scroll
+  (`AdminTabbedSection.scrollable`).
+- Tests: `owner_admins_test.dart` (application and app),
+  `postgres_admin_roster_test.dart`, `owner_admins_routes_test.dart`,
+  `owner_admins_dto_test.dart`, `owner_admins_api_test.dart`,
+  `0223_admin_role_changes_test.sql`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

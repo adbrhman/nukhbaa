@@ -56,6 +56,7 @@ export 'src/me_dto.dart';
 export 'src/my_fixture_score_dto.dart';
 export 'src/notification_dto.dart';
 export 'src/notification_preferences_dto.dart';
+export 'src/owner_admins_dto.dart';
 export 'src/owner_switches_dto.dart';
 export 'src/participant_fixture_score_dto.dart';
 export 'src/prediction_dto.dart';

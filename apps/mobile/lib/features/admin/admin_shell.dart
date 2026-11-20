@@ -27,6 +27,7 @@ import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/new_players_section.dart';
+import 'screens/sections/owner_admins_section.dart';
 import 'screens/sections/owner_announcements_section.dart';
 import 'screens/sections/owner_switches_section.dart';
 import 'screens/sections/person_links_section.dart';
@@ -195,7 +196,17 @@ class AdminNavList extends StatelessWidget {
 /// Two related sections under one menu entry (script 124: tabbed): the
 /// tabs on top, each section below as it was on its own page.
 class AdminTabbedSection extends StatelessWidget {
-  const AdminTabbedSection({super.key, required this.name, required this.tabs});
+  const AdminTabbedSection({
+    super.key,
+    required this.name,
+    required this.tabs,
+    this.scrollable = false,
+  });
+
+  // NK294_10
+  /// Whether the tabs scroll sideways instead of sharing the width: the
+  /// owners' page has six (script 294).
+  final bool scrollable;
 
   /// Keys the tab bar (`admin.<name>.tabs`) and each tab.
   final String name;
@@ -213,6 +224,8 @@ class AdminTabbedSection extends StatelessWidget {
         children: <Widget>[
           TabBar(
             key: Key('admin.$name.tabs'),
+            isScrollable: scrollable,
+            tabAlignment: scrollable ? TabAlignment.start : null,
             labelColor: t.primaryText,
             unselectedLabelColor: t.textSecondary,
             indicatorColor: t.primary,
@@ -341,11 +354,14 @@ class OwnerGeneralSection extends ConsumerWidget {
     }
     return const AdminTabbedSection(
       name: 'owner',
+      scrollable: true,
       tabs: <(String, Widget)>[
         // script 289: the owners' switches, first: the emergency stops.
         ('المفاتيح', OwnerSwitchesSection()),
         // script 290: the admins' announcements held for review.
         ('الإعلانات', OwnerAnnouncementsSection()),
+        // script 294: the admins, their roles and sessions.
+        ('المشرفون', OwnerAdminsSection()),
         ('الشعارات', ClubCrestsSection()),
         ('المخفيون', HiddenAccountsSection()),
         ('الأشخاص', PersonLinksSection()),
