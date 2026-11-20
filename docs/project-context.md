@@ -9192,6 +9192,35 @@ editor. No migration: `ops.owner_switches` (0218) already keeps `reason`,
   `owner_switches_route_test.dart`, `owner_switches_dto_test.dart`,
   `owner_switches_api_test.dart`, `owner_switches_section_test.dart`.
 
+### Announcements held for an owner seat (script 290, 2026-11-20)
+
+The owner's decision of 2026-11-20, amending Q07: an owner seat's
+announcement is published at once; any other admin's waits for an owner
+seat to publish it as written or reject it. The admin reads «تم إرسال
+الإشعار، وسيُنشر في كل التطبيق بعد مراجعة محتواه», and «لم يُعتمد للنشر»
+for one rejected, with no reason and no word of the owner.
+
+- **Migration 0220**: `notification.announcement_requests` (id = the
+  admin's request id, author, title, body, `pending|published|rejected`,
+  decided_by/at, recipients). RLS on, no client role.
+- **Application**: port `AnnouncementRequestStore`
+  (`PostgresAnnouncementRequestStore`); `PublishAnnouncement.publishAs`
+  (the fan-out without its own role check); `SubmitAnnouncement` (owner:
+  publish; anyone else, or a failed seat read: hold, and tell the owners
+  once); `OwnerAnnouncementReview` (list, publish once, reject;
+  `announcement.already_decided`, `announcement.request_not_found`).
+- **Routes**: `POST /admin/announcements` answers `status`
+  (`published|pending|rejected`; an old app reads `recipients` as before);
+  `GET /admin/announcements/mine`; `GET /owner/announcements`;
+  `POST /owner/announcements/{id}` `{"action": "publish"|"reject"}`.
+- **App**: the send screen shows the pending line and «ما أرسلته»; the
+  owners' page has the tab «الإعلانات».
+- Tests: `submit_announcement_test.dart`,
+  `postgres_announcement_request_store_test.dart`,
+  `announcement_review_routes_test.dart`, `announcement_request_dto_test.dart`,
+  `announcement_review_api_test.dart`, `announcement_review_test.dart`,
+  `0220_announcement_requests_test.sql`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

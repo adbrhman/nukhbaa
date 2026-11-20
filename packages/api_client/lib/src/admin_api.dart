@@ -420,6 +420,39 @@ final class AdminApi {
     );
   }
 
+  // NK290_12
+  /// `GET /admin/announcements/mine` -- the signed-in admin's latest
+  /// announcements held for review, and where each stands (script 290).
+  Future<Result<AnnouncementRequestsDto>> myAnnouncements() {
+    return _transport.getObject<AnnouncementRequestsDto>(
+      '/admin/announcements/mine',
+      parse: AnnouncementRequestsDto.fromJson,
+    );
+  }
+
+  /// `GET /owner/announcements` -- the admins' announcements held for an
+  /// owner seat, the pending first (script 290). An owner seat alone.
+  Future<Result<AnnouncementRequestsDto>> ownerAnnouncements() {
+    return _transport.getObject<AnnouncementRequestsDto>(
+      '/owner/announcements',
+      parse: AnnouncementRequestsDto.fromJson,
+    );
+  }
+
+  /// `POST /owner/announcements/{id}` -- [publish] the held announcement
+  /// [id] to every active player, or reject it (script 290). Answers its
+  /// new status.
+  Future<Result<String>> decideAnnouncement(
+    String id, {
+    required bool publish,
+  }) {
+    return _transport.postObject<String>(
+      '/owner/announcements/${Uri.encodeComponent(id)}',
+      body: <String, Object?>{'action': publish ? 'publish' : 'reject'},
+      parse: (json) => (json['status'] as String?) ?? '',
+    );
+  }
+
   /// `POST /admin/users/{userId}/suspend` — suspends a user, with a
   /// mandatory [reason] recorded on the audit trail. Idempotent: re-suspending
   /// an already-suspended user converges and echoes `suspended`.

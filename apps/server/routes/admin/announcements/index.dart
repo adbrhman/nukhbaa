@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:application/application.dart';
 import 'package:contracts/contracts.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
@@ -21,6 +22,10 @@ import 'package:shared/shared.dart';
 /// The only client-supplied values are the headline and the text. A blank or
 /// over-long value is a `400` validation failure from the domain
 /// (`notification.announcement_*`), never a silent empty broadcast.
+///
+/// An owner seat's announcement is published at once; any other admin's
+/// is held for an owner seat to publish or reject (`SubmitAnnouncement`,
+/// script 290), and answers `"status": "pending"` with no recipient.
 ///
 /// The fan-out is idempotent per announcement id. An optional `request_id`
 /// (a UUID the app makes once per message) becomes that id (audit M-14), so
@@ -63,7 +68,17 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final result = await root.publishAnnouncement(
+  // NK290_07
+  final SubmitAnnouncement? submit = root.submitAnnouncement;
+  if (submit == null) {
+    return errorResponse(
+      const AppError.transient(
+        'notification.announcements_unavailable',
+        'Announcements are unavailable',
+      ),
+    );
+  }
+  final result = await submit(
     principal: principal,
     title: title is String ? title : '',
     body: text is String ? text : '',
@@ -71,9 +86,12 @@ Future<Response> onRequest(RequestContext context) async {
   );
 
   return switch (result) {
-    Ok<int>(:final value) => Response.json(
-      body: AnnouncementPublishedDto(recipients: value).toJson(),
+    Ok<AnnouncementSubmitted>(:final value) => Response.json(
+      body: AnnouncementPublishedDto(
+        recipients: value.recipients,
+        status: value.status.wire,
+      ).toJson(),
     ),
-    Err<int>(:final error) => errorResponse(error),
+    Err<AnnouncementSubmitted>(:final error) => errorResponse(error),
   };
 }

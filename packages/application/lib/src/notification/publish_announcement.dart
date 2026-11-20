@@ -79,11 +79,29 @@ final class PublishAnnouncement {
       return Result.err(idResult.error);
     }
     final id = (idResult as Ok<AnnouncementId>).value;
+    return publishAs(
+      author: principal.userId,
+      id: id,
+      title: title,
+      body: body,
+    );
+  }
 
+  // NK290_01
+  /// Publishes [title]/[body] written by [author] as the announcement [id],
+  /// with no role check of its own: for an owner seat publishing an admin's
+  /// held announcement (`OwnerAnnouncementReview`, script 290), whose
+  /// caller has checked the seat. The same fan-out as [call].
+  Future<Result<int>> publishAs({
+    required UserId author,
+    required AnnouncementId id,
+    required String title,
+    required String body,
+  }) async {
     final DateTime now = _clock.nowUtc();
     final built = Announcement.create(
       id: id,
-      authorId: principal.userId,
+      authorId: author,
       title: title,
       body: body,
       createdAt: now,

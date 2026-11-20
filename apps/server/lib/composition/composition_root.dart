@@ -196,6 +196,8 @@ final class CompositionRoot {
     this.adminSetMonthPrize,
     this.cupChampions,
     this.adminMessagePlayer,
+    this.submitAnnouncement,
+    this.ownerAnnouncementReview,
     required this.registerDeviceToken,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
@@ -435,6 +437,8 @@ final class CompositionRoot {
     this.adminSetMonthPrize,
     this.cupChampions,
     this.adminMessagePlayer,
+    this.submitAnnouncement,
+    this.ownerAnnouncementReview,
     this.deleteMyAccount,
     this.ownerHiddenAccounts,
     this.supportPeekPredictions,
@@ -2453,6 +2457,16 @@ final class CompositionRoot {
   /// Publishes one admin instruction to every active user (admin-only; the
   /// audience is resolved server-side, never from the request body).
   final PublishAnnouncement publishAnnouncement;
+
+  /// An admin's announcement: an owner seat's published at once, anyone
+  /// else's held for review (`POST /admin/announcements`, script 290,
+  /// migration 0220). Null in tests that do not provide one.
+  // NK290_11
+  final SubmitAnnouncement? submitAnnouncement;
+
+  /// The owners' review of the held announcements (`/owner/announcements`,
+  /// script 290). Null in tests that do not provide one.
+  final OwnerAnnouncementReview? ownerAnnouncementReview;
 
   /// Reads the caller's OWN unread-notification count (recipient-only badge
   /// count — Notifications decision #4).
@@ -4572,6 +4586,62 @@ final class CompositionRoot {
         idGenerator: idGenerator,
         clock: clock,
         queue: notificationQueue,
+      ),
+      // The admins' announcements held for an owner seat, and the owners'
+      // review of them (script 290, migration 0220).
+      submitAnnouncement: SubmitAnnouncement(
+        publish: PublishAnnouncement(
+          announcements: announcementRepository,
+          create: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          sender: pushSender,
+          idGenerator: idGenerator,
+          clock: clock,
+          queue: notificationQueue,
+        ),
+        requests: PostgresAnnouncementRequestStore(connection),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+        idGenerator: idGenerator,
+        clock: clock,
+      ),
+      ownerAnnouncementReview: OwnerAnnouncementReview(
+        requests: PostgresAnnouncementRequestStore(connection),
+        publish: PublishAnnouncement(
+          announcements: announcementRepository,
+          create: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          sender: pushSender,
+          idGenerator: idGenerator,
+          clock: clock,
+          queue: notificationQueue,
+        ),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
       ),
       getUnreadCount: GetUnreadCount(notifications: notificationRepository),
       markNotificationRead: MarkNotificationRead(

@@ -27,6 +27,7 @@ import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/new_players_section.dart';
+import 'screens/sections/owner_announcements_section.dart';
 import 'screens/sections/owner_switches_section.dart';
 import 'screens/sections/person_links_section.dart';
 import 'screens/sections/results_scoring_section.dart';
@@ -343,6 +344,8 @@ class OwnerGeneralSection extends ConsumerWidget {
       tabs: <(String, Widget)>[
         // script 289: the owners' switches, first: the emergency stops.
         ('المفاتيح', OwnerSwitchesSection()),
+        // script 290: the admins' announcements held for review.
+        ('الإعلانات', OwnerAnnouncementsSection()),
         ('الشعارات', ClubCrestsSection()),
         ('المخفيون', HiddenAccountsSection()),
         ('الأشخاص', PersonLinksSection()),

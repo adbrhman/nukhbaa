@@ -79,6 +79,7 @@ export 'src/media/postgres_crest_catalog.dart';
 export 'src/media/supabase_crest_files.dart';
 export 'src/notification/postgres_admin_push_target_reader.dart';
 export 'src/notification/postgres_announcement_repository.dart';
+export 'src/notification/postgres_announcement_request_store.dart';
 export 'src/notification/postgres_device_token_repository.dart';
 export 'src/notification/cached_device_token_repository.dart';
 export 'src/notification/fcm_push_sender.dart';

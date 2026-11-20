@@ -12,11 +12,34 @@ import 'package:shared/shared.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/format/arabic_count.dart';
+import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../widgets/admin_ui_kit.dart';
 import '../../widgets/app_release_card.dart';
 
+// NK290_13
+/// `GET /admin/announcements/mine` (script 290): what this admin sent for
+/// review, and where each stands.
+final myAnnouncementsProvider =
+    FutureProvider.autoDispose<AnnouncementRequestsDto>((ref) async {
+      return switch (await ref.watch(adminApiProvider).myAnnouncements()) {
+        Ok<AnnouncementRequestsDto>(:final value) => value,
+        Err<AnnouncementRequestsDto>(:final error) => throw error,
+      };
+    });
+
+/// What an admin reads about one announcement he sent (script 290): never
+/// who reviews it.
+String announcementStatusLabel(String status) => switch (status) {
+  AnnouncementPublishedDto.pending => 'بانتظار المراجعة',
+  AnnouncementPublishedDto.rejected => 'لم يُعتمد للنشر',
+  _ => 'نُشر',
+};
+
 /// شاشة إرسال تعليمات المشرف إلى كل المستخدمين النشطين.
+///
+/// إعلان المالك يُنشر فوراً، وإعلان أي مشرف آخر ينتظر المراجعة قبل نشره
+/// (السكربت 290)، ويرى المشرف حالته في «ما أرسلته».
 ///
 /// النصّ يُحفظ مرّة واحدة في `notification.announcements`، ثم يُنشأ لكل
 /// مستخدم إشعار يشير إليه؛ فلا يُكرَّر النصّ في قاعدة البيانات. الخادم وحده
@@ -46,6 +69,7 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
   bool _inFlight = false;
   AppError? _error;
   int? _sentTo;
+  String _sentStatus = AnnouncementPublishedDto.published;
 
   /// معرّف الرسالة المكتوبة الآن، والنص الذي صُنع له.
   String? _requestId;
@@ -149,6 +173,7 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
       switch (result) {
         case Ok<AnnouncementPublishedDto>(:final value):
           _sentTo = value.recipients;
+          _sentStatus = value.status;
           _requestId = null;
           _requestFor = null;
           _title.clear();
@@ -157,6 +182,22 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
           _error = error;
       }
     });
+    if (result is Ok<AnnouncementPublishedDto>) {
+      ref.invalidate(myAnnouncementsProvider);
+    }
+  }
+
+  String _sentMessage(int sentTo) {
+    if (_sentStatus == AnnouncementPublishedDto.pending) {
+      return 'تم إرسال الإشعار، وسيُنشر في كل التطبيق بعد مراجعة محتواه.';
+    }
+    if (_sentStatus == AnnouncementPublishedDto.rejected) {
+      return 'لم يُعتمد للنشر.';
+    }
+    return sentTo == 0
+        ? 'وصل هذا الإشعار من قبل، فلم يُرسل مرة أخرى.'
+        : 'أُرسل الإشعار إلى '
+              '${arabicCount(sentTo, ArabicNoun.usersAfterPreposition)}';
   }
 
   @override
@@ -204,10 +245,7 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
                 const SizedBox(height: AppSpacing.sm),
                 AdminSuccessBanner(
                   key: const Key('admin.announcement.sent'),
-                  message: sentTo == 0
-                      ? 'وصل هذا الإشعار من قبل، فلم يُرسل مرة أخرى.'
-                      : 'أُرسل الإشعار إلى '
-                            '${arabicCount(sentTo, ArabicNoun.usersAfterPreposition)}',
+                  message: _sentMessage(sentTo),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
@@ -221,6 +259,7 @@ class _AnnouncementSectionState extends ConsumerState<AnnouncementSection> {
             ],
           ),
         ),
+        const _MyAnnouncements(),
         // Below the message: after raising the minimum, the announcement
         // reaches the builds that do not know it (batch 147).
         const SizedBox(height: AppSpacing.lg),
@@ -247,4 +286,56 @@ String newAnnouncementRequestId(Random random) {
     }
   }
   return out.toString();
+}
+
+/// «ما أرسلته»: the admin's latest announcements held for review and where
+/// each stands (script 290). Nothing while there is none.
+class _MyAnnouncements extends ConsumerWidget {
+  const _MyAnnouncements();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<AnnouncementRequestsDto> mine = ref.watch(
+      myAnnouncementsProvider,
+    );
+    return mine.when(
+      loading: () => const SizedBox.shrink(),
+      error: (Object e, _) => const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.md),
+        child: Text(
+          'تعذر تحميل ما أرسلته',
+          key: Key('admin.announcement.mine.error'),
+        ),
+      ),
+      data: (AnnouncementRequestsDto data) {
+        if (data.requests.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.lg),
+          child: AdminCard(
+            key: const Key('admin.announcement.mine'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  'ما أرسلته',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                for (final AnnouncementRequestDto line in data.requests)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Text(
+                      '${line.title} · ${announcementStatusLabel(line.status)}'
+                      ' · ${formatTimestamp(context, line.createdAt.toIso8601String())}',
+                      key: Key('admin.announcement.mine.${line.id}'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
