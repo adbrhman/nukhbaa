@@ -9321,6 +9321,80 @@ missed it. Each player is now a line with the button under it, as in
 «المخفيون»; one already an admin reads «مشرف من قبل»; a search with no
 player says so. `owner_admins_test.dart` draws with `AppTheme.dark`.
 
+### Google Play: release 877 and the road to production (script 297, 2026-11-20)
+
+The owner's session of 2026-11-20 evening, before applying for production.
+Docs only: what was checked in Play Console and GitHub, what was sent, and
+what is left. No code, no migration.
+
+- **Where the 14 days stand**: on 2026-11-20 the Dashboard read «12 testers
+  have currently been opted in for 7 days continuously»; «Apply for
+  production» opens about 2026-11-27. 12 of the 19 addresses had opted in,
+  exactly the floor: the owner sends the join link again so the other 7
+  join (joining changes no list). No tester is removed before the
+  application.
+- **Release 877** (second closed-test release): Build Verification run
+  #877, «Run workflow» by hand on commit `57bc663` (script 296), artifact
+  `nukhba-play-bundle` (a zip; the `app-release.aab` inside it is what Play
+  takes). Closed testing - Alpha, release name «877 (0.1.0)», 855 left in
+  «Not included», rollout 100%, notes ar «إضافة دردشة المجموعات وتحسينات
+  وإصلاحات» and en-US «Group chat added, plus improvements and fixes».
+  Preview: «Ready to release», no device lost, 12.7 MB for new installs
+  (+51.1 KB). Saved, then «Submit 1 change for review» in Publishing
+  overview (managed publishing off: it goes live once approved) while
+  Play's quick checks ran. It carries every script since 855 (272-296:
+  group chat, owners' page, app mode, build floors). A new release does not
+  reset the 14 days.
+- **Checked before building**: the latest runs were green -- Build
+  Verification #876 (#874 failed, #875 fixed it), db-tests #101,
+  migration-drift #127 (scheduled, 18:35), Release Server #265 (after
+  #876) -- so the live database has every migration through 0223 and the
+  server runs the head of main, which release 877 needs.
+- **Data safety**: reviewed screen by screen, last edited 2026-11-12, and
+  it already covers what the app collects: Name, Email address, User IDs;
+  Messages (Other in-app messages); Photos; Crash logs, Diagnostics; App
+  interactions, Other user-generated content; Device or other IDs.
+  Accounts by «Username and password» and «OAuth»; the delete URL
+  `https://nukhbaa.app/delete-account/`; nothing shared with third
+  parties; encrypted in transit. Nothing changed. Scripts 283 and 285-296
+  are owners' and admins' tools (switches, app mode, build floors,
+  announcement requests, the owner and role-change logs): no new player
+  data, so neither the privacy page nor Data safety changes.
+- **Public pages**: `/privacy/`, `/rules/`, `/delete-account/` answer with
+  the 19 November text (checked by the owner). The rules page states that
+  the contest has no cash prize: the champion's prize text set by the
+  owner (`championPrize`) must not announce money.
+- **Google's rules for the group chat** (user-generated content) are met:
+  conduct rules on the rules page, report and block from a long press,
+  hiding a message and muting its writer.
+- **The reviewer account** (written in App access, never in this file) is
+  hidden by the owner (0207): it signs in, predicts and gets its
+  notifications, but no board, no head-to-head draw, no crowning; so it has
+  no group and no group chat. First sign-in, 2026-11-20, on the web in a
+  private tab with the e-mail and password: it works, a prediction was
+  saved.
+- **Owner switches**: all on, 2026-11-20. Again on the application day:
+  app mode normal, every switch on, the Play build floor empty or not above
+  877.
+- **Open (web only)**: after an e-mail sign-in in a phone's browser, the
+  sign-in screen's field keeps the focus, so every tap brings the keyboard
+  back (seen on the score stepper's «+»; the stepper has no text field).
+  Reloading the page clears it; the Android app is not affected. The same
+  cause `DismissKeyboardOnTap` handles for the hall of fame alone. Fix in
+  the next batch: the sign-in screen drops the focus once signed in.
+- **Error log, 2026-11-20 evening**, once each, no action: `EMY2` (server,
+  GoTrue 429 «For security purposes, you can only request this after 41
+  seconds»: one e-mail asked for twice within a minute; `_rejection` makes
+  a 429 transient) and `WFLU` (server, a database query over 10 s, during a
+  live match; the same spread of timeouts as NFRL and 96WW). Reported if
+  they come in tens an hour, with the route.
+- **Next, in order**: release 877 approved, then the owner updates from
+  Play and checks the reviewer account; testers asked to update, try the
+  chat and write to nukhbaa.app@gmail.com; about 2026-11-27, with the
+  switches checked, «Apply for production» and its three parts answered
+  from real feedback (target audience 18+, as declared); no announcement
+  to the players before Google's approval e-mail.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
