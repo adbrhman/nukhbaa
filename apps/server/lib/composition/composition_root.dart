@@ -208,6 +208,7 @@ final class CompositionRoot {
     this.ownerNotices,
     this.ownerAuditLog,
     this.ownerSwitchBoard,
+    this.ownerSwitches,
     required this.suspendUser,
     required this.reinstateUser,
     required this.listUsers,
@@ -448,6 +449,7 @@ final class CompositionRoot {
     this.ownerNotices,
     this.ownerAuditLog,
     this.ownerSwitchBoard,
+    this.ownerSwitches,
     RegisterDeviceToken? registerDeviceToken,
     SuspendUser? suspendUser,
     ReinstateUser? reinstateUser,
@@ -2748,6 +2750,12 @@ final class CompositionRoot {
   // NK289_07
   final OwnerSwitchBoard? ownerSwitchBoard;
 
+  /// The owners' switches, read on every request by the writes they stop:
+  /// the predictions and the chat (script 291, migration 0221). Null in
+  /// tests that do not provide them, and then nothing is stopped.
+  // NK291_05
+  final OwnerSwitches? ownerSwitches;
+
   /// Crowns each month by itself once its last match is over (script 204,
   /// migration 0199); null in tests that do not provide one.
   final AutoCrownMonths? autoCrownMonths;
@@ -3674,6 +3682,8 @@ final class CompositionRoot {
         clock: clock,
       ),
       ownerAuditLog: PostgresOwnerAuditLog(connection),
+      // The owners' stops on the predictions and the chat (script 291).
+      ownerSwitches: PostgresOwnerSwitches(connection),
       // The owners' switch board (script 289): the same rows the crowning
       // guard reads on every run.
       ownerSwitchBoard: OwnerSwitchBoard(

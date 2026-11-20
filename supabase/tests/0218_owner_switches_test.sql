@@ -58,7 +58,8 @@ select pg_temp.check(
 
 select pg_temp.check(
   pg_temp.refusal(
-    'insert into ops.owner_switches (switch_key) values ($$chat$$)')
+    -- 'chat' became a switch in 0221 (script 291).
+    'insert into ops.owner_switches (switch_key) values ($$no_such_switch$$)')
     = '23514/owner_switches_key_check',
   'a switch this batch does not know is refused');
 

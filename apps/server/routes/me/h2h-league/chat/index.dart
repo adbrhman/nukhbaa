@@ -7,6 +7,7 @@ import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/h2h_chat_dto_mapper.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/owner_switch_stop.dart';
 import 'package:server/http/rate_limit.dart';
 import 'package:shared/shared.dart';
 
@@ -62,6 +63,10 @@ Future<Response> _send(RequestContext context) async {
   final principal = context.read<AuthenticatedUser>();
   final limited = limitPlayerAppend(PlayerAppend.h2hChatMessage, principal);
   if (limited != null) return limited;
+  // NK291_04
+  // The owners' stop on the chat (script 291).
+  final Response? paused = await ownerSwitchStop(root, OwnerSwitch.chat);
+  if (paused != null) return paused;
 
   final result = await root.h2hChat.send(
     principal: principal,

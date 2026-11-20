@@ -9221,6 +9221,25 @@ for one rejected, with no reason and no word of the owner.
   `announcement_review_api_test.dart`, `announcement_review_test.dart`,
   `0220_announcement_requests_test.sql`.
 
+### The owners' stops on the predictions and the chat (script 291, 2026-11-20)
+
+The launch batch: two more owner switches beside the crowning, on the same
+page and table. No admin is exempt.
+
+- **Migration 0221**: `ops.owner_switches` takes `predictions` and `chat`,
+  both on. `0218_owner_switches_test.sql` now names `no_such_switch` as the
+  unknown key, since `chat` is one.
+- **`OwnerSwitch.predictions` / `.chat`**; `CompositionRoot.ownerSwitches`
+  (`PostgresOwnerSwitches`, null in tests: nothing stopped).
+- **`ownerSwitchStop`** (`lib/http/owner_switch_stop.dart`), read on every
+  request: `POST /seasons/{id}/fixtures/{f}/prediction` answers
+  `409 prediction.paused`, `POST /me/h2h-league/chat` `409 h2h.chat_paused`,
+  both in Arabic; a switch that cannot be read refuses with its `503`.
+- **App**: «حفظ التوقعات» and «دردشة المواجهات» in «المفاتيح»; the
+  crowning's resume text names its three days.
+- Tests: `owner_switch_stop_test.dart`, `owner_switches_play_test.dart`,
+  `0221_owner_switches_play_test.sql`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

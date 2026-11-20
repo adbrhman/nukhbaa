@@ -8,6 +8,7 @@ import 'package:server/composition/composition_root.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/fixture_prediction_dto_mapper.dart';
 import 'package:server/http/json_body.dart';
+import 'package:server/http/owner_switch_stop.dart';
 import 'package:shared/shared.dart';
 
 /// `POST /seasons/{id}/fixtures/{fixtureId}/prediction` — submit (or
@@ -39,6 +40,10 @@ Future<Response> onRequest(
 
   final root = await context.read<Future<CompositionRoot>>();
   final principal = context.read<AuthenticatedUser>();
+  // NK291_03
+  // The owners' stop on the predictions (script 291).
+  final Response? paused = await ownerSwitchStop(root, OwnerSwitch.predictions);
+  if (paused != null) return paused;
 
   final bodyResult = await readJsonObject(context.request);
   if (bodyResult is Err<Map<String, Object?>>) {

@@ -185,7 +185,7 @@ void main() {
     final unknown = await put(r, const {
       'is_on': false,
       'reason': 'x',
-    }, key: 'predictions');
+    }, key: 'no_such_switch');
 
     expect(blank['code'], 'owner.reason_required');
     expect(missing['code'], 'owner.reason_required');

@@ -4,7 +4,14 @@ import 'package:shared/shared.dart';
 /// One of the owners' switches (script 286, migration 0218).
 enum OwnerSwitch {
   /// The month's crowning, by itself or by an admin's hand (decision Q04).
-  crowning('crowning');
+  crowning('crowning'),
+
+  // NK291_01
+  /// Every new or changed prediction (script 291, migration 0221).
+  predictions('predictions'),
+
+  /// Every new message in the head-to-head chat (script 291).
+  chat('chat');
 
   const OwnerSwitch(this.key);
 
