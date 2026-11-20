@@ -9267,6 +9267,15 @@ owners stop the app from «المفاتيح» in an emergency, with no release.
   `postgres_app_mode_store_test.dart`, `app_mode_dto_test.dart`,
   `owner_app_mode_api_test.dart`, `0222_app_mode_test.sql`.
 
+### The build floors on the owners' page (script 293, 2026-11-20)
+
+The launch batch: a build floor that blocks the players is undone from the
+owners' page. The tools already existed (`AppReleaseCard`: raise or clear
+the APK floor, set or clear the Play floor, batches 147 and 241); «المفاتيح»
+now shows the same card under the switches, so an owner reaches it in an
+emergency. No server change: the floors stay the admins' as well.
+- Test: `owner_build_floor_test.dart` (the APK floor cleared from the tab).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

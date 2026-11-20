@@ -22,6 +22,7 @@ import '../../../../core/format/timestamps.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/ui/app_button.dart';
 import '../../widgets/admin_ui_kit.dart';
+import '../../widgets/app_release_card.dart';
 
 // NK289_10
 /// `GET /owner/switches`.
@@ -200,6 +201,12 @@ class _OwnerSwitchesSectionState extends ConsumerState<OwnerSwitchesSection> {
                 onChanged: (bool on) => unawaited(_turn(line, on)),
               ),
             ),
+          // NK293_01
+          // script 293: the build floor of each channel (APK and Play),
+          // within reach in an emergency: clearing it lets the blocked
+          // players in again, with no release.
+          const SizedBox(height: AppSpacing.md),
+          const AppReleaseCard(),
         ],
       ),
     );
