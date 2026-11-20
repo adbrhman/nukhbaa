@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/infrastructure.dart';
 import 'package:meta/meta.dart';
+import 'package:server/http/maintenance_gate.dart';
 import 'package:server/provider_sync/phase_one_rules.dart';
 import 'package:shared/shared.dart';
 
@@ -16,6 +17,8 @@ import 'package:shared/shared.dart';
 /// composition root).
 final class CompositionRoot {
   CompositionRoot._({
+    this.ownerAppMode,
+    this.appModeCache,
     required PostgresConnection connection,
     required JwksClient jwksClient,
     required this.checkHealth,
@@ -260,6 +263,8 @@ final class CompositionRoot {
   /// loudly instead of dereferencing null.
   @visibleForTesting
   CompositionRoot.forTesting({
+    this.ownerAppMode,
+    this.appModeCache,
     CheckHealth? checkHealth,
     GetLatestBuild? getLatestBuild,
     SetMinSupportedBuild? setMinSupportedBuild,
@@ -2733,6 +2738,16 @@ final class CompositionRoot {
   /// one.
   final OwnerCrests? ownerCrests;
 
+  /// The app's mode in the owners' hands (`/owner/mode`, script 292,
+  /// migration 0222). Null in tests that do not provide one.
+  // NK292_08
+  final OwnerAppMode? ownerAppMode;
+
+  /// The app's mode as the root middleware reads it before every request,
+  /// ten seconds at most (`maintenanceGate`, script 292). Null in tests:
+  /// nothing is refused.
+  final AppModeCache? appModeCache;
+
   /// The owner seats, for the `/owner` gate (script 287, migration 0217):
   /// anyone else gets the answer of a path with no route. Null in tests
   /// that do not provide one, and then nobody passes the gate.
@@ -3669,6 +3684,22 @@ final class CompositionRoot {
         catalog: crestCatalog,
         baseUrl: crestBase,
       ),
+      // The app's mode in the owners' hands (script 292, migration 0222).
+      ownerAppMode: OwnerAppMode(
+        store: PostgresAppModeStore(connection),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
+      appModeCache: AppModeCache(PostgresAppModeStore(connection)),
       // The /owner gate's seats and the owners' own audit log (script 287).
       ownerNotices: OwnerInbox(
         owners: PostgresOwnerRegistry(connection),

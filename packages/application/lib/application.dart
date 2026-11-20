@@ -285,6 +285,8 @@ export 'src/platform/alert_admins_of_error.dart';
 export 'src/platform/check_health.dart';
 export 'src/platform/error_redaction.dart';
 export 'src/platform/get_latest_build.dart';
+export 'src/platform/owner_app_mode.dart';
+export 'src/platform/ports/app_mode_store.dart';
 export 'src/platform/ports/app_update_policy_store.dart';
 export 'src/platform/ports/build_info_repository.dart';
 export 'src/platform/ports/error_alert_repository.dart';

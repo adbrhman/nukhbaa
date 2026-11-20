@@ -4,6 +4,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:server/composition/composition_root.dart';
 import 'package:server/http/build_gate.dart';
 import 'package:server/http/error_capture.dart';
+import 'package:server/http/maintenance_gate.dart';
 import 'package:server/http/request_scope.dart';
 import 'package:server/http/security_headers.dart';
 
@@ -67,8 +68,18 @@ Handler middleware(Handler handler) {
   // A build too old to be served is answered here with the Arabic update
   // message, before any route or the database (script 142); off until
   // NUKHBA_BUILD_HEADER_SINCE is set on Northflank.
+  // NK292_06
+  // The app's mode in the owners' hands (script 292): read only or closed
+  // answers the players' refused requests with its Arabic message, after
+  // the update message and before any route; the admins pass to test.
+  final maintained = maintenanceGate(
+    cache: () async => (await CompositionRoot.instance()).appModeCache,
+    authenticate: (header) async =>
+        (await CompositionRoot.instance()).authenticateRequest(header),
+  )(captured);
+
   final gated = buildGate(minBuild: minServedBuild(Platform.environment))(
-    captured,
+    maintained,
   );
 
   return (context) async {

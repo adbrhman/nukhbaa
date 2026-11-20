@@ -209,6 +209,15 @@ void main() {
     await _open(tester, server, const OwnerSwitchesSection(), textScale: 2.0);
 
     expect(tester.takeException(), isNull);
+    // script 292: the card of the app's mode sits above the switches now.
+    await tester.scrollUntilVisible(
+      find.text('تتويج الشهر'),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('admin.switches.list')),
+        matching: find.byType(Scrollable),
+      ),
+    );
     expect(find.text('تتويج الشهر'), findsOneWidget);
   });
 }

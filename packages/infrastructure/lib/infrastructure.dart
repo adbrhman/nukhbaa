@@ -121,6 +121,7 @@ export 'src/platform/cached_app_update_policy_store.dart';
 export 'src/platform/cached_retired_build_reader.dart';
 export 'src/platform/github_build_info_repository.dart';
 export 'src/platform/mirrored_build_info_repository.dart';
+export 'src/platform/postgres_app_mode_store.dart';
 export 'src/platform/postgres_app_update_policy_store.dart';
 export 'src/platform/postgres_error_alert_repository.dart';
 export 'src/platform/postgres_error_log_admin_repository.dart';

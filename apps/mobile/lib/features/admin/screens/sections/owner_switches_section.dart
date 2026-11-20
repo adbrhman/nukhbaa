@@ -189,6 +189,8 @@ class _OwnerSwitchesSectionState extends ConsumerState<OwnerSwitchesSection> {
                 'إلا بسبب، ويبقى من غيّره ومتى. يقرأ الخادم المفتاح في كل '
                 'دورة، فلا يحتاج التغيير إعادة نشر.',
           ),
+          // script 292: the app's mode, above the switches.
+          const _AppModeCard(),
           for (final OwnerSwitchDto line in data.switches)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -365,6 +367,177 @@ class _ReasonDialogState extends State<_ReasonDialog> {
           ],
         ),
       ],
+    );
+  }
+}
+
+// NK292_10
+/// `GET /owner/mode` (script 292).
+final ownerAppModeProvider = FutureProvider.autoDispose<AppModeDto>((
+  ref,
+) async {
+  return switch (await ref.watch(adminApiProvider).ownerAppMode()) {
+    Ok<AppModeDto>(:final value) => value,
+    Err<AppModeDto>(:final error) => throw error,
+  };
+});
+
+/// Each mode: its name, what the players get, and what setting it does.
+const List<(String, String, String, String)> _modes = [
+  (
+    AppModeDto.normal,
+    'عادي',
+    'كل شيء يعمل.',
+    'يعود كل شيء للعمل خلال 10 ثوانٍ.',
+  ),
+  (
+    AppModeDto.readOnly,
+    'قراءة فقط',
+    'يتصفح اللاعبون النتائج والترتيب. حفظ التوقعات والدردشة والمجموعات '
+        'والاسم والصورة متوقفة. الدخول والدعم وحذف الحساب تعمل.',
+    'خلال 10 ثوانٍ يقرأ كل لاعب يحاول الحفظ أن نُخبة في وضع الصيانة. '
+        'المشرفون مستثنون ليختبروا، والمهام المجدولة تستمر (أوقفها '
+        'بمفاتيحها).',
+  ),
+  (
+    AppModeDto.closed,
+    'مغلق',
+    'لا يعمل للاعبين إلا الدخول وحذف الحساب.',
+    'خلال 10 ثوانٍ يقرأ كل لاعب أن نُخبة متوقفة مؤقتاً للصيانة. المشرفون '
+        'مستثنون، والمهام المجدولة تستمر (أوقفها بمفاتيحها).',
+  ),
+];
+
+(String, String, String, String) _modeOf(String wire) => _modes.firstWhere(
+  ((String, String, String, String) m) => m.$1 == wire,
+  orElse: () => (wire, wire, '', ''),
+);
+
+/// «وضع التطبيق»: normal, read only or closed, always for a reason
+/// (script 292).
+class _AppModeCard extends ConsumerStatefulWidget {
+  const _AppModeCard();
+
+  @override
+  ConsumerState<_AppModeCard> createState() => _AppModeCardState();
+}
+
+class _AppModeCardState extends ConsumerState<_AppModeCard> {
+  bool _busy = false;
+
+  Future<void> _set(String wire) async {
+    final (String, String, String, String) mode = _modeOf(wire);
+    final String? reason = await showDialog<String>(
+      context: context,
+      builder: (_) => _ReasonDialog(
+        title: 'وضع التطبيق: ${mode.$2}',
+        notice: mode.$4,
+        confirmLabel: 'غيّر الوضع',
+        destructive: wire != AppModeDto.normal,
+      ),
+    );
+    if (reason == null || !mounted) return;
+    setState(() => _busy = true);
+    final Result<AppModeDto> result = await ref
+        .read(adminApiProvider)
+        .setOwnerAppMode(wire, reason: reason);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    final String text = switch (result) {
+      Ok<AppModeDto>() => 'صار وضع التطبيق: ${mode.$2}',
+      Err<AppModeDto>(:final error) => ErrorPresenter.message(error),
+    };
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    ref.invalidate(ownerAppModeProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final AsyncValue<AppModeDto> state = ref.watch(ownerAppModeProvider);
+    final Widget body = state.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppSpacing.sm),
+        child: LinearProgressIndicator(),
+      ),
+      error: (Object e, _) => Text(
+        ErrorPresenter.messageOf(e),
+        key: const Key('admin.mode.loadError'),
+        style: TextStyle(color: tokens.errorText),
+      ),
+      data: (AppModeDto data) {
+        final (String, String, String, String) now = _modeOf(data.mode);
+        final String? reason = data.reason;
+        final String by = _byLabel(data.changedBy);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              now.$3,
+              key: const Key('admin.mode.state'),
+              style: context.text.bodySmall?.copyWith(
+                color: data.mode == AppModeDto.normal
+                    ? tokens.textSecondary
+                    : tokens.errorText,
+                fontWeight: data.mode == AppModeDto.normal
+                    ? FontWeight.w400
+                    : FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: <Widget>[
+                for (final (String, String, String, String) m in _modes)
+                  ChoiceChip(
+                    key: Key('admin.mode.${m.$1}'),
+                    label: Text(m.$2),
+                    selected: data.mode == m.$1,
+                    onSelected: _busy || data.mode == m.$1
+                        ? null
+                        : (_) => unawaited(_set(m.$1)),
+                  ),
+              ],
+            ),
+            if (reason != null || data.changedBy != null) ...<Widget>[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                <String>[
+                  'آخر تغيير: '
+                      '${formatTimestamp(context, data.changedAt.toIso8601String())}',
+                  if (by.isNotEmpty) by,
+                  if (reason != null) 'السبب: $reason',
+                ].join(' · '),
+                key: const Key('admin.mode.changed'),
+                style: context.text.bodySmall?.copyWith(
+                  color: tokens.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AdminCard(
+        key: const Key('admin.mode.card'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              'وضع التطبيق',
+              style: context.text.titleSmall?.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            body,
+          ],
+        ),
+      ),
     );
   }
 }

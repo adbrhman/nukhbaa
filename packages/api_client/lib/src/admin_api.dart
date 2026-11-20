@@ -298,6 +298,29 @@ final class AdminApi {
     );
   }
 
+  // NK292_09
+  /// `GET /owner/mode` -- the app's mode and its last change (script 292).
+  /// An owner seat alone.
+  Future<Result<AppModeDto>> ownerAppMode() {
+    return _transport.getObject<AppModeDto>(
+      '/owner/mode',
+      parse: AppModeDto.fromJson,
+    );
+  }
+
+  /// `PUT /owner/mode` -- sets the app's [mode] (`normal`, `read_only` or
+  /// `closed`) for [reason] (script 292).
+  Future<Result<AppModeDto>> setOwnerAppMode(
+    String mode, {
+    required String reason,
+  }) {
+    return _transport.putObject<AppModeDto>(
+      '/owner/mode',
+      body: <String, Object?>{'mode': mode, 'reason': reason},
+      parse: AppModeDto.fromJson,
+    );
+  }
+
   /// `GET /owner/person-links` -- every person the owner admin linked,
   /// each with its accounts, the main one first (script 263). The owner
   /// admin alone; another admin is `admin.owner_only`.

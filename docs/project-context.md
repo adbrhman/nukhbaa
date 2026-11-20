@@ -9240,6 +9240,33 @@ page and table. No admin is exempt.
 - Tests: `owner_switch_stop_test.dart`, `owner_switches_play_test.dart`,
   `0221_owner_switches_play_test.sql`.
 
+### The app's mode: normal, read only, closed (script 292, 2026-11-20)
+
+Item 1 of the owner's report, with the decision table of 2026-11-19: the
+owners stop the app from «المفاتيح» in an emergency, with no release.
+
+- **Migration 0222**: `ops.app_mode`, one row (`normal|read_only|closed`,
+  reason, changed_by/at). `supabase/queries/app_mode_normal.sql` brings it
+  back to normal if the page cannot be reached.
+- **Application**: `AppMode`, port `AppModeStore`
+  (`PostgresAppModeStore`, no row reads as normal); `OwnerAppMode` (owner
+  seat alone, a reason of 1 to 200 characters).
+- **`maintenanceGate`** (`lib/http/maintenance_gate.dart`), in the root
+  middleware after the build gate. `AppModeCache` reads the row at most
+  every ten seconds; a failed read counts as normal; `PUT /owner/mode`
+  forgets it. `read_only` refuses the players' writes but the devices,
+  `/me/account`, support, the app's own reports and read marks
+  (`409 app.read_only`); `closed` leaves signing in, `DELETE /me/account`
+  and `/errors/report` (`409 app.closed`). `/auth`, `/admin`, `/owner`,
+  `/health`, `/app/latest-build` are never refused; an admin's token
+  passes everywhere. The scheduled jobs go on: each has its own switch.
+- **Routes**: `GET`/`PUT /owner/mode`.
+- **App**: the card «وضع التطبيق» above the switches.
+- Tests: `maintenance_gate_test.dart`, `owner_mode_route_test.dart`,
+  `owner_app_mode_test.dart` (application and app),
+  `postgres_app_mode_store_test.dart`, `app_mode_dto_test.dart`,
+  `owner_app_mode_api_test.dart`, `0222_app_mode_test.sql`.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
