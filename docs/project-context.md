@@ -9395,6 +9395,27 @@ what is left. No code, no migration.
   from real feedback (target audience 18+, as declared); no announcement
   to the players before Google's approval e-mail.
 
+### The audit plan brought up to date (script 298, 2026-11-21)
+
+Docs only. `docs/remediation-plan.md` (the 2026-10-13 audit, 103 items) was
+last updated on 2026-11-02 and no longer matched the tree. Checked against
+the tree at script 297; no code, no migration.
+
+- **Rows corrected**: M-05 done (scripts 113, 114, 115, migration 0178);
+  L-59 reversed by script 110 (`app.nukhbaa`); L-24 reversed by script 261
+  (owner decision 2026-11-11); L-30 half done (193); L-60 part done (94);
+  L-44 code ready since 108 (the owner sets `NUKHBA_PG_SSL=verify-full`);
+  L-61 backups weekly (`db-backup.yml`), no restore test on record.
+- **Eased, still open**: M-29, M-30 (201), M-31 (103), L-23 (203, 204,
+  206). The head-to-head items L-28, L-31, L-32, L-33, L-36 are to be
+  judged again on the league of scripts 277 to 279 and 283.
+- **Section 4**: the four decisions written with their dates; none is open.
+- **Section 6 (new)**: the numbering ranges of rules 3 and 4 are retired
+  (139, 140 and 201 to 204 are other scripts); `session-log.md` stops at
+  269; scripts 207 to 259 are only in `session-log.md`; scripts 217, 218,
+  220 and 222 to 248 have no record in `docs/`; the 2026-11-01 review and
+  the NUKHBA-xxx audit use their own ids; and the whole open list.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
