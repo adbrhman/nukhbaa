@@ -6,6 +6,7 @@
 /// archived-event replay (Database ADR, Section 12).
 library;
 
+export 'src/admin_activity_dto.dart';
 export 'src/admin_dto.dart';
 export 'src/admin_error_log_dto.dart';
 export 'src/admin_hidden_accounts_dto.dart';

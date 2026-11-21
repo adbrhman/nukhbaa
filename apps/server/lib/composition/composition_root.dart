@@ -210,6 +210,8 @@ final class CompositionRoot {
     this.ownerCrests,
     this.ownerNotices,
     this.ownerAuditLog,
+    this.adminActivityLog,
+    this.ownerAdminActivity,
     this.ownerSwitchBoard,
     this.ownerSwitches,
     this.ownerAdmins,
@@ -454,6 +456,8 @@ final class CompositionRoot {
     this.ownerCrests,
     this.ownerNotices,
     this.ownerAuditLog,
+    this.adminActivityLog,
+    this.ownerAdminActivity,
     this.ownerSwitchBoard,
     this.ownerSwitches,
     this.ownerAdmins,
@@ -2766,6 +2770,15 @@ final class CompositionRoot {
   /// not provide one.
   final OwnerAuditLog? ownerAuditLog;
 
+  // NK300_09
+  /// Every change an admin made, kept for the owners (script 300,
+  /// migration 0224). Null in tests that do not provide one.
+  final AdminActivityLog? adminActivityLog;
+
+  /// The owners' read of it (`/owner/admin-activity`, script 300). Null in
+  /// tests that do not provide one.
+  final OwnerAdminActivity? ownerAdminActivity;
+
   /// The owners' switches and their hands on them (`/owner/switches`,
   /// script 289, migration 0218): first the month's crowning. Null in tests
   /// that do not provide one.
@@ -3720,6 +3733,22 @@ final class CompositionRoot {
         clock: clock,
       ),
       ownerAuditLog: PostgresOwnerAuditLog(connection),
+      // What the admins changed, for the owners (script 300).
+      adminActivityLog: PostgresAdminActivityLog(connection),
+      ownerAdminActivity: OwnerAdminActivity(
+        log: PostgresAdminActivityLog(connection),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
       // The owners' stops on the predictions and the chat (script 291).
       ownerSwitches: PostgresOwnerSwitches(connection),
       // The owners' switch board (script 289): the same rows the crowning

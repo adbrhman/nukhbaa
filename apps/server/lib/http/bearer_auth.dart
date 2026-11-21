@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:application/application.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:domain/domain.dart';
 import 'package:server/composition/composition_root.dart';
+import 'package:server/http/admin_activity.dart';
 import 'package:server/http/build_gate.dart';
 import 'package:server/http/error_envelope.dart';
 import 'package:server/http/rate_limit.dart';
@@ -71,7 +73,22 @@ Middleware bearerAuth({RateLimiter? writeLimiter}) {
         return limited;
       }
 
-      return handler(context.provide<AuthenticatedUser>(() => principal));
+      // NK300_06 script 300: an admin's change is kept for the owners;
+      // nothing is refused for it.
+      final Response response = await handler(
+        context.provide<AuthenticatedUser>(() => principal),
+      );
+      final AdminActivityLog? activity = root.adminActivityLog;
+      if (activity != null && principal.role == PlatformRole.admin) {
+        await keepAdminActivity(
+          log: activity,
+          principal: principal,
+          method: context.request.method,
+          path: context.request.uri.path,
+          status: response.statusCode,
+        );
+      }
+      return response;
     };
   };
 }

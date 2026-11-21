@@ -27,6 +27,7 @@ import 'screens/sections/hidden_accounts_section.dart';
 import 'screens/sections/h2h_admin_section.dart';
 import 'screens/sections/ledger_lookup_section.dart';
 import 'screens/sections/new_players_section.dart';
+import 'screens/sections/owner_admin_activity_section.dart';
 import 'screens/sections/owner_admins_section.dart';
 import 'screens/sections/owner_announcements_section.dart';
 import 'screens/sections/owner_switches_section.dart';
@@ -456,6 +457,8 @@ class OwnerGeneralSection extends ConsumerWidget {
         ('الإعلانات', OwnerAnnouncementsSection()),
         // script 294: the admins, their roles and sessions.
         ('المشرفون', OwnerAdminsSection()),
+        // script 300: what the admins changed, for the owners to check.
+        ('سجل المشرفين', OwnerAdminActivitySection()),
         ('الشعارات', ClubCrestsSection()),
         ('المخفيون', HiddenAccountsSection()),
         ('الأشخاص', PersonLinksSection()),

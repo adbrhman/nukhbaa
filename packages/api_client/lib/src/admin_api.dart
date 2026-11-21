@@ -321,6 +321,16 @@ final class AdminApi {
     );
   }
 
+  // NK300_08
+  /// `GET /owner/admin-activity` -- every change an admin made, the newest
+  /// first, with his name (script 300). An owner seat alone.
+  Future<Result<AdminActivityLogDto>> ownerAdminActivity() {
+    return _transport.getObject<AdminActivityLogDto>(
+      '/owner/admin-activity',
+      parse: AdminActivityLogDto.fromJson,
+    );
+  }
+
   // NK294_08
   /// `GET /owner/admins` -- every admin, whether each holds an owner seat,
   /// and the latest changes (script 294). An owner seat alone.

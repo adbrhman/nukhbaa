@@ -9445,6 +9445,31 @@ the tree at script 297; no code, no migration.
   empties after a settle (`results_settle_flow_test`); the owner's grid at
   360px and text x2 (`owner_switches_section_test`).
 
+### The admins' activity log for the owners (script 300, migration 0224, 2026-11-21)
+
+- **owner decision 2026-11-21**: the owners see every change an admin made,
+  with his name, to check it. Nothing an admin does is refused for it; the
+  owners' review of the admins' announcements (script 290) stays as it is.
+- **Server**: `bearerAuth` keeps, after the answer, one row per write an
+  admin made answered below 400 on the admin paths (`isAdminActivityPath`
+  in `lib/http/admin_activity.dart`: `/admin`, `/fixtures`, `/competitions`,
+  `/teams`, `/leagues`, `/crests`, `/champions`, `/cup-champions`, `/months`,
+  `/users`, and `/seasons` but a player's own prediction, its reaction and
+  joining a season; never `/me`, `/groups`, the notifications, nor a support
+  conversation marked read). `PostgresAdminActivityLog` appends to
+  `admin.admin_activity_log` (migration 0224, append-only, like 0219); a
+  failure to keep a row is printed and the answer goes out.
+- **Read**: `GET /owner/admin-activity` (`OwnerAdminActivity`, owner seats
+  alone, behind the owner gate) answers the latest 200, each with the
+  admin's name and the player or match the path names, as they read now,
+  with that match's result. The old value is not kept (the request body is
+  not read in the middleware): the line says what was done, by whom, on
+  whom, and how it stands now.
+- **App**: a tab «سجل المشرفين» on the owners' page
+  (`owner_admin_activity_section.dart`), each request in words
+  (`adminActivityLabel`; an unknown one keeps its method and path).
+- **To apply**: migration 0224 in the SQL Editor before the push.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
