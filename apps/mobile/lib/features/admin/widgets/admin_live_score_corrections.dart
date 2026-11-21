@@ -44,12 +44,12 @@ class AdminLiveScoreCorrections extends ConsumerWidget {
     // The admin panel's own read of the month (as «بانتظار النتيجة»): the
     // score shown is the one when the panel opened; the server corrects
     // against the provider's figure of the moment, whatever is shown here.
+    // NK301_03 the players' read of the month, as «بانتظار النتيجة».
     final List<CurrentMonthFixtureItemDto> items = switch (ref.watch(
-      adminDashboardProvider,
+      currentMonthFixturesProvider,
     )) {
-      AsyncData<AdminDashboardSnapshot>(:final value) => liveScoresToCorrect(
-        value.currentMonthFixtures,
-      ),
+      AsyncData<List<CurrentMonthFixtureItemDto>>(:final value) =>
+        liveScoresToCorrect(value),
       _ => const <CurrentMonthFixtureItemDto>[],
     };
     if (items.isEmpty) return const SizedBox.shrink();

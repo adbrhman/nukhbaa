@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/admin/screens/sections/results_scoring_section.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -115,20 +115,15 @@ void main() {
       ProviderScope(
         overrides: [
           ...harness.overrides,
-          adminDashboardProvider.overrideWith(
-            (ref) async => AdminDashboardSnapshot(
-              stats: const UserStatsDto(total: 0, active: 0, suspended: 0),
-              auditLog: const AuditLogDto(entries: <AuditEntryDto>[]),
-              competitions: const <CompetitionDto>[],
-              currentMonthFixtures: <CurrentMonthFixtureItemDto>[
-                CurrentMonthFixtureItemDto(
-                  competitionId: 'c-1',
-                  competitionName: 'Premier League',
-                  seasonLabel: '10/2026',
-                  fixture: _waiting,
-                ),
-              ],
-            ),
+          currentMonthFixturesProvider.overrideWith(
+            (ref) async => <CurrentMonthFixtureItemDto>[
+              CurrentMonthFixtureItemDto(
+                competitionId: 'c-1',
+                competitionName: 'Premier League',
+                seasonLabel: '10/2026',
+                fixture: _waiting,
+              ),
+            ],
           ),
         ],
         child: MaterialApp(

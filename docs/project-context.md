@@ -9470,6 +9470,21 @@ the tree at script 297; no code, no migration.
   (`adminActivityLabel`; an unknown one keeps its method and path).
 - **To apply**: migration 0224 in the SQL Editor before the push.
 
+### Matches by league, the results page's read (script 301, 2026-11-21)
+
+- **Matches tab**: the day's matches under one header per league, in the
+  order of each league's first kickoff: its name, the player's predictions
+  out of its matches (`5/7`, green once one is predicted) and an arrow. With
+  several leagues every header starts closed and a tap opens or closes its
+  own; with one league, or with the live filter, it is open. The player's
+  choice holds for the session.
+- **النتائج والاحتساب** (the owner: the slowest page): «بانتظار النتيجة» and
+  «النتائج المباشرة» read `currentMonthFixturesProvider`, the players' own
+  read of the month, already loaded by the matches tab, instead of
+  `adminDashboardProvider`, which fetched three more things for them (the
+  user count over every account, the audit log and the competitions).
+  Recording a result already refreshed that read.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

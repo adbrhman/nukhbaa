@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/error/error_presenter.dart';
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/admin/screens/sections/admin_home_section.dart';
 import 'package:mobile/features/admin/screens/sections/results_scoring_section.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -142,17 +142,12 @@ void main() {
       ProviderScope(
         overrides: [
           ...harness.overrides,
-          adminDashboardProvider.overrideWith(
-            (ref) async => AdminDashboardSnapshot(
-              stats: const UserStatsDto(total: 0, active: 0, suspended: 0),
-              auditLog: const AuditLogDto(entries: <AuditEntryDto>[]),
-              competitions: const <CompetitionDto>[],
-              currentMonthFixtures: <CurrentMonthFixtureItemDto>[
-                _item(_waiting),
-                _item(_scored, resultHome: 2, resultAway: 0),
-                _item(_test),
-              ],
-            ),
+          currentMonthFixturesProvider.overrideWith(
+            (ref) async => <CurrentMonthFixtureItemDto>[
+              _item(_waiting),
+              _item(_scored, resultHome: 2, resultAway: 0),
+              _item(_test),
+            ],
           ),
         ],
         child: MaterialApp(

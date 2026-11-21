@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/admin/screens/sections/results_scoring_section.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -97,7 +97,7 @@ Future<void> _tap(WidgetTester tester, String key) async {
 
 /// Pumps the section over a harness whose handler is [handler]; the picked
 /// match, 2-1, is typed in and ready for the button.
-// NK299_09 how many times the dashboard was read: from the second read
+// NK299_09 how many times the month's feed was read: from the second read
 // on, the match has its result, as the server would answer.
 int _dashboardReads = 0;
 
@@ -112,22 +112,17 @@ Future<void> _pumpReady(WidgetTester tester, AdminHarness harness) async {
     ProviderScope(
       overrides: [
         ...harness.overrides,
-        adminDashboardProvider.overrideWith(
-          (ref) async => AdminDashboardSnapshot(
-            stats: const UserStatsDto(total: 0, active: 0, suspended: 0),
-            auditLog: const AuditLogDto(entries: <AuditEntryDto>[]),
-            competitions: const <CompetitionDto>[],
-            currentMonthFixtures: <CurrentMonthFixtureItemDto>[
-              CurrentMonthFixtureItemDto(
-                competitionId: 'c-1',
-                competitionName: 'Premier League',
-                seasonLabel: '10/2026',
-                fixture: _waiting,
-                resultHomeGoals: ++_dashboardReads > 1 ? 2 : null,
-                resultAwayGoals: _dashboardReads > 1 ? 1 : null,
-              ),
-            ],
-          ),
+        currentMonthFixturesProvider.overrideWith(
+          (ref) async => <CurrentMonthFixtureItemDto>[
+            CurrentMonthFixtureItemDto(
+              competitionId: 'c-1',
+              competitionName: 'Premier League',
+              seasonLabel: '10/2026',
+              fixture: _waiting,
+              resultHomeGoals: ++_dashboardReads > 1 ? 2 : null,
+              resultAwayGoals: _dashboardReads > 1 ? 1 : null,
+            ),
+          ],
         ),
       ],
       child: MaterialApp(

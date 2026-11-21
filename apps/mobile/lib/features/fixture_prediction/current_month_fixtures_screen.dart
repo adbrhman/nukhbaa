@@ -81,6 +81,10 @@ class _CurrentMonthFixturesScreenState
   /// stranding the user on an empty list they did not empty.
   bool _liveOnly = false;
 
+  /// Which leagues the player opened or closed on the day's list, by name
+  /// (script 301); a league he never touched follows the default.
+  final Map<String, bool> _leagueOpen = <String, bool>{};
+
   /// Re-evaluates every clock-derived state on the screen once a minute.
   ///
   /// Kickoff passing changes nothing in the feed, so nothing rebuilt the
@@ -358,37 +362,202 @@ class _CurrentMonthFixturesScreenState
                 ),
               );
             }
+            // NK301_01 script 301: the day's matches under one header per
+            // league, as the player picks: a header opens or closes its own.
+            final List<_LeagueGroup> groups = _LeagueGroup.of(dayItems);
+            // The player's own predictions, counted under each header (5/7).
+            final Set<String> predicted = <String>{
+              for (final FixturePredictionDto p
+                  in ref.watch(myFixturePredictionsProvider).value ??
+                      const <FixturePredictionDto>[])
+                p.fixtureId,
+            };
+            // One league, or the live filter: nothing to choose, all open.
+            final bool openByDefault = liveOnly || groups.length == 1;
+            bool isOpen(_LeagueGroup g) => _leagueOpen[g.name] ?? openByDefault;
+            final List<Object> rows = <Object>[
+              for (final _LeagueGroup g in groups) ...<Object>[
+                g,
+                if (isOpen(g)) ...g.items,
+              ],
+            ];
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView.builder(
                 key: const Key('currentMonthFixtures.list'),
                 physics: const AlwaysScrollableScrollPhysics(),
                 // script 132: list margin -- the FotMob card stands 16
-                // logical px from either edge (45px at 1080/2.75x, measured
-                // 2026-10-20), so the card takes its width too.
+                // logical px from either edge.
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
                   AppSpacing.xs,
                   AppSpacing.lg,
                   AppSpacing.sm,
                 ),
-                itemCount: dayItems.length,
-                itemBuilder: (context, index) => RepaintBoundary(
-                  // A card's State holds the scoreline being typed, and a
-                  // ListView recycles State by POSITION. With no key, the day
-                  // strip could hand tomorrow's fixture to the State that was
-                  // drawing today's -- so the card showed a scoreline that
-                  // belonged to a different match, and that of course had
-                  // never been saved for the one on screen. Keying by fixture
-                  // id ties each State to its own fixture for its whole life.
-                  child: FotmobMatchCard(
-                    key: ValueKey<String>(dayItems[index].fixture.fixtureId),
-                    item: dayItems[index],
-                  ),
-                ),
+                itemCount: rows.length,
+                itemBuilder: (context, index) {
+                  final Object row = rows[index];
+                  if (row is _LeagueGroup) {
+                    final bool open = isOpen(row);
+                    return _LeagueHeader(
+                      key: ValueKey<String>('league.${row.name}'),
+                      index: row.index,
+                      name: row.name,
+                      total: row.items.length,
+                      predicted: row.items
+                          .where((i) => predicted.contains(i.fixture.fixtureId))
+                          .length,
+                      open: open,
+                      onTap: () =>
+                          setState(() => _leagueOpen[row.name] = !open),
+                    );
+                  }
+                  final CurrentMonthFixtureItemDto item =
+                      row as CurrentMonthFixtureItemDto;
+                  return RepaintBoundary(
+                    key: ValueKey<String>('card.${item.fixture.fixtureId}'),
+                    // A card's State holds the scoreline being typed: keyed
+                    // by fixture id, it stays tied to its own fixture.
+                    child: FotmobMatchCard(
+                      key: ValueKey<String>(item.fixture.fixtureId),
+                      item: item,
+                    ),
+                  );
+                },
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// One league's matches of the day, in kickoff order (script 301).
+class _LeagueGroup {
+  _LeagueGroup(this.index, this.name);
+
+  /// Its place on the day's list, from 0.
+  final int index;
+
+  /// The league's name (the competition's when the fixture names none).
+  final String name;
+
+  /// Its matches, earliest first.
+  final List<CurrentMonthFixtureItemDto> items = <CurrentMonthFixtureItemDto>[];
+
+  /// [dayItems] (already in kickoff order) by league, each league placed
+  /// where its first match falls.
+  static List<_LeagueGroup> of(List<CurrentMonthFixtureItemDto> dayItems) {
+    final Map<String, _LeagueGroup> byName = <String, _LeagueGroup>{};
+    for (final CurrentMonthFixtureItemDto item in dayItems) {
+      final String? league = item.fixture.leagueName?.trim();
+      final String name = league == null || league.isEmpty
+          ? item.competitionName
+          : league;
+      byName
+          .putIfAbsent(name, () => _LeagueGroup(byName.length, name))
+          .items
+          .add(item);
+    }
+    return byName.values.toList(growable: false);
+  }
+}
+
+/// A league's header on the day's list (script 301): its name, how many
+/// of its matches the player predicted, and an arrow that opens or closes
+/// its matches.
+class _LeagueHeader extends StatelessWidget {
+  const _LeagueHeader({
+    super.key,
+    required this.index,
+    required this.name,
+    required this.total,
+    required this.predicted,
+    required this.open,
+    required this.onTap,
+  });
+
+  final int index;
+  final String name;
+  final int total;
+  final int predicted;
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final bool any = predicted > 0;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+      child: Material(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: Key('currentMonthFixtures.league.$index'),
+          onTap: onTap,
+          child: Semantics(
+            button: true,
+            expanded: open,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.emoji_events_outlined,
+                      size: 20,
+                      color: t.textMuted,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        name,
+                        key: Key('currentMonthFixtures.league.$index.name'),
+                        style: context.text.titleSmall?.copyWith(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: any ? t.success : t.surfaceHigh,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        any ? '$predicted/$total' : '$total',
+                        key: Key('currentMonthFixtures.league.$index.count'),
+                        textDirection: TextDirection.ltr,
+                        style: context.text.labelLarge?.copyWith(
+                          color: any ? t.onSuccess : t.textSecondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      open
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: t.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -14,7 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/admin/admin_providers.dart';
+import 'package:mobile/features/fixture_prediction/current_month_fixtures_providers.dart';
 import 'package:mobile/features/admin/screens/sections/results_scoring_section.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -84,18 +84,13 @@ void main() {
       ProviderScope(
         overrides: [
           ...harness.overrides,
-          adminDashboardProvider.overrideWith(
-            (ref) async => AdminDashboardSnapshot(
-              stats: const UserStatsDto(total: 0, active: 0, suspended: 0),
-              auditLog: const AuditLogDto(entries: <AuditEntryDto>[]),
-              competitions: const <CompetitionDto>[],
-              currentMonthFixtures: <CurrentMonthFixtureItemDto>[
-                _live('f-paris', 'باريس إف سي'),
-                _live('f-gone', 'لوهافر'),
-                // A recorded result is no longer corrected here.
-                _live('f-done', 'لوريان', resultHome: 1),
-              ],
-            ),
+          currentMonthFixturesProvider.overrideWith(
+            (ref) async => <CurrentMonthFixtureItemDto>[
+              _live('f-paris', 'باريس إف سي'),
+              _live('f-gone', 'لوهافر'),
+              // A recorded result is no longer corrected here.
+              _live('f-done', 'لوريان', resultHome: 1),
+            ],
           ),
         ],
         child: MaterialApp(

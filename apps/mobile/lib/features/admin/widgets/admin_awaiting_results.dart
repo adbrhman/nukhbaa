@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_tokens.dart';
 import '../../../core/format/timestamps.dart';
-import '../admin_providers.dart';
+import '../../fixture_prediction/current_month_fixtures_providers.dart';
 import '../screens/sections/admin_home_section.dart';
 import 'admin_ui_kit.dart';
 
@@ -27,13 +27,14 @@ class AdminAwaitingResults extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.tokens;
+    // NK301_02 the players' own read of the month (script 301), shared
+    // with the matches tab: the panel's dashboard read three more things
+    // (the user count, the audit log, the competitions) to show this.
     final List<CurrentMonthFixtureItemDto> items = switch (ref.watch(
-      adminDashboardProvider,
+      currentMonthFixturesProvider,
     )) {
-      AsyncData<AdminDashboardSnapshot>(:final value) => fixturesAwaitingResult(
-        value.currentMonthFixtures,
-        (now ?? DateTime.now)(),
-      ),
+      AsyncData<List<CurrentMonthFixtureItemDto>>(:final value) =>
+        fixturesAwaitingResult(value, (now ?? DateTime.now)()),
       _ => const <CurrentMonthFixtureItemDto>[],
     };
     if (items.isEmpty) return const SizedBox.shrink();
