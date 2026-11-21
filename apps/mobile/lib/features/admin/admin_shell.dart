@@ -201,12 +201,18 @@ class AdminTabbedSection extends StatelessWidget {
     required this.name,
     required this.tabs,
     this.scrollable = false,
+    this.columns,
   });
 
   // NK294_10
   /// Whether the tabs scroll sideways instead of sharing the width: the
   /// owners' page has six (script 294).
   final bool scrollable;
+
+  // NK299_04
+  /// Draws the tabs as a grid of this many to a row, every one in sight,
+  /// instead of a bar (the owners' page, script 299).
+  final int? columns;
 
   /// Keys the tab bar (`admin.<name>.tabs`) and each tab.
   final String name;
@@ -222,19 +228,26 @@ class AdminTabbedSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          TabBar(
-            key: Key('admin.$name.tabs'),
-            isScrollable: scrollable,
-            tabAlignment: scrollable ? TabAlignment.start : null,
-            labelColor: t.primaryText,
-            unselectedLabelColor: t.textSecondary,
-            indicatorColor: t.primary,
-            dividerColor: t.border,
-            tabs: <Widget>[
-              for (int i = 0; i < tabs.length; i++)
-                Tab(key: Key('admin.$name.tab.$i'), text: tabs[i].$1),
-            ],
-          ),
+          if (columns != null)
+            _AdminTabGrid(
+              name: name,
+              labels: <String>[for (final (String, Widget) tab in tabs) tab.$1],
+              columns: columns!,
+            )
+          else
+            TabBar(
+              key: Key('admin.$name.tabs'),
+              isScrollable: scrollable,
+              tabAlignment: scrollable ? TabAlignment.start : null,
+              labelColor: t.primaryText,
+              unselectedLabelColor: t.textSecondary,
+              indicatorColor: t.primary,
+              dividerColor: t.border,
+              tabs: <Widget>[
+                for (int i = 0; i < tabs.length; i++)
+                  Tab(key: Key('admin.$name.tab.$i'), text: tabs[i].$1),
+              ],
+            ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
             child: TabBarView(
@@ -244,6 +257,86 @@ class AdminTabbedSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The tabs of an [AdminTabbedSection] as a grid, [columns] to a row
+/// (script 299): a tap selects one, and the selected one is underlined.
+class _AdminTabGrid extends StatelessWidget {
+  const _AdminTabGrid({
+    required this.name,
+    required this.labels,
+    required this.columns,
+  });
+
+  final String name;
+  final List<String> labels;
+  final int columns;
+
+  @override
+  Widget build(BuildContext context) {
+    final TabController controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      key: Key('admin.$name.tabs'),
+      animation: controller,
+      builder: (BuildContext context, Widget? child) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (int start = 0; start < labels.length; start += columns)
+            // One height for the row, so the underlines line up when one
+            // label wraps at large text.
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (int i = start; i < start + columns; i++)
+                    Expanded(
+                      child: i < labels.length
+                          ? _cell(context, controller, i)
+                          : const SizedBox.shrink(),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell(BuildContext context, TabController controller, int i) {
+    final AppTokens t = context.tokens;
+    final bool selected = controller.index == i;
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        key: Key('admin.$name.tab.$i'),
+        onTap: () => controller.animateTo(i),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected ? t.primary : t.border,
+                width: selected ? 3 : 1,
+              ),
+            ),
+          ),
+          child: Text(
+            labels[i],
+            textAlign: TextAlign.center,
+            style: context.text.titleSmall?.copyWith(
+              color: selected ? t.primaryText : t.textSecondary,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -354,7 +447,8 @@ class OwnerGeneralSection extends ConsumerWidget {
     }
     return const AdminTabbedSection(
       name: 'owner',
-      scrollable: true,
+      // script 299: four to a row, every tab in sight.
+      columns: 4,
       tabs: <(String, Widget)>[
         // script 289: the owners' switches, first: the emergency stops.
         ('المفاتيح', OwnerSwitchesSection()),

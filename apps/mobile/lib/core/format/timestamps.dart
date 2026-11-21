@@ -15,57 +15,45 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' as intl;
 
-import '../time/riyadh_day_turnover.dart';
+import '../time/riyadh_clock.dart';
 
-/// Date + time of day, e.g. `6 Sep 2026, 5:29 AM` in the viewer's zone.
+// NK299_06 owner decision 2026-11-21 (script 299): every time in the app
+// is Riyadh's, on the 24-hour clock, whatever the phone's zone.
+
+/// Date + time of day on Riyadh's clock, e.g. `6 Sep 2026 08:29`.
 String formatTimestamp(BuildContext context, String isoTimestamp) {
   final DateTime? parsed = DateTime.tryParse(isoTimestamp);
   if (parsed == null) return isoTimestamp;
   final String locale = Localizations.localeOf(context).toString();
-  return intl.DateFormat.yMMMd(locale).add_jm().format(parsed.toLocal());
+  return intl.DateFormat.yMMMd(
+    locale,
+  ).add_Hm().format(RiyadhClock.wallOf(parsed));
 }
 
-/// Time of day only -- for lists where the date is already implied.
+/// Time of day only (`21:30`), on Riyadh's clock -- for lists where the
+/// date is already implied.
 String formatTimeOfDay(BuildContext context, String isoTimestamp) {
   final DateTime? parsed = DateTime.tryParse(isoTimestamp);
   if (parsed == null) return isoTimestamp;
   final String locale = Localizations.localeOf(context).toString();
-  return intl.DateFormat.jm(locale).format(parsed.toLocal());
+  return intl.DateFormat.Hm(locale).format(RiyadhClock.wallOf(parsed));
 }
 
-/// Time of day of a kickoff, for a list already filed under the kickoff's
-/// Riyadh day (the matches tab, the home highlights, the admin's day).
-///
-/// The time is the viewer's own clock -- the one the prediction lock is
-/// read against, so a player never misses a kickoff by an hour. When the
-/// viewer's date is not that Riyadh day (23:30 Riyadh is 00:30 the next day
-/// in the Emirates; 00:30 Riyadh is 22:30 the day before in Egypt), the
-/// viewer's weekday follows: `00:30 (الخميس)`. At UTC+3 the two dates
-/// always agree, so nothing is added.
-String formatKickoffTime(BuildContext context, String isoTimestamp) {
-  final DateTime? parsed = DateTime.tryParse(isoTimestamp);
-  if (parsed == null) return isoTimestamp;
-  final String locale = Localizations.localeOf(context).toString();
-  final DateTime local = parsed.toLocal();
-  final String time = intl.DateFormat.jm(locale).format(local);
-  final DateTime day = RiyadhDayTurnover.dayKeyOf(parsed);
-  if (local.year == day.year &&
-      local.month == day.month &&
-      local.day == day.day) {
-    return time;
-  }
-  return '$time (${intl.DateFormat.EEEE(locale).format(local)})';
-}
+/// Time of day of a kickoff (`00:30`), for a list already filed under the
+/// kickoff's Riyadh day (the matches tab, the home highlights, the admin's
+/// day). The time is Riyadh's too, so it always falls on that day and no
+/// weekday is added (the viewer's weekday followed it until script 299).
+String formatKickoffTime(BuildContext context, String isoTimestamp) =>
+    formatTimeOfDay(context, isoTimestamp);
 
-/// Day + time of day without the year, e.g. `10 Sep · 10:00 PM` in the
-/// viewer's zone -- for cards inside the current month, where the year is
-/// implied. Same parse/convert/locale idiom as [formatTimestamp].
+/// Day + time of day without the year, e.g. `10 Sep · 22:00` on Riyadh's
+/// clock -- for cards inside the current month, where the year is implied.
 String formatDayAndTime(BuildContext context, String isoTimestamp) {
   final DateTime? parsed = DateTime.tryParse(isoTimestamp);
   if (parsed == null) return isoTimestamp;
   final String locale = Localizations.localeOf(context).toString();
-  final DateTime local = parsed.toLocal();
-  final String day = intl.DateFormat.MMMd(locale).format(local);
-  final String time = intl.DateFormat.jm(locale).format(local);
+  final DateTime wall = RiyadhClock.wallOf(parsed);
+  final String day = intl.DateFormat.MMMd(locale).format(wall);
+  final String time = intl.DateFormat.Hm(locale).format(wall);
   return '$day · $time';
 }

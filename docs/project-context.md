@@ -9416,6 +9416,35 @@ the tree at script 297; no code, no migration.
   220 and 222 to 248 have no record in `docs/`; the 2026-11-01 review and
   the NUKHBA-xxx audit use their own ids; and the whole open list.
 
+### Results page, owner tabs, the 24-hour Riyadh clock (script 299, 2026-11-21)
+
+- **owner decision 2026-11-21**: every time in the app is Riyadh's, on the
+  24-hour clock. Reason: one clock for every player and admin.
+  `core/format/timestamps.dart` (`formatTimestamp`, `formatTimeOfDay`,
+  `formatKickoffTime`, `formatDayAndTime`) reads `RiyadhClock.wallOf` with
+  `Hm`; the weekday `formatKickoffTime` added for a viewer outside UTC+3 is
+  gone (the time and its day are both Riyadh's now). The admin's own date
+  lines (counted matches, matches list, merge dialog, fixture picker, error
+  log, shared phones, new players), the notifications and the badges read
+  Riyadh's clock too; `app.dart` sets `alwaysUse24HourFormat` for every time
+  picker. A viewer outside UTC+3 now reads Riyadh's time, not his phone's.
+  The server's texts were already Riyadh 24-hour.
+- **النتائج والاحتساب**: a settled match stayed under «بانتظار النتيجة»: the
+  list reads `adminDashboardProvider`'s own copy of the month, which
+  recording a result never refreshed. `RecordFixtureResultController` now
+  invalidates it. The half-black page: the keyboard is closed (`unfocus`)
+  before the confirmation and when a waiting match is picked. Probable
+  cause, not reproduced off the device: the field was focused again behind
+  the dialog, then disabled by the run, and the page stayed laid out for a
+  keyboard that had closed.
+- **«الإدارة العامة للمالك»**: `AdminTabbedSection(columns: 4)` draws its
+  tabs as a grid, four to a row, every one in sight, instead of a bar that
+  scrolled sideways.
+- **Tests**: `kickoff_time_test` rewritten (zone-free); the card's kickoff
+  label is `00:30` (`fotmob_match_card_weekday_test`); the waiting list
+  empties after a settle (`results_settle_flow_test`); the owner's grid at
+  360px and text x2 (`owner_switches_section_test`).
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

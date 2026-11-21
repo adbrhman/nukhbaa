@@ -42,7 +42,8 @@ String sharedDeviceAccounts(int count) {
 }
 
 String _day(DateTime when) {
-  final DateTime local = when.toLocal();
+  // NK299_13 Riyadh's day (script 299).
+  final DateTime local = when.toUtc().add(const Duration(hours: 3));
   String two(int n) => n < 10 ? '0$n' : '$n';
   return '${local.year}/${two(local.month)}/${two(local.day)}';
 }

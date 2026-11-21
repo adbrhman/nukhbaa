@@ -182,7 +182,8 @@ class _BadgeTile extends StatelessWidget {
     final String? unlockedAt = badge.unlockedAt;
     final DateTime? granted = unlockedAt == null
         ? null
-        : DateTime.tryParse(unlockedAt)?.toLocal();
+        // NK299_18 Riyadh's day (script 299).
+        : DateTime.tryParse(unlockedAt)?.toUtc().add(const Duration(hours: 3));
     final bool isHeld = unlockedAt != null;
     final Color accent = isHeld ? t.gold : t.textMuted;
     final int target = badge.target <= 0 ? 1 : badge.target;

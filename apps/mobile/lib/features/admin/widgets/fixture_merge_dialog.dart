@@ -168,12 +168,15 @@ class _FixtureMergeDialogState extends ConsumerState<FixtureMergeDialog> {
   }
 
   String _copyLine(FixtureCopyDto copy) {
-    final DateTime? kickoff = DateTime.tryParse(copy.kickoffAt)?.toLocal();
+    // NK299_15 Riyadh's 24-hour clock (script 299).
+    final DateTime? kickoff = DateTime.tryParse(
+      copy.kickoffAt,
+    )?.toUtc().add(const Duration(hours: 3));
     final String locale = Localizations.localeOf(context).toString();
     return <String>[
       if (kickoff != null)
         '${intl.DateFormat('d MMMM', locale).format(kickoff)} - '
-            '${intl.DateFormat.jm(locale).format(kickoff)}',
+            '${intl.DateFormat.Hm(locale).format(kickoff)}',
       '${copy.predictions} توقّع',
       if (copy.hasResult) 'لها نتيجة',
       if (copy.hidden) 'مخفية',

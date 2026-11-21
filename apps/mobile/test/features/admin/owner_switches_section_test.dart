@@ -203,6 +203,37 @@ void main() {
     );
   });
 
+  // NK299_19
+  testWidgets('the owner page shows every tab, four to a row, at text x2', (
+    tester,
+  ) async {
+    await _open(tester, _Server(), const OwnerGeneralSection(), textScale: 2);
+
+    expect(tester.takeException(), isNull);
+    for (final String label in <String>[
+      'المفاتيح',
+      'الإعلانات',
+      'المشرفون',
+      'الشعارات',
+      'المخفيون',
+      'الأشخاص',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    final double row1 = tester
+        .getCenter(find.byKey(const Key('admin.owner.tab.0')))
+        .dy;
+    expect(
+      tester.getCenter(find.byKey(const Key('admin.owner.tab.3'))).dy,
+      row1,
+    );
+    expect(
+      tester.getCenter(find.byKey(const Key('admin.owner.tab.4'))).dy,
+      greaterThan(row1),
+    );
+    expect(find.byType(TabBar), findsNothing);
+  });
+
   testWidgets('fits a 360px phone at text x2', (tester) async {
     final server = _Server(reason: 'مراجعة نقاط الشهر قبل التتويج', by: 'other')
       ..on = false;

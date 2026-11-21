@@ -53,7 +53,8 @@ String realNameRequest(String name) =>
     'منتحَل. أرسل لنا هنا اسمك الأول واسم عائلتك لنعدّله لك.';
 
 String _when(DateTime at) {
-  final DateTime local = at.toLocal();
+  // NK299_14 Riyadh's 24-hour clock (script 299).
+  final DateTime local = at.toUtc().add(const Duration(hours: 3));
   String two(int n) => n < 10 ? '0$n' : '$n';
   return '${local.year}/${two(local.month)}/${two(local.day)} '
       '${two(local.hour)}:${two(local.minute)}';

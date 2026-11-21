@@ -48,7 +48,9 @@ class NukhbaApp extends ConsumerWidget {
         return ClubCrestScope(
           crests: crests,
           child: MediaQuery(
-            data: mq.copyWith(textScaler: capped),
+            // NK299_05 owner decision 2026-11-21: the 24-hour clock
+            // everywhere, the time pickers included.
+            data: mq.copyWith(textScaler: capped, alwaysUse24HourFormat: true),
             child: child ?? const SizedBox.shrink(),
           ),
         );

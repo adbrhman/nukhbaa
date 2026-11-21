@@ -138,9 +138,9 @@ abstract final class ErrorLogLabels {
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
-/// A time as the admin reads it: local, `2026-10-03 14:05`.
+/// A time as the admin reads it: Riyadh's, `2026-10-03 14:05` (NK299_12).
 String errorLogTime(DateTime at) {
-  final DateTime t = at.toLocal();
+  final DateTime t = at.toUtc().add(const Duration(hours: 3));
   return '${t.year}-${_two(t.month)}-${_two(t.day)} '
       '${_two(t.hour)}:${_two(t.minute)}';
 }

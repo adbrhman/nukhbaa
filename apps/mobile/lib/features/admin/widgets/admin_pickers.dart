@@ -417,7 +417,8 @@ class SeasonFixturePickerField extends ConsumerWidget {
           'EEEE d MMMM',
           locale,
         );
-        final intl.DateFormat timeFormat = intl.DateFormat.jm(locale);
+        // NK299_16 Riyadh's 24-hour clock (script 299).
+        final intl.DateFormat timeFormat = intl.DateFormat.Hm(locale);
         final List<DropdownMenuItem<String>> items =
             <DropdownMenuItem<String>>[];
         String? currentDay;
@@ -475,13 +476,13 @@ class SeasonFixturePickerField extends ConsumerWidget {
     );
   }
 
-  /// Local kickoff, or null when the schedule carries none.
+  /// The kickoff on Riyadh's clock, or null when the schedule carries none.
   static DateTime? _kickoffLocal(SeasonFixtureCardDto fixture) {
     final String? raw = fixture.kickoffAt;
     if (raw == null) {
       return null;
     }
-    return DateTime.tryParse(raw)?.toLocal();
+    return DateTime.tryParse(raw)?.toUtc().add(const Duration(hours: 3));
   }
 
   /// Sort key; a fixture with no kickoff sorts to the bottom.

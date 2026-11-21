@@ -145,6 +145,10 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
   /// converges: it records the same score again and carries on from there.
   Future<void> _settleResult() async {
     if (_settling) return;
+    // NK299_02 the keyboard closes before the confirmation: focused again
+    // behind the dialog, then disabled by the run, it left the page laid
+    // out for a keyboard that was gone (the half-black page).
+    FocusManager.instance.primaryFocus?.unfocus();
     final f = _fixtureId;
     final s = _resultSeasonId;
     final h = int.tryParse(_homeGoals.text.trim());
@@ -251,6 +255,7 @@ class _ResultsScoringSectionState extends ConsumerState<ResultsScoringSection> {
         const AdminLiveScoreCorrections(),
         AdminAwaitingResults(
           onPick: (CurrentMonthFixtureItemDto item) => setState(() {
+            FocusManager.instance.primaryFocus?.unfocus();
             _resultCompetitionId = item.competitionId;
             _resultSeasonId = item.fixture.seasonId;
             _fixtureId = item.fixture.fixtureId;

@@ -1,20 +1,19 @@
-/// A kickoff's time is the viewer's own clock, and the viewer's weekday
-/// follows it only when the viewer's date is not the Riyadh day the match
-/// is filed under.
-///
-/// Both cases are driven whatever the device zone: 00:30 Riyadh falls on
-/// the day before west of Riyadh, 23:30 Riyadh on the day after east of it.
-/// `50_kickoff_time.sh` also runs this under TZ=UTC, where the first one
-/// must carry its weekday.
+/// Every time in the app is Riyadh's, on the 24-hour clock, whatever the
+/// device's zone (owner decision 2026-11-21, script 299). A kickoff's time
+/// carries no weekday any more: it always falls on the Riyadh day it is
+/// filed under.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart' as intl;
 import 'package:mobile/core/format/timestamps.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
-Future<String> _shown(WidgetTester tester, DateTime kickoffUtc) async {
+// NK299_07
+Future<String> _shown(
+  WidgetTester tester,
+  String Function(BuildContext context) format,
+) async {
   late String out;
   await tester.pumpWidget(
     MaterialApp(
@@ -23,7 +22,7 @@ Future<String> _shown(WidgetTester tester, DateTime kickoffUtc) async {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: Builder(
         builder: (BuildContext context) {
-          out = formatKickoffTime(context, kickoffUtc.toIso8601String());
+          out = format(context);
           return const SizedBox();
         },
       ),
@@ -32,50 +31,32 @@ Future<String> _shown(WidgetTester tester, DateTime kickoffUtc) async {
   return out;
 }
 
-String _expected(DateTime kickoffUtc, int riyadhDay) {
-  final DateTime local = kickoffUtc.toLocal();
-  final String time = intl.DateFormat.jm('en').format(local);
-  final bool sameDate =
-      local.year == 2026 && local.month == 10 && local.day == riyadhDay;
-  return sameDate
-      ? time
-      : '$time (${intl.DateFormat.EEEE('en').format(local)})';
-}
-
 void main() {
-  testWidgets('the weekday follows only when the dates differ', (tester) async {
-    // 00:30 Riyadh on Thursday 15 October 2026.
-    final DateTime earlyThursday = DateTime.utc(2026, 10, 14, 21, 30);
-    // 23:30 Riyadh on Wednesday 14 October 2026.
-    final DateTime lateWednesday = DateTime.utc(2026, 10, 14, 20, 30);
+  testWidgets('a kickoff reads on Riyadh 24-hour clock', (tester) async {
+    // 00:30 Riyadh on Thursday 15 October 2026, and 23:05 the day before.
+    final String early = DateTime.utc(2026, 10, 14, 21, 30).toIso8601String();
+    final String late = DateTime.utc(2026, 10, 14, 20, 5).toIso8601String();
 
-    expect(await _shown(tester, earlyThursday), _expected(earlyThursday, 15));
-    expect(await _shown(tester, lateWednesday), _expected(lateWednesday, 14));
+    expect(await _shown(tester, (c) => formatKickoffTime(c, early)), '00:30');
+    expect(await _shown(tester, (c) => formatKickoffTime(c, late)), '23:05');
+    expect(await _shown(tester, (c) => formatTimeOfDay(c, late)), '23:05');
+  });
 
-    // Spelled out for the two zones the script runs this in (the clock
-    // text itself is left to intl: its AM/PM spacing is CLDR's).
-    if (DateTime.now().timeZoneOffset == Duration.zero) {
-      expect(await _shown(tester, earlyThursday), endsWith(' (Wednesday)'));
-      expect(await _shown(tester, lateWednesday), isNot(contains('(')));
-    }
-    if (DateTime.now().timeZoneOffset == const Duration(hours: 3)) {
-      expect(await _shown(tester, earlyThursday), isNot(contains('(')));
-      expect(await _shown(tester, lateWednesday), isNot(contains('(')));
-    }
+  testWidgets('a date and time carry the 24-hour Riyadh time', (tester) async {
+    final String at = DateTime.utc(2026, 11, 17, 19).toIso8601String();
+
+    final String stamp = await _shown(tester, (c) => formatTimestamp(c, at));
+    expect(stamp, endsWith('22:00'));
+    expect(stamp, contains('17'));
+    expect(stamp, isNot(contains('PM')));
+    final String day = await _shown(tester, (c) => formatDayAndTime(c, at));
+    expect(day, endsWith('22:00'));
   });
 
   testWidgets('an unreadable time is shown as it came', (tester) async {
-    late String out;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (BuildContext context) {
-            out = formatKickoffTime(context, 'not a time');
-            return const SizedBox();
-          },
-        ),
-      ),
+    expect(
+      await _shown(tester, (c) => formatKickoffTime(c, 'not a time')),
+      'not a time',
     );
-    expect(out, 'not a time');
   });
 }

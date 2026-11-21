@@ -379,7 +379,8 @@ class _NotificationRow extends ConsumerWidget {
     if (parsed == null) {
       return iso;
     }
-    final DateTime local = parsed.toLocal();
+    // NK299_17 Riyadh's 24-hour clock (script 299).
+    final DateTime local = parsed.toUtc().add(const Duration(hours: 3));
     String two(int value) => value.toString().padLeft(2, '0');
     return '${local.year}/${two(local.month)}/${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';

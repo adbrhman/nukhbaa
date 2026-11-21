@@ -97,7 +97,12 @@ Future<void> _tap(WidgetTester tester, String key) async {
 
 /// Pumps the section over a harness whose handler is [handler]; the picked
 /// match, 2-1, is typed in and ready for the button.
+// NK299_09 how many times the dashboard was read: from the second read
+// on, the match has its result, as the server would answer.
+int _dashboardReads = 0;
+
 Future<void> _pumpReady(WidgetTester tester, AdminHarness harness) async {
+  _dashboardReads = 0;
   tester.view.physicalSize = const Size(900, 3000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -118,6 +123,8 @@ Future<void> _pumpReady(WidgetTester tester, AdminHarness harness) async {
                 competitionName: 'Premier League',
                 seasonLabel: '10/2026',
                 fixture: _waiting,
+                resultHomeGoals: ++_dashboardReads > 1 ? 2 : null,
+                resultAwayGoals: _dashboardReads > 1 ? 1 : null,
               ),
             ],
           ),
@@ -204,6 +211,9 @@ void main() {
     // The players' report is on screen: the exact scoreline's grade label.
     expect(find.text('نتيجة مطابقة'), findsOneWidget);
     expect(find.byKey(const Key('admin.results.resume')), findsNothing);
+    // The settled match leaves «بانتظار النتيجة» (script 299).
+    expect(_dashboardReads, greaterThan(1));
+    expect(find.byKey(const Key('admin.results.awaiting')), findsNothing);
   });
 
   testWidgets('a step that fails after the result is saved is named, and the '

@@ -156,7 +156,10 @@ class AdminCountedFixturesSection extends ConsumerWidget {
 }
 
 String _formatKickoff(String? raw) {
-  final date = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+  // NK299_10 Riyadh's clock (script 299).
+  final date = raw == null
+      ? null
+      : DateTime.tryParse(raw)?.toUtc().add(const Duration(hours: 3));
   if (date == null) return '—';
   final hour = date.hour.toString().padLeft(2, '0');
   final minute = date.minute.toString().padLeft(2, '0');

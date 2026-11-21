@@ -1,18 +1,16 @@
-/// A viewer whose date is not Riyadh's reads the weekday after the kickoff
-/// time ("11:30 م (الأحد)", `formatKickoffTime`). That longer label
-/// overflowed the card's header at 320px and at large text, and every test
-/// that drew a card failed between 21:00 and 24:00 UTC (CI, 2026-10-10).
+/// A kickoff reads on Riyadh's 24-hour clock (script 299); until then a
+/// viewer whose date was not Riyadh's read the weekday after the time, and
+/// that longer label overflowed the card's header at 320px and at large
+/// text (CI, 2026-10-10). The label still has to fit at those sizes.
 ///
-/// The kickoff here is 21:30 UTC, 00:30 Riyadh the next day, so the label
-/// is the long one wherever the device's date differs from Riyadh's then:
-/// in CI (UTC) always. On a phone set to Riyadh time the two dates agree
-/// and the test is skipped; the batch scripts run this file with TZ=UTC.
+/// The kickoff here is 21:30 UTC, 00:30 Riyadh the next day.
 library;
 
 import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/fixture_prediction/current_month_fixtures_screen.dart';
 import 'package:mobile/l10n/app_localizations.dart';
@@ -24,13 +22,6 @@ final DateTime _kickoff = () {
   final DateTime day = DateTime.now().toUtc().add(const Duration(days: 365));
   return DateTime.utc(day.year, day.month, day.day, 21, 30);
 }();
-
-/// Whether this device shows the long label for [_kickoff].
-bool get _longLabel {
-  final DateTime local = _kickoff.toLocal();
-  final DateTime riyadh = _kickoff.add(const Duration(hours: 3));
-  return local.day != riyadh.day;
-}
 
 final CurrentMonthFixtureItemDto _lateItem = CurrentMonthFixtureItemDto(
   competitionId: sampleFeedItem.competitionId,
@@ -106,7 +97,11 @@ void main() {
       final Text label = tester.widget<Text>(
         find.byKey(const Key('matchCard.kickoff')),
       );
-      expect(label.data, matches(RegExp(r'\(.+\)')));
-    }, skip: !_longLabel);
+      // NK299_08 Riyadh's time, whatever the device's zone.
+      expect(
+        label.data,
+        intl.DateFormat.Hm('ar').format(DateTime(2000, 1, 1, 0, 30)),
+      );
+    });
   }
 }

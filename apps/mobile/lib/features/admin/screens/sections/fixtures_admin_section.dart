@@ -655,13 +655,14 @@ class _FixtureRow extends StatelessWidget {
   String _kickoffLine(BuildContext context) {
     final DateTime? kickoff = DateTime.tryParse(
       fixture.kickoffAt ?? '',
-    )?.toLocal();
+    )?.toUtc().add(const Duration(hours: 3));
+    // NK299_11 Riyadh's 24-hour clock (script 299).
     final String? league = fixture.leagueName;
     if (kickoff == null) return league ?? '';
     final String locale = Localizations.localeOf(context).toString();
     final String when =
         '${intl.DateFormat('EEEE d MMMM', locale).format(kickoff)} - '
-        '${intl.DateFormat.jm(locale).format(kickoff)}';
+        '${intl.DateFormat.Hm(locale).format(kickoff)}';
     return league == null ? when : '$when · $league';
   }
 

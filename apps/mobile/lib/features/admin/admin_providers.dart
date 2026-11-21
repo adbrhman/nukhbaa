@@ -655,6 +655,9 @@ class RecordFixtureResultController extends _$RecordFixtureResultController {
     if (state is AsyncData<FixtureResultDto>) {
       ref.invalidate(currentMonthFixturesProvider);
       ref.invalidate(seasonFixturesProvider(seasonId));
+      // NK299_01 «بانتظار النتيجة» reads the dashboard's own copy of the
+      // month: without this a settled match stayed on that list.
+      ref.invalidate(adminDashboardProvider);
     }
   }
 }
