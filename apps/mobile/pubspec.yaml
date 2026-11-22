@@ -153,6 +153,7 @@ flutter:
     # leagues' logos are their owners' marks and never ship in the app.
     - assets/flags/
     - assets/branding/nukhbaa_logo.png
+    - assets/branding/nukhbaa_wordmark.png
   generate: true
   fonts:
     - family: IBMPlexSansArabic

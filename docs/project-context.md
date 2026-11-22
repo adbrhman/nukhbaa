@@ -9485,6 +9485,24 @@ the tree at script 297; no code, no migration.
   user count over every account, the audit log and the competitions).
   Recording a result already refreshed that read.
 
+### The wordmark on the matches tab, and «الكل» (script 302, 2026-11-22)
+
+- **Header** (owner decision 2026-11-22: the brand in place of the word
+  «المباريات»; of his two drafts, the one whose N stays readable at 26 px):
+  the matches tab draws `assets/branding/nukhbaa_wordmark.png` (a white
+  mask on transparency, 505x84) through a `ShaderMask`: the mark in the
+  logo's blue `kBrandMarkBlue` (4.1:1 on both themes' page, over the 3:1
+  of a graphic), the letters in `textPrimary` (white dark, ink light). It
+  is one header node read «المباريات», and scales down at large text.
+  UI-20 (one header shape, name at the start) still holds; the other tabs
+  keep their names.
+- **«الكل»** above the leagues (several leagues, not the live filter): the
+  day's predictions out of its matches, and an arrow; a tap opens every
+  league, and closes them all once every one is open. Reuses
+  `historyFilterAll`; no new text.
+- Tests: `current_month_fixtures_leagues_test.dart` (the real matches
+  screen). No server change, no migration, no new dependency.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

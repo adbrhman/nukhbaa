@@ -50,6 +50,7 @@ import '../../core/error/error_presenter.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/app_skeleton.dart';
 import '../../core/ui/app_tab_header.dart';
+import '../../core/ui/brand_mark.dart';
 import '../../l10n/app_localizations.dart';
 import '../history/my_fixture_scores_providers.dart';
 import '../history/prediction_history_providers.dart';
@@ -282,12 +283,37 @@ class _CurrentMonthFixturesScreenState
 
     return Scaffold(
       backgroundColor: tokens.background,
-      // The tab's name at the start, like every tab; the wordmark stays on
-      // home alone (UI-20).
+      // NK302_01 script 302 (owner decision 2026-11-22): the wordmark in
+      // place of the tab's name, read by screen readers as the name.
       appBar: AppTabHeader(
-        title: Text(
-          l10n.matchesTitle,
+        title: Semantics(
           key: const Key('currentMonthFixtures.title'),
+          header: true,
+          label: l10n.matchesTitle,
+          excludeSemantics: true,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: ShaderMask(
+              // The mark in the logo's blue, the letters in the theme's
+              // text colour (white on dark, ink on light).
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (Rect bounds) => LinearGradient(
+                colors: <Color>[
+                  kBrandMarkBlue,
+                  kBrandMarkBlue,
+                  tokens.textPrimary,
+                  tokens.textPrimary,
+                ],
+                stops: const <double>[0, _markShare, _markShare, 1],
+              ).createShader(bounds),
+              child: Image.asset(
+                'assets/branding/nukhbaa_wordmark.png',
+                key: const Key('currentMonthFixtures.wordmark'),
+                height: 26,
+              ),
+            ),
+          ),
         ),
         actions: <Widget>[
           LiveMatchesChip(
@@ -375,7 +401,11 @@ class _CurrentMonthFixturesScreenState
             // One league, or the live filter: nothing to choose, all open.
             final bool openByDefault = liveOnly || groups.length == 1;
             bool isOpen(_LeagueGroup g) => _leagueOpen[g.name] ?? openByDefault;
+            // NK302_02 script 302: «الكل» opens every league at once,
+            // and closes them all once every one is open.
+            final bool allOpen = groups.every(isOpen);
             final List<Object> rows = <Object>[
+              if (!liveOnly && groups.length > 1) const _AllLeagues(),
               for (final _LeagueGroup g in groups) ...<Object>[
                 g,
                 if (isOpen(g)) ...g.items,
@@ -397,11 +427,29 @@ class _CurrentMonthFixturesScreenState
                 itemCount: rows.length,
                 itemBuilder: (context, index) {
                   final Object row = rows[index];
+                  if (row is _AllLeagues) {
+                    return _LeagueHeader(
+                      key: const ValueKey<String>('leagues.all'),
+                      id: 'leagues.all',
+                      icon: Icons.view_agenda_outlined,
+                      name: l10n.historyFilterAll,
+                      total: dayItems.length,
+                      predicted: dayItems
+                          .where((i) => predicted.contains(i.fixture.fixtureId))
+                          .length,
+                      open: allOpen,
+                      onTap: () => setState(() {
+                        for (final _LeagueGroup g in groups) {
+                          _leagueOpen[g.name] = !allOpen;
+                        }
+                      }),
+                    );
+                  }
                   if (row is _LeagueGroup) {
                     final bool open = isOpen(row);
                     return _LeagueHeader(
                       key: ValueKey<String>('league.${row.name}'),
-                      index: row.index,
+                      id: 'league.${row.index}',
                       name: row.name,
                       total: row.items.length,
                       predicted: row.items
@@ -431,6 +479,14 @@ class _CurrentMonthFixturesScreenState
       ),
     );
   }
+}
+
+/// The mark's share of the wordmark's width, from the left (script 302).
+const double _markShare = 0.313;
+
+/// The «الكل» row above the leagues (script 302).
+class _AllLeagues {
+  const _AllLeagues();
 }
 
 /// One league's matches of the day, in kickoff order (script 301).
@@ -470,7 +526,8 @@ class _LeagueGroup {
 class _LeagueHeader extends StatelessWidget {
   const _LeagueHeader({
     super.key,
-    required this.index,
+    required this.id,
+    this.icon = Icons.emoji_events_outlined,
     required this.name,
     required this.total,
     required this.predicted,
@@ -478,7 +535,9 @@ class _LeagueHeader extends StatelessWidget {
     required this.onTap,
   });
 
-  final int index;
+  /// Its keys' stem: league.<n>, or leagues.all.
+  final String id;
+  final IconData icon;
   final String name;
   final int total;
   final int predicted;
@@ -496,7 +555,7 @@ class _LeagueHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          key: Key('currentMonthFixtures.league.$index'),
+          key: Key('currentMonthFixtures.$id'),
           onTap: onTap,
           child: Semantics(
             button: true,
@@ -510,16 +569,12 @@ class _LeagueHeader extends StatelessWidget {
                 ),
                 child: Row(
                   children: <Widget>[
-                    Icon(
-                      Icons.emoji_events_outlined,
-                      size: 20,
-                      color: t.textMuted,
-                    ),
+                    Icon(icon, size: 20, color: t.textMuted),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         name,
-                        key: Key('currentMonthFixtures.league.$index.name'),
+                        key: Key('currentMonthFixtures.$id.name'),
                         style: context.text.titleSmall?.copyWith(
                           color: t.textPrimary,
                           fontWeight: FontWeight.w700,
@@ -538,7 +593,7 @@ class _LeagueHeader extends StatelessWidget {
                       ),
                       child: Text(
                         any ? '$predicted/$total' : '$total',
-                        key: Key('currentMonthFixtures.league.$index.count'),
+                        key: Key('currentMonthFixtures.$id.count'),
                         textDirection: TextDirection.ltr,
                         style: context.text.labelLarge?.copyWith(
                           color: any ? t.onSuccess : t.textSecondary,

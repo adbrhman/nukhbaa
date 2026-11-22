@@ -143,5 +143,87 @@ void main() {
     expect(find.byKey(const Key('currentMonthFixtures.league.0')), findsOne);
     expect(find.byKey(const ValueKey<String>('f-1')), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('f-2')), findsOneWidget);
+    expect(
+      find.byKey(const Key('currentMonthFixtures.leagues.all')),
+      findsNothing,
+    );
+  });
+
+  // NK302_03
+  testWidgets('«الكل» opens every league, then closes them all', (
+    tester,
+  ) async {
+    final String at = futureIso();
+    await _pump(
+      tester,
+      <CurrentMonthFixtureItemDto>[
+        _item('f-1', 'Premier League', at),
+        _item('f-2', 'Serie A', at),
+      ],
+      predicted: <String>['f-2'],
+    );
+    final Finder all = find.byKey(
+      const Key('currentMonthFixtures.leagues.all'),
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const Key('currentMonthFixtures.leagues.all.name')),
+          )
+          .data,
+      'الكل',
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const Key('currentMonthFixtures.leagues.all.count')),
+          )
+          .data,
+      '1/2',
+    );
+    expect(find.byKey(const ValueKey<String>('f-1')), findsNothing);
+
+    await tester.tap(all);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('f-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('f-2')), findsOneWidget);
+
+    // One closed by hand: «الكل» opens it again.
+    await tester.tap(find.byKey(const Key('currentMonthFixtures.league.1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('f-2')), findsNothing);
+    await tester.tap(all);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('f-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('f-2')), findsOneWidget);
+
+    await tester.tap(all);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('f-1')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('f-2')), findsNothing);
+  });
+
+  testWidgets('the header shows the wordmark, read as the tab name', (
+    tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    try {
+      await _pump(tester, <CurrentMonthFixtureItemDto>[
+        _item('f-1', 'Premier League', futureIso()),
+      ]);
+      expect(
+        find.byKey(const Key('currentMonthFixtures.wordmark')),
+        findsOneWidget,
+      );
+      expect(find.text('المباريات'), findsNothing);
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('currentMonthFixtures.title')))
+            .label,
+        contains('المباريات'),
+      );
+    } finally {
+      handle.dispose();
+    }
   });
 }
