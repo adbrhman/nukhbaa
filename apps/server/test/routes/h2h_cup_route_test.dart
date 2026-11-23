@@ -1,7 +1,7 @@
 /// `GET /me/h2h-cup` from the real entry point: the route handler, the real
 /// use-case and the real mapper over a scripted cup store. A qualifier
 /// reads his path, his pair and the day; a player outside the cup reads
-/// `not_qualified`; no prediction of anybody is on the wire.
+/// `spectator` with the first places' path; no prediction of anybody is on the wire.
 library;
 
 import 'dart:io';
@@ -135,7 +135,7 @@ void main() {
       expect(body.toString(), isNot(contains('prediction')));
     });
 
-    test('a player outside the cup is not qualified', () async {
+    test('a player outside the cup watches the first places path', () async {
       final response = await cup_route.onRequest(
         wireContext(
           root: _root(),
@@ -149,9 +149,12 @@ void main() {
 
       expect(response.statusCode, HttpStatus.ok);
       final body = await decodeBody(response);
-      expect(body['state'], 'not_qualified');
-      expect(_list(body['stages']), isEmpty);
-      expect(_list(body['entrants']), isEmpty);
+      expect(body['state'], 'spectator');
+      expect(body['place'], 1);
+      expect(body['group_number'], 0);
+      expect(_list(body['entrants']), hasLength(4));
+      expect(_list(body['stages']), isNotEmpty);
+      expect(_list(body['entrants']).any((p) => p['is_me'] == true), isFalse);
     });
 
     test('a POST is 405', () async {

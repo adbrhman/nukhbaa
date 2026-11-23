@@ -212,19 +212,88 @@ void main() {
       expect(cup.stages.last.phase, MyH2hCupPhase.waiting);
     });
 
-    test('a player outside the cup is not qualified', () async {
+    test('a player outside the cup watches the first places path', () async {
       final cup = await _read(
         who: AuthenticatedUser(userId: userNo(99), role: PlatformRole.user),
         H2hCupState(
           entries: _entries(),
+          stages: [
+            _stage(
+              round: H2hCupRound.semi,
+              pairs: [
+                H2hCupPair(slot: 1, home: userNo(1), away: userNo(3)),
+                H2hCupPair(slot: 2, home: userNo(2), away: userNo(4)),
+              ],
+            ),
+            _stage(
+              round: H2hCupRound.semi,
+              place: 2,
+              pairs: [
+                H2hCupPair(slot: 1, home: userNo(5), away: userNo(7)),
+                H2hCupPair(slot: 2, home: userNo(6), away: userNo(8)),
+              ],
+            ),
+          ],
+          titles: const <H2hCupTitle>[],
+        ),
+      );
+
+      expect(cup.state, MyH2hCupState.spectator);
+      expect(cup.place, 1);
+      expect(cup.groupNumber, 0);
+      expect(cup.entrants.map((p) => p.userId), [
+        userNo(1),
+        userNo(2),
+        userNo(3),
+        userNo(4),
+      ]);
+      expect(cup.entrants.any((p) => p.isMe), isFalse);
+      expect(cup.stages.first.pairs, hasLength(2));
+      expect(cup.stages.first.pairs.any((p) => p.isMine), isFalse);
+    });
+
+    test('with no first-place qualifier there is nothing to watch', () async {
+      final cup = await _read(
+        who: AuthenticatedUser(userId: userNo(99), role: PlatformRole.user),
+        H2hCupState(
+          entries: _entries(pathOne: 0),
           stages: const <H2hCupStage>[],
           titles: const <H2hCupTitle>[],
         ),
       );
 
       expect(cup.state, MyH2hCupState.notQualified);
-      expect(cup.stages, isEmpty);
       expect(cup.entrants, isEmpty);
+    });
+
+    test('a finished cup is not watched after a few days either', () async {
+      final state = H2hCupState(
+        entries: _entries(),
+        stages: [
+          _stage(
+            round: H2hCupRound.finale,
+            pairs: [H2hCupPair(slot: 1, home: userNo(1), away: userNo(2))],
+            day: DateTime.utc(2026, 11, 22),
+          ),
+        ],
+        titles: [
+          for (var place = 1; place <= 3; place++)
+            H2hCupTitle(
+              place: place,
+              champion: userNo(place),
+              runnerUp: null,
+              how: 'final',
+            ),
+        ],
+      );
+
+      final cup = await _read(
+        who: AuthenticatedUser(userId: userNo(99), role: PlatformRole.user),
+        state,
+        now: DateTime.utc(2026, 11, 28, 9),
+      );
+
+      expect(cup.state, MyH2hCupState.notQualified);
     });
 
     test('the title of his path arrives with the champion named', () async {

@@ -272,16 +272,18 @@ final class MyH2hCupDto {
   /// The current schema version for this DTO.
   static const int currentSchemaVersion = 1;
 
-  /// `qualified` or `not_qualified`.
+  /// `qualified`, `spectator` (outside the cup, watching the first places'
+  /// path) or `not_qualified`.
   final String state;
 
   /// The first day of the month of the cup (`YYYY-MM-DD`).
   final String? monthStart;
 
-  /// The caller's path: 1, 2 or 3 (0 when not qualified).
+  /// The caller's path: 1, 2 or 3; 1 for a `spectator`, 0 when not
+  /// qualified.
   final int place;
 
-  /// The caller's elite group (0 when not qualified).
+  /// The caller's elite group (0 when not qualified or a `spectator`).
   final int groupNumber;
 
   /// The qualifiers of the caller's path, by group.

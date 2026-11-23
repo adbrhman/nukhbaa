@@ -268,7 +268,40 @@ void main() {
     expect(_text(tester, 'h2h.cup.titleLine'), contains('أنت بطل'));
   });
 
-  testWidgets('a player outside the cup sees no card', (
+  testWidgets('a player outside the cup watches the first places path', (
+    WidgetTester tester,
+  ) async {
+    final MyH2hCupDto q = _qualified();
+    await _open(
+      tester,
+      cup: MyH2hCupDto(
+        state: 'spectator',
+        monthStart: q.monthStart,
+        place: 1,
+        entrants: <H2hCupPlayerDto>[_omar, _noura, _huda],
+        stages: <H2hCupStageDto>[
+          H2hCupStageDto(
+            round: 'semi',
+            cupDay: 1,
+            expectedDay: 20,
+            phase: 'scheduled',
+            attempt: 1,
+            day: '2026-11-23',
+            fixtureCount: 8,
+            pairs: <H2hCupPairDto>[_pair(1, _omar, _noura)],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byKey(const Key('h2h.cup')), findsOneWidget);
+    expect(_text(tester, 'h2h.cup.path'), contains('أوائل المجموعات'));
+    expect(_text(tester, 'h2h.cup.path'), contains('مشاهدة'));
+    expect(find.byKey(const Key('h2h.cup.focus')), findsNothing);
+    expect(find.byKey(const Key('h2h.cup.pair.semi.1')), findsOneWidget);
+  });
+
+  testWidgets('a player outside every open cup sees no card', (
     WidgetTester tester,
   ) async {
     await _open(tester, cup: const MyH2hCupDto(state: 'not_qualified'));

@@ -24,6 +24,10 @@ enum MyH2hCupState {
 
   /// The caller qualified for the cup of a month.
   qualified,
+
+  /// The caller is outside the cup but may watch the first places' path
+  /// (the group leaders): read-only, nothing of his own in it.
+  spectator,
 }
 
 /// Where one stage of the caller's path stands.
@@ -218,6 +222,10 @@ final class GetMyH2hCup {
   /// Days a finished cup stays on the caller's screen.
   static const int lingerDays = 3;
 
+  /// The path a player outside the cup may watch: the first places, the
+  /// group leaders.
+  static const int spectatorPlace = 1;
+
   final H2hCupStore _cups;
   final WeeklyLeagueProfileReader _profiles;
   final Clock _clock;
@@ -234,6 +242,9 @@ final class GetMyH2hCup {
       current,
       DateTime.utc(current.year, current.month - 1),
     ];
+    // The first open cup of the first places, kept for a caller who is in
+    // none of them: he may watch it, he does not play it.
+    ({DateTime month, H2hCupState state})? watch;
     for (final month in months) {
       if (!H2hLeaguePolicy.usesEliteDraw(month)) {
         continue;
@@ -243,11 +254,32 @@ final class GetMyH2hCup {
         return Result.err(read.error);
       }
       final state = (read as Ok<H2hCupState>).value;
-      final mine = _entryOf(state, principal.userId);
-      if (mine == null || _over(state, today)) {
+      if (_over(state, today)) {
         continue;
       }
-      return _view(month, state, mine, principal.userId);
+      final mine = _entryOf(state, principal.userId);
+      if (mine == null) {
+        if (watch == null && state.entriesOf(spectatorPlace).isNotEmpty) {
+          watch = (month: month, state: state);
+        }
+        continue;
+      }
+      return _view(
+        month,
+        state,
+        principal.userId,
+        place: mine.place,
+        groupNumber: mine.groupNumber,
+      );
+    }
+    if (watch != null) {
+      return _view(
+        watch.month,
+        watch.state,
+        principal.userId,
+        place: spectatorPlace,
+        watching: true,
+      );
     }
     return const Result.ok(MyH2hCup.notQualified);
   }
@@ -278,10 +310,11 @@ final class GetMyH2hCup {
   Future<Result<MyH2hCup>> _view(
     DateTime month,
     H2hCupState state,
-    H2hCupEntry mine,
-    UserId me,
-  ) async {
-    final place = mine.place;
+    UserId me, {
+    required int place,
+    int groupNumber = 0,
+    bool watching = false,
+  }) async {
     final entries = state.entriesOf(place);
     final steps = <H2hCupStep>[
       H2hCupStep(place, H2hCupRound.semi),
@@ -360,10 +393,10 @@ final class GetMyH2hCup {
 
     return Result.ok(
       MyH2hCup(
-        state: MyH2hCupState.qualified,
+        state: watching ? MyH2hCupState.spectator : MyH2hCupState.qualified,
         monthStart: month,
         place: place,
-        groupNumber: mine.groupNumber,
+        groupNumber: groupNumber,
         entrants: <MyH2hCupPlayer>[for (final e in entries) player(e.userId)],
         stages: stages,
         title: title == null

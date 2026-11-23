@@ -14,8 +14,9 @@ import 'package:shared/shared.dart';
 /// of that path, and its two stages with their day, pairs, results and
 /// title.
 ///
-/// A caller outside every open cup reads `state: not_qualified` and nothing
-/// else. Names, days and the figures that decided a pair only: no
+/// A caller outside every open cup reads `state: spectator` with the path of
+/// the first places (the group leaders) to watch, or `state: not_qualified`
+/// and nothing else when no cup is open. Names, days and the figures that decided a pair only: no
 /// prediction of anybody arrives here. Nothing is computed on the client
 /// (Axioms 2/5).
 ///

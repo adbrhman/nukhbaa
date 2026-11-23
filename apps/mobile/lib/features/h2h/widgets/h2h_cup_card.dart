@@ -2,7 +2,8 @@
 /// سيواجه، ويوم المرحلة، ونتيجتها، وبقية مواجهات مساره، واللقب إن حُسم.
 ///
 /// كل شيء من الخادم (`GET /me/h2h-cup`): القرعة والأيام والنتائج؛ هنا لا
-/// يُسحب شيء ولا يُحسم شيء. من لم يتأهل (أو فشل الطلب) لا يرى البطاقة.
+/// يُسحب شيء ولا يُحسم شيء. من لم يتأهل يرى مسار أوائل المجموعات للمشاهدة
+/// فقط (`spectator`)؛ ومن لا كأس مفتوحاً له (أو فشل الطلب) لا يرى البطاقة.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -16,7 +17,7 @@ import '../h2h_cup_texts.dart';
 import '../h2h_providers.dart';
 import '../h2h_texts.dart';
 
-/// كأس النخبة، أو لا شيء لمن لم يتأهل.
+/// كأس النخبة: مساره للمتأهل، ومسار أوائل المجموعات لغيره، أو لا شيء.
 class H2hCupCard extends ConsumerWidget {
   /// ينشئ البطاقة.
   const H2hCupCard({super.key});
@@ -24,11 +25,12 @@ class H2hCupCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyH2hCupDto? cup = ref.watch(myH2hCupProvider).value;
-    if (cup == null || cup.state != 'qualified') {
+    if (cup == null || (cup.state != 'qualified' && cup.state != 'spectator')) {
       return const SizedBox.shrink();
     }
+    final bool mine = cup.state == 'qualified';
     final AppTokens t = context.tokens;
-    final H2hCupStageDto? focus = h2hCupFocusStage(cup);
+    final H2hCupStageDto? focus = mine ? h2hCupFocusStage(cup) : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: AppCard(
@@ -54,7 +56,8 @@ class H2hCupCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '${h2hCupPathName(cup.place)} · مجموعة ${cup.groupNumber}'
+              '${h2hCupPathName(cup.place)}'
+              '${mine ? ' · مجموعة ${cup.groupNumber}' : ' · مشاهدة'}'
               '${cup.monthStart == null ? '' : ' · ${h2hMonthLabel(cup.monthStart!)}'}',
               key: const Key('h2h.cup.path'),
               style: context.text.bodySmall?.copyWith(color: t.textSecondary),
@@ -69,7 +72,7 @@ class H2hCupCard extends ConsumerWidget {
             ],
             const SizedBox(height: AppSpacing.md),
             for (final H2hCupStageDto stage in cup.stages)
-              _StageBlock(stage: stage),
+              _StageBlock(stage: stage, mine: mine),
           ],
         ),
       ),
@@ -143,9 +146,12 @@ class _Focus extends StatelessWidget {
 
 /// مرحلة واحدة من المسار بكل مواجهاتها.
 class _StageBlock extends StatelessWidget {
-  const _StageBlock({required this.stage});
+  const _StageBlock({required this.stage, required this.mine});
 
   final H2hCupStageDto stage;
+
+  /// Whether the path is the caller's own (false: he only watches it).
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +175,9 @@ class _StageBlock extends StatelessWidget {
               padding: const EdgeInsets.only(top: AppSpacing.xs),
               child: Text(
                 stage.phase == 'skipped'
-                    ? 'لا تُلعب هذه المرحلة في مسارك'
+                    ? (mine
+                          ? 'لا تُلعب هذه المرحلة في مسارك'
+                          : 'لا تُلعب هذه المرحلة في هذا المسار')
                     : h2hCupWaitingLine(stage),
                 style: context.text.bodySmall?.copyWith(color: t.textMuted),
               ),

@@ -9541,6 +9541,30 @@ the tree at script 297; no code, no migration.
   the assistant's sandbox: analyze and the tests run on the device by the
   script, and were not run before it.
 
+### The cup for a player outside it: the first places' path to watch (script 305, 2026-11-23)
+
+Decided by the owner on 2026-11-23: a player who did not qualify sees the
+Elite Cup's matchups between the group leaders (the first places' path).
+
+- **Server**: `GetMyH2hCup` returns the new state `spectator` when the caller
+  is in no open cup but the first places' path (`spectatorPlace` = 1) of an
+  open cup has qualifiers: that path's qualifiers, stages, pairs, results and
+  title, `place` 1, `groupNumber` 0, no `isMe`/`isMine` anywhere. A qualifier
+  still reads his own path first; with no open cup, or none with first
+  places, the answer stays `not_qualified` and nothing else. A cup finished
+  more than `lingerDays` ago is not shown to anyone. The seconds' and thirds'
+  paths stay for their own players only.
+- **Wire**: `MyH2hCupDto.state` gains `spectator` (additive, schema version
+  unchanged; an older app reads it as no card). Names, days and the figures
+  that decided a pair only: no prediction of anybody arrives.
+- **Mobile**: `H2hCupCard` draws the path for `spectator` without «مواجهتك»
+  and without a group number, labelled «مشاهدة».
+- No migration, no table, no rule of the cup changed, no new dependency.
+- **Tests**: `get_my_h2h_cup_test.dart` (a spectator sees path 1 only and no
+  `isMe`; no first places; a finished cup), `h2h_cup_route_test.dart`,
+  `h2h_cup_card_test.dart`. Written without a Dart SDK in the assistant's
+  sandbox: analyze and the tests run on the device, and were not run before.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

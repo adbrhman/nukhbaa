@@ -75,6 +75,7 @@ MyH2hCupDto myH2hCupToDto(MyH2hCup cup) {
   return MyH2hCupDto(
     state: switch (cup.state) {
       MyH2hCupState.qualified => 'qualified',
+      MyH2hCupState.spectator => 'spectator',
       MyH2hCupState.notQualified => 'not_qualified',
     },
     monthStart: month == null ? null : _day(month),
