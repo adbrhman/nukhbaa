@@ -162,6 +162,7 @@ final class CompositionRoot {
     required this.getMyH2hLeague,
     required this.getMyH2hMonth,
     required this.getH2hEliteTables,
+    required this.getMyH2hCup,
     required this.getMyH2hRound,
     required this.getMyH2hGroupRound,
     required this.listH2hRounds,
@@ -409,6 +410,7 @@ final class CompositionRoot {
     GetMyH2hLeague? getMyH2hLeague,
     GetMyH2hMonth? getMyH2hMonth,
     GetH2hEliteTables? getH2hEliteTables,
+    GetMyH2hCup? getMyH2hCup,
     GetMyH2hRound? getMyH2hRound,
     GetMyH2hGroupRound? getMyH2hGroupRound,
     ListH2hRounds? listH2hRounds,
@@ -701,6 +703,7 @@ final class CompositionRoot {
        getMyH2hLeague = getMyH2hLeague ?? _absentGetMyH2hLeague(),
        getMyH2hMonth = getMyH2hMonth ?? _absentGetMyH2hMonth(),
        getH2hEliteTables = getH2hEliteTables ?? _absentGetH2hEliteTables(),
+       getMyH2hCup = getMyH2hCup ?? _absentGetMyH2hCup(),
        getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
        getMyH2hGroupRound = getMyH2hGroupRound ?? _absentGetMyH2hGroupRound(),
        listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
@@ -1537,6 +1540,12 @@ final class CompositionRoot {
     leagues: _unwiredH2h,
     rounds: _unwiredH2h,
     sheets: _unwiredH2h,
+    profiles: _UnwiredWeeklyLeagueProfileReader(),
+    clock: _unwiredClock,
+  );
+
+  static GetMyH2hCup _absentGetMyH2hCup() => GetMyH2hCup(
+    cups: _UnwiredH2hCups(),
     profiles: _UnwiredWeeklyLeagueProfileReader(),
     clock: _unwiredClock,
   );
@@ -2579,6 +2588,10 @@ final class CompositionRoot {
   /// The tables of the four elite groups, readable by every player (backs
   /// `GET /me/h2h-league/elite`).
   final GetH2hEliteTables getH2hEliteTables;
+
+  /// The caller's Elite Cup: qualified or not, the path, the stages with
+  /// their day, pairs and results, and the title (backs `GET /me/h2h-cup`).
+  final GetMyH2hCup getMyH2hCup;
 
   /// One head-to-head round of the caller in detail; the opponent's picks
   /// only on fixtures that kicked off by the server clock (backs
@@ -4004,6 +4017,11 @@ final class CompositionRoot {
           clock: clock,
         ),
         rounds: PostgresH2hRoundStore(connection),
+        clock: clock,
+      ),
+      getMyH2hCup: GetMyH2hCup(
+        cups: PostgresH2hCupStore(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
         clock: clock,
       ),
       getH2hEliteTables: GetH2hEliteTables(

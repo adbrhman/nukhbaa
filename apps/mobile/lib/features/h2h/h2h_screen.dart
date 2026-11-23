@@ -29,6 +29,7 @@ import 'chat/h2h_chat_screen.dart';
 import 'chat/h2h_chat_texts.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
+import 'widgets/h2h_cup_card.dart';
 import 'widgets/h2h_division_card.dart';
 import 'widgets/h2h_elite_tables.dart';
 import 'widgets/h2h_group_matches.dart';
@@ -104,6 +105,7 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(myH2hLeagueProvider);
+            ref.invalidate(myH2hCupProvider);
             try {
               await ref.read(myH2hLeagueProvider.future);
             } on Object {
@@ -122,9 +124,13 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
                 AppSpacing.lg,
                 104,
               ),
-              children: league.state == 'open'
-                  ? _openMonth(league)
-                  : _waiting(league),
+              children: <Widget>[
+                const H2hCupCard(),
+                if (league.state == 'open')
+                  ..._openMonth(league)
+                else
+                  ..._waiting(league),
+              ],
             ),
           ),
         ),

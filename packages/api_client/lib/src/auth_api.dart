@@ -308,6 +308,16 @@ final class AuthApi {
     );
   }
 
+  /// `GET /me/h2h-cup` -- the caller's Elite Cup: whether he qualified, his
+  /// path, its stages with their day, pairs and results, and the title.
+  /// Names, days and figures only; no prediction arrives here.
+  Future<Result<MyH2hCupDto>> myH2hCup() {
+    return _transport.getObject<MyH2hCupDto>(
+      '/me/h2h-cup',
+      parse: MyH2hCupDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///

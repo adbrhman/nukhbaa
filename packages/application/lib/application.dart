@@ -111,6 +111,7 @@ export 'src/gamification/evaluate_badges.dart';
 export 'src/gamification/get_h2h_elite_tables.dart';
 export 'src/gamification/get_my_badges.dart';
 export 'src/gamification/get_my_daily_challenge.dart';
+export 'src/gamification/get_my_h2h_cup.dart';
 export 'src/gamification/get_my_h2h_group_round.dart';
 export 'src/gamification/get_my_h2h_league.dart';
 export 'src/gamification/get_my_h2h_month.dart';
