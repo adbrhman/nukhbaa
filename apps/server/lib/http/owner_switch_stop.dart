@@ -18,6 +18,18 @@ AppError ownerSwitchPaused(OwnerSwitch which) => switch (which) {
     'champion.crowning_paused',
     'تتويج الشهر موقوف مؤقتاً.',
   ),
+  OwnerSwitch.h2hRounds => const AppError.invariant(
+    'h2h.rounds_paused',
+    'اعتماد جولات المواجهات موقوف مؤقتاً.',
+  ),
+  OwnerSwitch.h2hCup => const AppError.invariant(
+    'h2h.cup_paused',
+    'كأس المواجهات موقوف مؤقتاً.',
+  ),
+  OwnerSwitch.h2hCupCrowning => const AppError.invariant(
+    'h2h.cup_crowning_paused',
+    'تتويج كأس المواجهات موقوف مؤقتاً.',
+  ),
 };
 
 // NK291_02

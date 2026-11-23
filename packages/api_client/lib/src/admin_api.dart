@@ -273,6 +273,19 @@ final class AdminApi {
     );
   }
 
+  /// `GET /owner/h2h-cup` -- the whole Elite Cup of a month for the owners'
+  /// page (script 304): the month's rounds and the three paths with their
+  /// qualifiers, stages, pairs, results and titles. [month] (`YYYY-MM-DD`)
+  /// picks the month; the latest one holding a cup without it. An owner
+  /// seat alone.
+  Future<Result<OwnerH2hCupDto>> ownerH2hCup({String? month}) {
+    return _transport.getObject<OwnerH2hCupDto>(
+      '/owner/h2h-cup',
+      query: month == null ? null : <String, String>{'month': month},
+      parse: OwnerH2hCupDto.fromJson,
+    );
+  }
+
   // NK289_09
   /// `GET /owner/switches` -- the owners' switches, each with its state and
   /// its last change (script 289). An owner seat alone.

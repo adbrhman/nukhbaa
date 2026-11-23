@@ -60,6 +60,12 @@ H2hCupStageDto _stage(MyH2hCupStage stage) {
   );
 }
 
+/// A player of a path on the wire (the owners' cup reads it too).
+H2hCupPlayerDto h2hCupPlayerToDto(MyH2hCupPlayer player) => _player(player);
+
+/// A stage on the wire (the owners' cup reads it too).
+H2hCupStageDto h2hCupStageToDto(MyH2hCupStage stage) => _stage(stage);
+
 /// The caller's cup on the wire.
 MyH2hCupDto myH2hCupToDto(MyH2hCup cup) {
   final month = cup.monthStart;

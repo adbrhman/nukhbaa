@@ -1,3 +1,5 @@
+import 'package:application/src/admin/owner_switch_hold.dart';
+import 'package:application/src/admin/ports/owner_switches.dart';
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/gamification/h2h_cycle.dart';
@@ -33,11 +35,13 @@ final class ApproveH2hRound {
     required Clock clock,
     H2hControlStore? controls,
     H2hLeagueStore? leagues,
+    OwnerSwitches? ownerSwitches,
   }) : _rounds = rounds,
        _ids = idGenerator,
        _clock = clock,
        _controls = controls,
-       _leagues = leagues;
+       _leagues = leagues,
+       _switches = ownerSwitches;
 
   final H2hRoundStore _rounds;
   final IdGenerator _ids;
@@ -47,6 +51,9 @@ final class ApproveH2hRound {
   /// NK279: reads the league a day belongs to; null: the day's own month.
   final H2hLeagueStore? _leagues;
 
+  /// Script 304: the owners' stop on approving rounds; null: none wired.
+  final OwnerSwitches? _switches;
+
   /// Approves the Riyadh [day] (any instant on that date) for [principal].
   Future<Result<H2hRound>> call({
     required AuthenticatedUser principal,
@@ -55,6 +62,14 @@ final class ApproveH2hRound {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) {
       return Result.err(auth.error);
+    }
+    if (await ownerSwitchHolds(_switches, OwnerSwitch.h2hRounds)) {
+      return const Result.err(
+        AppError.invariant(
+          'h2h.rounds_paused',
+          'Approving rounds is paused by the owners',
+        ),
+      );
     }
     final theDay = DateTime.utc(day.year, day.month, day.day);
     final DateTime? monthStart;

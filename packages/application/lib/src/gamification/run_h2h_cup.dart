@@ -3,6 +3,8 @@ library;
 
 import 'dart:math';
 
+import 'package:application/src/admin/owner_switch_hold.dart';
+import 'package:application/src/admin/ports/owner_switches.dart';
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
@@ -98,6 +100,7 @@ final class RunH2hCup {
     H2hControlStore? controls,
     Random? random,
     bool enabled = true,
+    OwnerSwitches? ownerSwitches,
   }) : _cups = cups,
        _rounds = rounds,
        _leagues = leagues,
@@ -105,7 +108,8 @@ final class RunH2hCup {
        _ids = idGenerator,
        _controls = controls,
        _random = random ?? Random.secure(),
-       _enabled = enabled;
+       _enabled = enabled,
+       _switches = ownerSwitches;
 
   final H2hCupStore _cups;
   final H2hRoundStore _rounds;
@@ -119,11 +123,23 @@ final class RunH2hCup {
   /// run does nothing at all.
   final bool _enabled;
 
+  /// Script 304: the owners' stops, `h2h_cup` (the whole keeping) and
+  /// `h2h_cup_crowning` (the titles); null: none wired. A switch off or
+  /// unreadable holds the work.
+  final OwnerSwitches? _switches;
+
   /// Keeps every open cup as of [now].
   Future<Result<H2hCupRun>> call({required DateTime now}) async {
     if (!_enabled) {
       return const Result.ok(H2hCupRun());
     }
+    if (await ownerSwitchHolds(_switches, OwnerSwitch.h2hCup)) {
+      return const Result.ok(H2hCupRun());
+    }
+    final crownHeld = await ownerSwitchHolds(
+      _switches,
+      OwnerSwitch.h2hCupCrowning,
+    );
     final instant = now.toUtc();
     final today = riyadhDayOf(instant);
     final current = H2hLeaguePolicy.monthStartOf(today);
@@ -152,7 +168,7 @@ final class RunH2hCup {
       if (held == null || held.isPilot) {
         continue;
       }
-      final kept = await _keep(month, instant, today, days);
+      final kept = await _keep(month, instant, today, days, crownHeld);
       if (kept is Err<H2hCupRun>) {
         return Result.err(kept.error);
       }
@@ -173,6 +189,7 @@ final class RunH2hCup {
     DateTime now,
     DateTime today,
     _Window days,
+    bool crownHeld,
   ) async {
     var run = const H2hCupRun();
     var stateResult = await _cups.stateOf(month);
@@ -236,6 +253,10 @@ final class RunH2hCup {
         final entries = state.entriesOf(place);
         if (step.round == H2hCupRound.semi) {
           if (entries.length <= 1) {
+            if (crownHeld) {
+              waiting = true;
+              continue;
+            }
             final alone = await _crownAlone(month, place, [
               for (final e in entries) e.userId,
             ]);
@@ -286,6 +307,10 @@ final class RunH2hCup {
             through.add(bye);
           }
           if (through.length <= 1) {
+            if (crownHeld) {
+              waiting = true;
+              continue;
+            }
             final alone = await _crownAlone(month, place, through);
             if (alone is Err<void>) {
               return Result.err(alone.error);
@@ -329,6 +354,10 @@ final class RunH2hCup {
           continue;
         }
         played = _later(played, decidedFinal.day);
+        if (crownHeld) {
+          waiting = true;
+          continue;
+        }
         final pair = decidedFinal.pairs.first;
         final winner = decidedFinal.results.first.winner;
         final crowned = await _cups.crown(

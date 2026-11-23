@@ -11,7 +11,20 @@ enum OwnerSwitch {
   predictions('predictions'),
 
   /// Every new message in the head-to-head chat (script 291).
-  chat('chat');
+  chat('chat'),
+
+  /// Approving new head-to-head rounds, by the scheduler or an admin
+  /// (script 304, migration 0225). Rounds already approved still lock and
+  /// settle.
+  h2hRounds('h2h_rounds'),
+
+  /// The Elite Cup's keeping: its entries, stages, results and titles
+  /// (script 304, migration 0225). What is stored stays.
+  h2hCup('h2h_cup'),
+
+  /// The Elite Cup's titles only (script 304, migration 0225): the cup
+  /// still runs, and no path is crowned.
+  h2hCupCrowning('h2h_cup_crowning');
 
   const OwnerSwitch(this.key);
 

@@ -1,3 +1,5 @@
+import 'package:application/src/admin/owner_switch_hold.dart';
+import 'package:application/src/admin/ports/owner_switches.dart';
 import 'package:application/src/common/id_generator.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
@@ -76,13 +78,15 @@ final class RunH2hRounds {
     H2hTurnKeeper? turns,
     H2hCupStore? cups,
     bool cycleOverrun = true,
+    OwnerSwitches? ownerSwitches,
   }) : _rounds = rounds,
        _leagues = leagues,
        _ids = idGenerator,
        _controls = controls,
        _turns = turns,
        _cups = cups,
-       _overrun = cycleOverrun;
+       _overrun = cycleOverrun,
+       _switches = ownerSwitches;
 
   final H2hRoundStore _rounds;
   final H2hLeagueStore _leagues;
@@ -95,6 +99,10 @@ final class RunH2hRounds {
   /// (`NUKHBA_H2H_CYCLE_OVERRUN=off`): every day is a round of its own
   /// month, as before script 279.
   final bool _overrun;
+
+  /// Script 304: the owners' stop on approving rounds; null: none wired.
+  /// Off or unreadable, nothing is approved; the rounds due still lock.
+  final OwnerSwitches? _switches;
 
   /// Approves and locks what is due as of [now].
   Future<Result<H2hRoundsRun>> call({required DateTime now}) async {
@@ -154,6 +162,10 @@ final class RunH2hRounds {
         }
         excluded = (days as Ok<Set<DateTime>>).value;
       }
+    }
+
+    if (approving && await ownerSwitchHolds(_switches, OwnerSwitch.h2hRounds)) {
+      approving = false;
     }
 
     for (final day in [today, tomorrow]) {

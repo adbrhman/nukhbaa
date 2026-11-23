@@ -30,6 +30,7 @@ import 'screens/sections/new_players_section.dart';
 import 'screens/sections/owner_admin_activity_section.dart';
 import 'screens/sections/owner_admins_section.dart';
 import 'screens/sections/owner_announcements_section.dart';
+import 'screens/sections/owner_h2h_section.dart';
 import 'screens/sections/owner_switches_section.dart';
 import 'screens/sections/person_links_section.dart';
 import 'screens/sections/results_scoring_section.dart';
@@ -462,6 +463,8 @@ class OwnerGeneralSection extends ConsumerWidget {
         ('الشعارات', ClubCrestsSection()),
         ('المخفيون', HiddenAccountsSection()),
         ('الأشخاص', PersonLinksSection()),
+        // script 304: the head-to-head league in the owners' hands.
+        ('المواجهات', OwnerH2hSection()),
       ],
     );
   }
