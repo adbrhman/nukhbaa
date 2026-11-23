@@ -15,47 +15,49 @@ import 'package:shared/shared.dart';
 /// dropped at the month's end. The month's champion, by the calendar, is
 /// not affected.
 ///
-/// Only the month before [day]'s is looked at, and only when it is a month
-/// of the December rules (January 2027 on): its row, then its rounds, then
-/// whether it is judged, each read only when the one before leaves the
-/// answer open. A league is never more than one month late: the next
-/// month's draw waits for it to be judged. Never throws.
+/// The months before [day]'s are looked at from the nearest one back, down
+/// to December 2026 and no further (only a month of the December rules can
+/// run past its end). A month that was never drawn is passed over: while a
+/// league is late the months behind it are not drawn, and it may be more
+/// than one month late, so a day of February can still be December's
+/// (NK303). The first drawn month decides, reading its row, then its
+/// rounds, then whether it is judged, each only when the one before leaves
+/// the answer open: a pilot, a month with its 19 rounds and a judged month
+/// leave the day to its own month. Never throws.
 Future<Result<DateTime>> h2hCycleOf({
   required H2hLeagueStore leagues,
   required H2hRoundStore rounds,
   required DateTime day,
 }) async {
   final own = H2hLeaguePolicy.monthStartOf(day);
-  final previous = H2hLeaguePolicy.previousMonthOf(own);
-  if (!H2hLeaguePolicy.usesDecemberRules(previous)) {
-    return Result.ok(own);
+  var month = H2hLeaguePolicy.previousMonthOf(own);
+  while (H2hLeaguePolicy.usesDecemberRules(month)) {
+    final infoResult = await leagues.monthOf(month);
+    if (infoResult is Err<H2hMonthInfo?>) {
+      return Result.err(infoResult.error);
+    }
+    final info = (infoResult as Ok<H2hMonthInfo?>).value;
+    if (info == null) {
+      // NK303: never drawn; the month before it may still be the league.
+      month = H2hLeaguePolicy.previousMonthOf(month);
+      continue;
+    }
+    if (info.isPilot) {
+      return Result.ok(own);
+    }
+    final listResult = await rounds.roundsOf(month);
+    if (listResult is Err<List<H2hRound>>) {
+      return Result.err(listResult.error);
+    }
+    final count = (listResult as Ok<List<H2hRound>>).value.length;
+    if (!H2hLeaguePolicy.runsPastMonthEnd(monthStart: month, rounds: count)) {
+      return Result.ok(own);
+    }
+    final closedResult = await leagues.isClosed(month);
+    if (closedResult is Err<bool>) {
+      return Result.err(closedResult.error);
+    }
+    return Result.ok((closedResult as Ok<bool>).value ? own : month);
   }
-  final infoResult = await leagues.monthOf(previous);
-  if (infoResult is Err<H2hMonthInfo?>) {
-    return Result.err(infoResult.error);
-  }
-  final info = (infoResult as Ok<H2hMonthInfo?>).value;
-  if (info == null || info.isPilot) {
-    return Result.ok(own);
-  }
-  final listResult = await rounds.roundsOf(previous);
-  if (listResult is Err<List<H2hRound>>) {
-    return Result.err(listResult.error);
-  }
-  final count = (listResult as Ok<List<H2hRound>>).value.length;
-  if (count >= H2hLeaguePolicy.maxRounds) {
-    return Result.ok(own);
-  }
-  final closedResult = await leagues.isClosed(previous);
-  if (closedResult is Err<bool>) {
-    return Result.err(closedResult.error);
-  }
-  return Result.ok(
-    H2hLeaguePolicy.cycleOf(
-      day: day,
-      previousDrawn: true,
-      previousRounds: count,
-      previousJudged: (closedResult as Ok<bool>).value,
-    ),
-  );
+  return Result.ok(own);
 }

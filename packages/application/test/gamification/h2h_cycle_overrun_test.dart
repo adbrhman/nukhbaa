@@ -17,6 +17,7 @@ import 'h2h_fakes.dart';
 final _november = DateTime.utc(2026, 11);
 final _december = DateTime.utc(2026, 12);
 final _january = DateTime.utc(2027);
+final _february = DateTime.utc(2027, 2);
 
 H2hLeagueId _group(int n) =>
     H2hLeagueId('11111111-1111-4111-8279-${n.toString().padLeft(12, '0')}');
@@ -202,6 +203,58 @@ void main() {
             .value,
         _december,
       );
+    });
+  });
+
+  group('a league more than one month late', () {
+    // NK303: two months late. December keeps 17 rounds through January, so
+    // January is never drawn (its draw waits for December to be judged).
+    Future<DateTime> cycle(_World w, DateTime day) async =>
+        ((await h2hCycleOf(leagues: w.leagues, rounds: w.rounds, day: day))
+                as Ok<DateTime>)
+            .value;
+
+    test('February and March days still belong to the unjudged December, '
+        'January never drawn', () async {
+      final w = _lateDecember();
+      expect(w.leagues.months.containsKey(_january), isFalse);
+
+      expect(await cycle(w, DateTime.utc(2027, 1, 20)), _december);
+      expect(await cycle(w, DateTime.utc(2027, 2, 3)), _december);
+      expect(await cycle(w, DateTime.utc(2027, 3, 9)), _december);
+    });
+
+    test(
+      '3 February becomes December\'s round 18, not February\'s first',
+      () async {
+        final w = _lateDecember();
+        final day = DateTime.utc(2027, 2, 3);
+        w.rounds.dayOf(day, 8, DateTime.utc(2027, 2, 3, 15));
+
+        // 01:00 Riyadh on 3 February: the first kickoff is 17 hours ahead.
+        final run = await w.roundsJob()(now: DateTime.utc(2027, 2, 2, 22));
+
+        expect((run as Ok<H2hRoundsRun>).value.approved, 1);
+        final december = w.rounds.byMonth[_december]!;
+        expect(december, hasLength(18));
+        expect(december.last.number, 18);
+        expect(december.last.day, day);
+        expect(w.rounds.byMonth[_february], isNull);
+      },
+    );
+
+    test('what already worked stays: a judged or a complete December leaves '
+        'the day to its own month', () async {
+      final judged = _lateDecember();
+      judged.leagues.closed[_december] = 12;
+      expect(await cycle(judged, DateTime.utc(2027, 2, 3)), _february);
+
+      final full = _World(
+        _december,
+        rounds: 19,
+        firstDay: DateTime.utc(2026, 12, 2),
+      );
+      expect(await cycle(full, DateTime.utc(2027, 2, 3)), _february);
     });
   });
 

@@ -9503,6 +9503,44 @@ the tree at script 297; no code, no migration.
 - Tests: `current_month_fixtures_leagues_test.dart` (the real matches
   screen). No server change, no migration, no new dependency.
 
+### The league's cycle when it is more than one month late (script 303, 2026-11-23)
+
+- **What was checked** (a review of the tree and a re-evaluation of the audit
+  of the head-to-head league, not a production test): `h2hCycleOf` looked
+  only at the month right before the day's. A December league that is still
+  short of its 19 rounds when February starts (January is never drawn: its
+  draw waits for December to be judged) was not found, so a day of February
+  was taken for February's own round, while the guard of migration 0215
+  (`h2h_rounds_cycle_open`) refuses a February round as long as December is
+  open: the approval is refused, for the scheduler and for an admin's hand
+  alike (the scheduler passes over a refusal that is not transient), and
+  December would never get its 18th round. Inferred from the code; no
+  incident was seen in production, and December 2026 is the first month it
+  can happen to.
+- **Changed**: `h2hCycleOf` now walks back from the month before the day's,
+  down to December 2026, passes over a month that was never drawn and lets
+  the first drawn month decide (pilot, 19 rounds or judged: the day is its
+  own month's; else it is that month's). The extension decided on
+  2026-11-14 (script 279) is kept as it is; a month one month late behaves
+  as before. No rule, no migration, no table, no new dependency.
+- **Not changed, owner's decision first**: when December is judged late, the
+  draw of the next month reads the month right before it (January, never
+  drawn) and so deals February seeded from January's active players, not
+  from December's judged ladder. Which month's result carries across a month
+  that was skipped is a rule of promotion and relegation.
+- **Re-evaluated on this tree**: L-31 and L-32 are handled by the design of
+  script 279 (covered by `h2h_cycle_overrun_test.dart`), except for the
+  league two months late (this script); L-28 is a rule decided with NK216
+  (a seat keeps its record), not a defect; L-33 and L-36: not re-proved, a
+  boundary test on Postgres is still needed (the fixtures of a day are read
+  `AT TIME ZONE 'Asia/Riyadh'`, and the months are Riyadh dates).
+- **Tests**: `h2h_cycle_overrun_test.dart`, three added: the days of
+  February and March go to an unjudged December; 3 February becomes
+  December's round 18 through `RunH2hRounds`; a judged or a complete
+  December leaves the day to its own month. Written without a Dart SDK in
+  the assistant's sandbox: analyze and the tests run on the device by the
+  script, and were not run before it.
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
