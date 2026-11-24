@@ -15,6 +15,7 @@ import '../../core/perf/frame_reporter.dart';
 import '../../core/providers.dart';
 import '../../core/time/riyadh_day_turnover.dart';
 import '../../core/ui/brand_mark.dart';
+import '../../core/ui/release_stray_keyboard.dart';
 import '../competition/competition_providers.dart';
 import '../fixture_prediction/current_month_fixtures_providers.dart';
 import '../history/prediction_history_providers.dart';
@@ -60,6 +61,8 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
   final Set<int> _built = <int>{0};
 
   void _select(int index) {
+    // NK319_02
+    releaseStrayKeyboard();
     // The tabs are not routes, so the navigator's observer never sees
     // them: a switch to another tab is counted here (migration 0093).
     if (index != currentIndex) {
@@ -294,42 +297,48 @@ class _NukhbaaShellState extends ConsumerState<NukhbaaShell>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope<Object?>(
-      canPop: currentIndex == 0,
-      onPopInvokedWithResult: _onBack,
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: context.tokens.background,
-          extendBody: true,
-          // On a tablet the tabs keep a phone-like reading width, centred,
-          // instead of stretching cards and tables edge to edge. A phone is
-          // narrower than the cap, so nothing changes there.
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppSizes.maxContentWidth,
-              ),
-              child: IndexedStack(
-                index: currentIndex,
-                children: <Widget>[
-                  for (int i = 0; i < tabCount; i++)
-                    if (_built.contains(i))
-                      // A kept-alive tab out of sight stops its tickers.
-                      // IndexedStack keeps them running (Visibility.maintain),
-                      // so an animation on a hidden tab drew frames over the
-                      // visible one -- and each was a full repaint, counted
-                      // as slow on low-end phones (frame stats, 2026-10-07).
-                      TickerMode(enabled: i == currentIndex, child: _pageAt(i))
-                    else
-                      const SizedBox.shrink(),
-                ],
+    // NK319_05
+    return ReleaseStrayKeyboard(
+      child: PopScope<Object?>(
+        canPop: currentIndex == 0,
+        onPopInvokedWithResult: _onBack,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: context.tokens.background,
+            extendBody: true,
+            // On a tablet the tabs keep a phone-like reading width, centred,
+            // instead of stretching cards and tables edge to edge. A phone is
+            // narrower than the cap, so nothing changes there.
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppSizes.maxContentWidth,
+                ),
+                child: IndexedStack(
+                  index: currentIndex,
+                  children: <Widget>[
+                    for (int i = 0; i < tabCount; i++)
+                      if (_built.contains(i))
+                        // A kept-alive tab out of sight stops its tickers.
+                        // IndexedStack keeps them running (Visibility.maintain),
+                        // so an animation on a hidden tab drew frames over the
+                        // visible one -- and each was a full repaint, counted
+                        // as slow on low-end phones (frame stats, 2026-10-07).
+                        TickerMode(
+                          enabled: i == currentIndex,
+                          child: _pageAt(i),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                  ],
+                ),
               ),
             ),
-          ),
-          bottomNavigationBar: NukhbaaBottomNav(
-            index: currentIndex,
-            onChanged: _select,
+            bottomNavigationBar: NukhbaaBottomNav(
+              index: currentIndex,
+              onChanged: _select,
+            ),
           ),
         ),
       ),
