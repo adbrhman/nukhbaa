@@ -8,10 +8,11 @@
 /// only counts down to a kickoff the server sent.
 ///
 /// Before the caller holds a seat (the league has not opened, the draw is
-/// still to come, or they are outside it) the tab explains why and lists
-/// the rules. Once seated it shows the division card, then one of three
-/// sections: the match that matters now, the group's table, and the rounds.
-/// The rules are one tap away in the header.
+/// still to come, or they are outside it) the tab explains why, shows the
+/// Elite Cup board and lists the rules. Once seated it shows the division
+/// card, then one of five sections: the match that matters now, the group's
+/// table, the rounds, every match of a round in the group, and the Elite
+/// Cup board. The rules are one tap away in the header.
 library;
 
 import 'package:contracts/contracts.dart';
@@ -29,6 +30,7 @@ import 'chat/h2h_chat_screen.dart';
 import 'chat/h2h_chat_texts.dart';
 import 'h2h_providers.dart';
 import 'h2h_texts.dart';
+import 'widgets/h2h_cup_board.dart';
 import 'widgets/h2h_cup_card.dart';
 import 'widgets/h2h_division_card.dart';
 import 'widgets/h2h_elite_tables.dart';
@@ -55,7 +57,7 @@ class H2hScreen extends ConsumerStatefulWidget {
   final DateTime Function()? now;
 
   /// The section a seated month opens on: 0 the match, 1 the table, 2 the
-  /// rounds, 3 every match of a round in the group.
+  /// rounds, 3 every match of a round in the group, 4 the Elite Cup board.
   final int initialSection;
 
   @override
@@ -63,7 +65,10 @@ class H2hScreen extends ConsumerStatefulWidget {
 }
 
 class _H2hScreenState extends ConsumerState<H2hScreen> {
-  late int _section = widget.initialSection.clamp(0, 3);
+  late int _section = widget.initialSection.clamp(
+    0,
+    h2hSectionLabels.length - 1,
+  );
 
   /// The standings section shows the four elite groups, not the caller's own.
   bool _eliteView = false;
@@ -106,6 +111,7 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
           onRefresh: () async {
             ref.invalidate(myH2hLeagueProvider);
             ref.invalidate(myH2hCupProvider);
+            ref.invalidate(h2hCupBoardProvider);
             try {
               await ref.read(myH2hLeagueProvider.future);
             } on Object {
@@ -138,10 +144,13 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
     );
   }
 
-  /// A month without a seat for the caller: why, then the rules.
+  /// A month without a seat for the caller: why, the Elite Cup board, then
+  /// the rules.
   List<Widget> _waiting(MyH2hLeagueDto league) => <Widget>[
     _StateCard(league: league),
     const SizedBox(height: AppSpacing.lg),
+    // NK316_02
+    const H2hCupBoardView(),
     AppCard(
       key: const Key('h2h.rules'),
       child: H2hRulesList(monthStart: league.monthStart, withTitle: true),
@@ -171,7 +180,7 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
     );
   }
 
-  /// The caller's seated month: the card, the three sections, the one
+  /// The caller's seated month: the card, the five sections, the one
   /// chosen.
   List<Widget> _openMonth(MyH2hLeagueDto league) => <Widget>[
     H2hDivisionCard(league: league),
@@ -192,7 +201,8 @@ class _H2hScreenState extends ConsumerState<H2hScreen> {
       ),
       1 => _tableSection(league),
       2 => H2hRoundsList(league: league),
-      _ => H2hGroupMatches(league: league),
+      3 => H2hGroupMatches(league: league),
+      _ => const H2hCupBoardView(),
     },
   ];
 }

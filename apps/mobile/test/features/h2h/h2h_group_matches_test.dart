@@ -204,12 +204,14 @@ String? _text(WidgetTester tester, Finder finder) =>
     tester.widget<Text>(finder).data;
 
 void main() {
-  test('the fourth section is the group matches', () {
+  test('the sections end with the group matches and the cup', () {
+    // NK316_04
     expect(h2hSectionLabels, <String>[
       'مواجهتي',
       'الترتيب',
       'الجولات',
       'المجموعة',
+      'الكأس',
     ]);
   });
 

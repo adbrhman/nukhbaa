@@ -83,13 +83,16 @@ String h2hRoundStatusLabel(String status) => switch (status) {
   _ => 'قادمة',
 };
 
-/// The four sections of a seated month, in order. The last is every match
-/// of a round in the caller's group; short enough for a quarter of a phone.
+// NK316_01
+/// The five sections of a seated month, in order: the match, the table, the
+/// rounds, every match of a round in the caller's group, and the Elite Cup
+/// board. Each is one short word, so that five share a phone's width.
 const List<String> h2hSectionLabels = <String>[
   'مواجهتي',
   'الترتيب',
   'الجولات',
   'المجموعة',
+  'الكأس',
 ];
 
 /// The Arabic month names, January first.
