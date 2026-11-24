@@ -9,8 +9,15 @@ void main() {
   test('a pair decided by the right direction says so, not the league', () {
     final String direction = h2hCupOutcomeName('direction');
     expect(direction, contains('الاتجاه الصحيح'));
-    expect(direction, isNot(contains('ترتيب الدوري')));
-    expect(h2hCupOutcomeName('league'), contains('ترتيب الدوري'));
+    expect(direction, isNot(contains('نقاط الشهر')));
+  });
+
+  // NK322_02
+  test('a pair level even on direction says the month points decided it', () {
+    final String league = h2hCupOutcomeName('league');
+    expect(league, contains('الاتجاه الصحيح'));
+    expect(league, contains('نقاط الشهر'));
+    expect(league, isNot(contains('ترتيب الدوري')));
   });
 
   test('a value the build does not know is shown as nothing', () {
