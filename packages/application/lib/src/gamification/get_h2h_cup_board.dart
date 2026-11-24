@@ -203,59 +203,39 @@ final class H2hCupBoard {
   final List<H2hCupBoardPathView> paths;
 }
 
-/// Reads the whole Elite Cup of the month for a signed-in player or admin.
+// NK310_02
+/// Builds the board of one month's cup for one reader (script 310).
 ///
-/// The month is the one [H2hCupMonthPicker] chooses for the caller, the one
-/// `GetMyH2hCup` reads. A caller outside the cup reads every path as a
-/// watcher: his own picks are in no pair, so before kickoff every side is
-/// withheld. A transient failure of a port is returned as it came.
+/// Shared by the player's use-case ([GetH2hCupBoard]) and the owners'
+/// (`GetOwnerH2hCupPicks`). It is **not exported** from the package, so
+/// nothing outside the application layer can ask for an unmasked board.
 ///
-/// Never throws; returns a typed [Result].
-final class GetH2hCupBoard {
-  /// Creates the use-case over its collaborators.
-  const GetH2hCupBoard({
-    required H2hCupStore cups,
-    required H2hCupPickReader picks,
-    required WeeklyLeagueProfileReader profiles,
-    required Clock clock,
-  }) : _cups = cups,
-       _picks = picks,
-       _profiles = profiles,
-       _clock = clock;
+/// With `unmasked` false, every side other than the caller's is withheld
+/// until its fixture has kicked off, checked here against the server clock
+/// whatever the reader handed over. With it true, which only the owners'
+/// use-case passes, every side shows the pick it has.
+final class H2hCupBoardBuilder {
+  const H2hCupBoardBuilder._();
 
   static const List<H2hCupRound> _rounds = <H2hCupRound>[
     H2hCupRound.semi,
     H2hCupRound.finale,
   ];
 
-  final H2hCupStore _cups;
-  final H2hCupPickReader _picks;
-  final WeeklyLeagueProfileReader _profiles;
-  final Clock _clock;
-
-  /// Reads the cup board for [principal], any player or admin.
-  Future<Result<H2hCupBoard>> call({
-    required AuthenticatedUser principal,
+  /// Builds the board of [state], the cup of [monthStart], as [caller] reads
+  /// it. [readFixtures] reads the fixtures of the stages, once, and is the
+  /// only place a pick comes from.
+  static Future<Result<H2hCupBoard>> build({
+    required H2hCupState state,
+    required DateTime monthStart,
+    required UserId caller,
+    required DateTime nowUtc,
+    required bool unmasked,
+    required WeeklyLeagueProfileReader profiles,
+    required Future<Result<Map<H2hCupStageId, List<H2hCupStageFixture>>>>
+    Function(List<H2hCupStage> stages)
+    readFixtures,
   }) async {
-    final auth = Authorization.requireRole(principal, PlatformRole.user);
-    if (auth is Err<AuthenticatedUser>) {
-      return Result.err(auth.error);
-    }
-    final nowUtc = _clock.nowUtc().toUtc();
-    final picked = await H2hCupMonthPicker.pick(
-      cups: _cups,
-      today: riyadhDayOf(nowUtc),
-      user: principal.userId,
-    );
-    if (picked is Err<H2hCupMonthPick?>) {
-      return Result.err(picked.error);
-    }
-    final pick = (picked as Ok<H2hCupMonthPick?>).value;
-    if (pick == null) {
-      return const Result.ok(H2hCupBoard.none);
-    }
-    final state = pick.state;
-
     final places = <int>[
       for (final place in H2hCupPolicy.places)
         if (state.entriesOf(place).isNotEmpty || state.titleOf(place) != null)
@@ -273,11 +253,7 @@ final class GetH2hCupBoard {
 
     var fixturesByStage = const <H2hCupStageId, List<H2hCupStageFixture>>{};
     if (stages.isNotEmpty) {
-      final read = await _picks.fixturesOf(
-        stages: stages,
-        reader: principal.userId,
-        nowUtc: nowUtc,
-      );
+      final read = await readFixtures(stages);
       if (read is Err<Map<H2hCupStageId, List<H2hCupStageFixture>>>) {
         return Result.err(read.error);
       }
@@ -307,12 +283,11 @@ final class GetH2hCupBoard {
           ..add(pair.away);
       }
     }
-    final profiles = await _profiles.profilesOf(ids.toList());
-    if (profiles is Err<Map<UserId, WeeklyLeagueMemberProfile>>) {
-      return Result.err(profiles.error);
+    final named = await profiles.profilesOf(ids.toList());
+    if (named is Err<Map<UserId, WeeklyLeagueMemberProfile>>) {
+      return Result.err(named.error);
     }
-    final names =
-        (profiles as Ok<Map<UserId, WeeklyLeagueMemberProfile>>).value;
+    final names = (named as Ok<Map<UserId, WeeklyLeagueMemberProfile>>).value;
     final groups = <UserId, int>{
       for (final entry in state.entries) entry.userId: entry.groupNumber,
     };
@@ -320,7 +295,7 @@ final class GetH2hCupBoard {
       userId: id,
       displayName: names[id]?.displayName ?? '',
       groupNumber: groups[id] ?? 0,
-      isMe: id == principal.userId,
+      isMe: id == caller,
     );
 
     final paths = <H2hCupBoardPathView>[];
@@ -356,8 +331,9 @@ final class GetH2hCupBoard {
                         pair: pair,
                         result: GetMyH2hCup.resultOf(stage, pair.slot),
                         fixtures: fixtures,
-                        caller: principal.userId,
+                        caller: caller,
                         nowUtc: nowUtc,
+                        unmasked: unmasked,
                         player: player,
                       ),
                   ],
@@ -382,7 +358,7 @@ final class GetH2hCupBoard {
 
     return Result.ok(
       H2hCupBoard(
-        monthStart: pick.month,
+        monthStart: monthStart,
         paths: List<H2hCupBoardPathView>.unmodifiable(paths),
       ),
     );
@@ -394,6 +370,7 @@ final class GetH2hCupBoard {
     required List<H2hCupStageFixture> fixtures,
     required UserId caller,
     required DateTime nowUtc,
+    required bool unmasked,
     required MyH2hCupPlayer Function(UserId) player,
   }) => H2hCupBoardPairView(
     slot: pair.slot,
@@ -408,6 +385,7 @@ final class GetH2hCupBoard {
           pair: pair,
           caller: caller,
           nowUtc: nowUtc,
+          unmasked: unmasked,
         ),
     ],
   );
@@ -417,6 +395,7 @@ final class GetH2hCupBoard {
     required H2hCupPair pair,
     required UserId caller,
     required DateTime nowUtc,
+    required bool unmasked,
   }) {
     final kickoff = fixture.kickoffAt?.toUtc();
     final started = GetMyH2hRound.hasKickedOff(
@@ -447,26 +426,30 @@ final class GetH2hCupBoard {
         owner: pair.home,
         caller: caller,
         started: started,
+        unmasked: unmasked,
         fixture: fixture,
       ),
       awaySide: _sideOf(
         owner: pair.away,
         caller: caller,
         started: started,
+        unmasked: unmasked,
         fixture: fixture,
       ),
     );
   }
 
-  /// The side of [owner]: his pick when [caller] is [owner] or the fixture
-  /// has [started], otherwise a withheld side that carries nothing.
+  /// The side of [owner]: his pick when the board is [unmasked], when
+  /// [caller] is [owner], or when the fixture has [started]; otherwise a
+  /// withheld side that carries nothing.
   static H2hCupBoardSideView _sideOf({
     required UserId owner,
     required UserId caller,
     required bool started,
+    required bool unmasked,
     required H2hCupStageFixture fixture,
   }) {
-    if (owner != caller && !started) {
+    if (!unmasked && owner != caller && !started) {
       return const H2hCupBoardSideView.hidden();
     }
     return H2hCupBoardSideView(revealed: true, pick: fixture.picks[owner]);
@@ -490,5 +473,67 @@ final class GetH2hCupBoard {
         return a.fixtureId.compareTo(b.fixtureId);
       });
     return sorted;
+  }
+}
+
+/// Reads the whole Elite Cup of the month for a signed-in player or admin.
+///
+/// The month is the one [H2hCupMonthPicker] chooses for the caller, the one
+/// `GetMyH2hCup` reads. A caller outside the cup reads every path as a
+/// watcher: his own picks are in no pair, so before kickoff every side is
+/// withheld. A transient failure of a port is returned as it came.
+///
+/// Never throws; returns a typed [Result].
+final class GetH2hCupBoard {
+  /// Creates the use-case over its collaborators.
+  const GetH2hCupBoard({
+    required H2hCupStore cups,
+    required H2hCupPickReader picks,
+    required WeeklyLeagueProfileReader profiles,
+    required Clock clock,
+  }) : _cups = cups,
+       _picks = picks,
+       _profiles = profiles,
+       _clock = clock;
+
+  final H2hCupStore _cups;
+  final H2hCupPickReader _picks;
+  final WeeklyLeagueProfileReader _profiles;
+  final Clock _clock;
+
+  /// Reads the cup board for [principal], any player or admin.
+  Future<Result<H2hCupBoard>> call({
+    required AuthenticatedUser principal,
+  }) async {
+    final auth = Authorization.requireRole(principal, PlatformRole.user);
+    if (auth is Err<AuthenticatedUser>) {
+      return Result.err(auth.error);
+    }
+    final nowUtc = _clock.nowUtc().toUtc();
+    final picked = await H2hCupMonthPicker.pick(
+      cups: _cups,
+      today: riyadhDayOf(nowUtc),
+      user: principal.userId,
+    );
+    if (picked is Err<H2hCupMonthPick?>) {
+      return Result.err(picked.error);
+    }
+    final pick = (picked as Ok<H2hCupMonthPick?>).value;
+    if (pick == null) {
+      return const Result.ok(H2hCupBoard.none);
+    }
+    return H2hCupBoardBuilder.build(
+      state: pick.state,
+      monthStart: pick.month,
+      caller: principal.userId,
+      nowUtc: nowUtc,
+      unmasked: false,
+      profiles: _profiles,
+      readFixtures: (stages) => _picks.fixturesOf(
+        stages: stages,
+        reader: principal.userId,
+        nowUtc: nowUtc,
+      ),
+    );
   }
 }
