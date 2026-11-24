@@ -15,11 +15,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../../core/design/app_radius.dart';
 import '../../../../core/design/app_spacing.dart';
 import '../../../../core/design/app_tokens.dart';
 import '../../../../core/error/error_presenter.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/ui/segmented_pills.dart';
+import '../../../competition/team_registry.dart';
 import '../../../h2h/h2h_cup_texts.dart';
 import '../../../h2h/h2h_texts.dart';
 import '../../widgets/admin_ui_kit.dart';
@@ -36,6 +38,56 @@ final ownerH2hCupProvider = FutureProvider.autoDispose
         Err<OwnerH2hCupDto>(:final error) => throw error,
       };
     }, retry: (_, _) => null);
+
+// NK317_01
+/// `GET /owner/h2h-cup/picks?month=` -- the month's board with every
+/// player's pick shown, kicked off or not. Read only once a pair is opened.
+final ownerH2hCupPicksProvider = FutureProvider.autoDispose
+    .family<H2hCupBoardDto, String?>((ref, month) async {
+      return switch (await ref
+          .watch(adminApiProvider)
+          .ownerH2hCupPicks(month: month)) {
+        Ok<H2hCupBoardDto>(:final value) => value,
+        Err<H2hCupBoardDto>(:final error) => throw error,
+      };
+    }, retry: (_, _) => null);
+
+/// Opens a pair's picks.
+const String _ownerPicksOpen = 'عرض توقعات المباريات';
+
+/// Closes a pair's picks.
+const String _ownerPicksClose = 'إخفاء توقعات المباريات';
+
+/// Said above the picks: the owner sees what a player cannot.
+const String _ownerPicksNotice = 'للمالك فقط: ترى التوقعات قبل الانطلاق';
+
+/// A pair the board does not hold, or one that holds no fixture yet.
+const String _ownerPicksNone = 'لا مباريات لهذا الزوج بعد.';
+
+/// The fixtures of the pair at [place], [round] and [slot] in [board]. Null
+/// when the board holds no such pair, or holds it drawn between other
+/// players (the pair was redrawn between the two reads).
+List<H2hCupBoardFixtureDto>? _ownerPairFixtures(
+  H2hCupBoardDto board,
+  int place,
+  String round,
+  H2hCupPairDto pair,
+) {
+  for (final H2hCupBoardPathDto path in board.paths) {
+    if (path.place != place) continue;
+    for (final H2hCupBoardStageDto stage in path.stages) {
+      if (stage.round != round) continue;
+      for (final H2hCupBoardPairDto found in stage.pairs) {
+        if (found.slot == pair.slot &&
+            found.home.userId == pair.home.userId &&
+            found.away.userId == pair.away.userId) {
+          return found.fixtures;
+        }
+      }
+    }
+  }
+  return null;
+}
 
 /// The keys of the three locks, in the order they are drawn.
 const List<String> ownerH2hSwitchKeys = <String>[
@@ -128,6 +180,8 @@ class _OwnerH2hSectionState extends ConsumerState<OwnerH2hSection> {
           'وحُسم ${value.closedMonths} من الأشهر.',
         );
         ref.invalidate(ownerH2hCupProvider);
+        // NK317_02
+        ref.invalidate(ownerH2hCupPicksProvider);
       case Err<H2hJobsRunDto>(:final error):
         _say(ErrorPresenter.message(error));
     }
@@ -366,7 +420,7 @@ class _Body extends StatelessWidget {
         for (final OwnerH2hCupPathDto path in data.paths)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _Path(path: path),
+            child: _Path(path: path, month: data.monthStart),
           ),
       ],
     );
@@ -374,9 +428,12 @@ class _Body extends StatelessWidget {
 }
 
 class _Path extends StatelessWidget {
-  const _Path({required this.path});
+  const _Path({required this.path, required this.month});
 
   final OwnerH2hCupPathDto path;
+
+  /// The month the cup belongs to, asked of the picks route.
+  final String month;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +473,7 @@ class _Path extends StatelessWidget {
               ),
             ),
           for (final H2hCupStageDto stage in path.stages)
-            _Stage(place: path.place, stage: stage),
+            _Stage(place: path.place, month: month, stage: stage),
         ],
       ),
     );
@@ -424,9 +481,10 @@ class _Path extends StatelessWidget {
 }
 
 class _Stage extends StatelessWidget {
-  const _Stage({required this.place, required this.stage});
+  const _Stage({required this.place, required this.month, required this.stage});
 
   final int place;
+  final String month;
   final H2hCupStageDto stage;
 
   @override
@@ -458,7 +516,12 @@ class _Stage extends StatelessWidget {
               ),
             ),
           for (final H2hCupPairDto pair in stage.pairs)
-            _PairLine(place: place, round: stage.round, pair: pair),
+            _PairLine(
+              place: place,
+              month: month,
+              round: stage.round,
+              pair: pair,
+            ),
           if (stage.bye != null)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.xs),
@@ -473,19 +536,31 @@ class _Stage extends StatelessWidget {
   }
 }
 
-class _PairLine extends StatelessWidget {
+class _PairLine extends ConsumerStatefulWidget {
   const _PairLine({
     required this.place,
+    required this.month,
     required this.round,
     required this.pair,
   });
 
   final int place;
+  final String month;
   final String round;
   final H2hCupPairDto pair;
 
   @override
+  ConsumerState<_PairLine> createState() => _PairLineState();
+}
+
+class _PairLineState extends ConsumerState<_PairLine> {
+  bool _open = false;
+
+  @override
   Widget build(BuildContext context) {
+    final int place = widget.place;
+    final String round = widget.round;
+    final H2hCupPairDto pair = widget.pair;
     final AppTokens t = context.tokens;
     final bool homeWon = pair.decided && pair.winnerUserId == pair.home.userId;
     final bool awayWon = pair.decided && pair.winnerUserId == pair.away.userId;
@@ -539,6 +614,325 @@ class _PairLine extends StatelessWidget {
               key: Key('owner.h2h.outcome.$place.$round.${pair.slot}'),
               style: context.text.bodySmall?.copyWith(color: t.textMuted),
             ),
+          // NK317_03
+          Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              key: Key('owner.h2h.pair.$place.$round.${pair.slot}.toggle'),
+              onTap: () => setState(() => _open = !_open),
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        _open ? _ownerPicksClose : _ownerPicksOpen,
+                        style: context.text.labelMedium?.copyWith(
+                          color: t.gold,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _open
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      color: t.gold,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_open)
+            _PairPicks(
+              place: place,
+              month: widget.month,
+              round: round,
+              pair: pair,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A pair's fixtures with both players' picks, read from the owner picks
+/// route. Read only: nothing here writes, and the owner sees the picks of
+/// fixtures that have not kicked off, which no player does.
+class _PairPicks extends ConsumerWidget {
+  const _PairPicks({
+    required this.place,
+    required this.month,
+    required this.round,
+    required this.pair,
+  });
+
+  final int place;
+  final String month;
+  final String round;
+  final H2hCupPairDto pair;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens t = context.tokens;
+    final String prefix = 'owner.h2h.picks.$place.$round.${pair.slot}';
+    final AsyncValue<H2hCupBoardDto> board = ref.watch(
+      ownerH2hCupPicksProvider(month),
+    );
+    return Container(
+      key: Key(prefix),
+      margin: const EdgeInsets.only(top: AppSpacing.xs),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: t.surfaceElevated,
+        borderRadius: AppRadius.brMd,
+        border: Border.all(color: t.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(Icons.visibility_rounded, size: 16, color: t.gold),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  _ownerPicksNotice,
+                  key: Key('$prefix.notice'),
+                  style: context.text.labelMedium?.copyWith(
+                    color: t.gold,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          board.when(
+            loading: () => Padding(
+              key: Key('$prefix.loading'),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+            error: (Object e, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  ErrorPresenter.messageOf(e),
+                  key: Key('$prefix.error'),
+                  style: TextStyle(color: t.errorText),
+                ),
+                TextButton(
+                  key: Key('$prefix.retry'),
+                  onPressed: () => ref.invalidate(ownerH2hCupPicksProvider),
+                  child: const Text(h2hCupBoardRetry),
+                ),
+              ],
+            ),
+            data: (H2hCupBoardDto data) {
+              final List<H2hCupBoardFixtureDto>? fixtures = _ownerPairFixtures(
+                data,
+                place,
+                round,
+                pair,
+              );
+              if (fixtures == null || fixtures.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(
+                    _ownerPicksNone,
+                    key: Key('$prefix.empty'),
+                    style: context.text.bodySmall?.copyWith(color: t.textMuted),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final H2hCupBoardFixtureDto fixture in fixtures)
+                    _PickFixture(
+                      keyPrefix: '$prefix.fixture.${fixture.fixtureId}',
+                      pair: pair,
+                      fixture: fixture,
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One fixture: the match, its state, then the two players' picks.
+class _PickFixture extends StatelessWidget {
+  const _PickFixture({
+    required this.keyPrefix,
+    required this.pair,
+    required this.fixture,
+  });
+
+  final String keyPrefix;
+  final H2hCupPairDto pair;
+  final H2hCupBoardFixtureDto fixture;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final H2hCupBoardFixtureDto f = fixture;
+    final bool scored = f.homeGoals != null && f.awayGoals != null;
+    final String middle = scored
+        ? h2hScoreline(f.homeGoals!, f.awayGoals!)
+        : h2hCupKickoffLabel(f.kickoffAt);
+    final TextStyle? team = context.text.bodyMedium?.copyWith(
+      color: t.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+    return Padding(
+      key: Key(keyPrefix),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  teamDisplayName(f.homeTeam),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: team,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Text(
+                  middle,
+                  key: Key('$keyPrefix.middle'),
+                  style: context.text.titleSmall?.copyWith(
+                    color: scored ? t.textPrimary : t.textSecondary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  teamDisplayName(f.awayTeam),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: team,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            h2hFixtureStateLabel(f.state),
+            key: Key('$keyPrefix.state'),
+            textAlign: TextAlign.center,
+            style: context.text.labelSmall?.copyWith(color: t.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _PickRow(
+            keyPrefix: '$keyPrefix.home',
+            player: pair.home,
+            side: f.homeSide,
+          ),
+          _PickRow(
+            keyPrefix: '$keyPrefix.away',
+            player: pair.away,
+            side: f.awaySide,
+          ),
+          if (f.state == 'void')
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(
+                h2hCupBoardVoidNote,
+                key: Key('$keyPrefix.void'),
+                style: context.text.bodySmall?.copyWith(color: t.textSecondary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One player's line of a fixture: his name, then his pick, or that it is
+/// withheld, or that he did not predict. The owner route never withholds,
+/// but the contract allows it, so a withheld side is never read as "did
+/// not predict".
+class _PickRow extends StatelessWidget {
+  const _PickRow({
+    required this.keyPrefix,
+    required this.player,
+    required this.side,
+  });
+
+  final String keyPrefix;
+  final H2hCupPlayerDto player;
+  final H2hCupBoardSideDto side;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens t = context.tokens;
+    final H2hPickDto? pick = side.pick;
+    final Widget body;
+    if (!side.revealed) {
+      body = Text(
+        h2hCupPickHidden,
+        key: Key('$keyPrefix.hidden'),
+        style: context.text.labelMedium?.copyWith(color: t.textSecondary),
+      );
+    } else if (pick == null) {
+      body = Text(
+        h2hCupNoPickOther,
+        key: Key('$keyPrefix.none'),
+        style: context.text.titleSmall?.copyWith(
+          color: t.textSecondary,
+          fontWeight: FontWeight.w800,
+        ),
+      );
+    } else {
+      final String extras = h2hCupPickExtras(pick);
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            h2hScoreline(pick.homeGoals, pick.awayGoals),
+            key: Key('$keyPrefix.pick'),
+            style: context.text.titleSmall?.copyWith(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (extras.isNotEmpty)
+            Text(
+              extras,
+              key: Key('$keyPrefix.extras'),
+              style: context.text.labelSmall?.copyWith(color: t.textSecondary),
+            ),
+        ],
+      );
+    }
+    return Padding(
+      key: Key(keyPrefix),
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              h2hCupNameOf(player),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodySmall?.copyWith(color: t.textPrimary),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(child: body),
         ],
       ),
     );

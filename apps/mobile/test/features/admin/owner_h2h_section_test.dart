@@ -108,6 +108,119 @@ OwnerH2hCupDto _cup(String month) => OwnerH2hCupDto(
       : const <OwnerH2hCupPathDto>[],
 );
 
+// NK317_04
+H2hCupBoardFixtureDto _fx(
+  String id, {
+  required String state,
+  required H2hCupBoardSideDto home,
+  required H2hCupBoardSideDto away,
+  String? kickoff,
+  int? homeGoals,
+  int? awayGoals,
+}) => H2hCupBoardFixtureDto(
+  fixtureId: id,
+  homeTeam: 'الأهلي',
+  awayTeam: 'الهلال',
+  state: state,
+  kickoffAt: kickoff,
+  homeGoals: homeGoals,
+  awayGoals: awayGoals,
+  homeSide: home,
+  awaySide: away,
+);
+
+/// The board of the picks route: only path 1 holds the pair, so the same
+/// pair on the other paths is one the board does not know.
+H2hCupBoardDto _board(String month, {bool hideAway = false}) => H2hCupBoardDto(
+  monthStart: month,
+  paths: <H2hCupBoardPathDto>[
+    H2hCupBoardPathDto(
+      place: 1,
+      stages: <H2hCupBoardStageDto>[
+        H2hCupBoardStageDto(
+          round: 'semi',
+          cupDay: 1,
+          phase: 'scheduled',
+          attempt: 1,
+          day: '2026-11-22',
+          pairs: <H2hCupBoardPairDto>[
+            H2hCupBoardPairDto(
+              slot: 1,
+              home: _sami,
+              away: _noura,
+              decided: false,
+              fixtures: <H2hCupBoardFixtureDto>[
+                _fx(
+                  'fx-1',
+                  state: 'not_started',
+                  kickoff: '2099-11-22T19:00:00Z',
+                  home: const H2hCupBoardSideDto(
+                    revealed: true,
+                    pick: H2hPickDto(
+                      homeGoals: 2,
+                      awayGoals: 1,
+                      isDouble: true,
+                    ),
+                  ),
+                  away: hideAway
+                      ? const H2hCupBoardSideDto.hidden()
+                      : const H2hCupBoardSideDto(
+                          revealed: true,
+                          pick: H2hPickDto(
+                            homeGoals: 0,
+                            awayGoals: 0,
+                            isDouble: false,
+                          ),
+                        ),
+                ),
+                _fx(
+                  'fx-2',
+                  state: 'not_started',
+                  home: const H2hCupBoardSideDto(
+                    revealed: true,
+                    pick: H2hPickDto(
+                      homeGoals: 1,
+                      awayGoals: 1,
+                      isDouble: false,
+                    ),
+                  ),
+                  away: const H2hCupBoardSideDto(revealed: true),
+                ),
+                _fx(
+                  'fx-3',
+                  state: 'finished',
+                  kickoff: '2026-11-20T17:00:00Z',
+                  homeGoals: 3,
+                  awayGoals: 0,
+                  home: const H2hCupBoardSideDto(
+                    revealed: true,
+                    pick: H2hPickDto(
+                      homeGoals: 3,
+                      awayGoals: 0,
+                      isDouble: false,
+                      points: 6,
+                      exact: true,
+                    ),
+                  ),
+                  away: const H2hCupBoardSideDto(
+                    revealed: true,
+                    pick: H2hPickDto(
+                      homeGoals: 1,
+                      awayGoals: 0,
+                      isDouble: false,
+                      points: 3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+  ],
+);
+
 final class _Server {
   _Server({this.withSwitches = true});
 
@@ -118,6 +231,12 @@ final class _Server {
     'h2h_cup_crowning': true,
   };
   final List<http.Request> requests = <http.Request>[];
+
+  /// Makes the picks route fail, as a read that cannot be served.
+  bool picksFail = false;
+
+  /// Makes the picks route withhold one side, as the contract allows.
+  bool hideAway = false;
 
   Map<String, Object?> _line(String key) => {
     'key': key,
@@ -146,6 +265,15 @@ final class _Server {
               .cast<String, Object?>();
       on[key] = body['is_on']! as bool;
       return _json(_line(key));
+    }
+    if (path == '/owner/h2h-cup/picks') {
+      if (picksFail) return _json(const <String, Object?>{}, 500);
+      return _json(
+        _board(
+          request.url.queryParameters['month'] ?? '2026-11-01',
+          hideAway: hideAway,
+        ).toJson(),
+      );
     }
     if (path == '/owner/h2h-cup') {
       return _json(
@@ -334,6 +462,153 @@ void main() {
     await _open(tester, _Server(), const OwnerH2hSection(), textScale: 2);
 
     expect(find.byKey(const Key('owner.h2h.path.1')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  // NK317_05
+  const String toggle = 'owner.h2h.pair.1.semi.1.toggle';
+  const String picks = 'owner.h2h.picks.1.semi.1';
+  const String fx1 = '$picks.fixture.fx-1';
+  const String fx2 = '$picks.fixture.fx-2';
+  const String fx3 = '$picks.fixture.fx-3';
+
+  testWidgets('no pick is asked for until a pair is opened', (tester) async {
+    final server = _Server();
+    await _open(tester, server, const OwnerH2hSection());
+
+    expect(find.byKey(const Key(toggle)), findsOneWidget);
+    expect(find.byKey(const Key(picks)), findsNothing);
+    expect(server.to('/owner/h2h-cup/picks'), isEmpty);
+  });
+
+  testWidgets('an opened pair shows both picks of every fixture, started or '
+      'not, under the owner-only note', (tester) async {
+    final server = _Server();
+    await _open(tester, server, const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+
+    final request = server.to('/owner/h2h-cup/picks').single;
+    expect(request.method, 'GET');
+    expect(request.url.queryParameters['month'], '2026-11-01');
+    expect(
+      _text(tester, '$picks.notice'),
+      'للمالك فقط: ترى التوقعات قبل الانطلاق',
+    );
+    // A fixture that has not kicked off: the owner reads both picks.
+    expect(_text(tester, '$fx1.home.pick'), '2 - 1');
+    expect(_text(tester, '$fx1.home.extras'), 'مضاعفة');
+    expect(_text(tester, '$fx1.away.pick'), '0 - 0');
+    expect(_text(tester, '$fx1.middle'), '22:00');
+    // A player who did not predict says so, and the other pick shows.
+    expect(_text(tester, '$fx2.home.pick'), '1 - 1');
+    expect(_text(tester, '$fx2.away.none'), 'لم يتوقع');
+    // A fixture with a result shows it, and each pick with its points.
+    expect(_text(tester, '$fx3.middle'), '3 - 0');
+    expect(_text(tester, '$fx3.home.extras'), contains('+6'));
+    expect(_text(tester, '$fx3.away.extras'), contains('+3'));
+    // Nothing is withheld from the owner.
+    expect(find.text('تظهر بعد انطلاق المباراة'), findsNothing);
+  });
+
+  testWidgets('an opened pair has no way to edit anything', (tester) async {
+    final server = _Server();
+    await _open(tester, server, const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key(fx1)), findsOneWidget);
+    for (final Type type in <Type>[
+      TextField,
+      Switch,
+      Checkbox,
+      IconButton,
+      TextButton,
+      FilledButton,
+      ElevatedButton,
+      OutlinedButton,
+    ]) {
+      expect(
+        find.descendant(
+          of: find.byKey(const Key(picks)),
+          matching: find.byType(type),
+        ),
+        findsNothing,
+        reason: '$type inside the picks',
+      );
+    }
+    for (final http.Request r in server.requests) {
+      if (r.url.path.startsWith('/owner/h2h-cup/picks')) {
+        expect(r.method, 'GET');
+      }
+    }
+  });
+
+  testWidgets('closing the pair hides the picks', (tester) async {
+    await _open(tester, _Server(), const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key(picks)), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key(picks)), findsNothing);
+  });
+
+  testWidgets('a pair the board does not hold says so', (tester) async {
+    await _open(tester, _Server(), const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key('owner.h2h.pair.2.semi.1.toggle')));
+    await tester.pumpAndSettle();
+
+    expect(
+      _text(tester, 'owner.h2h.picks.2.semi.1.empty'),
+      'لا مباريات لهذا الزوج بعد.',
+    );
+  });
+
+  testWidgets('a side the route withholds is never read as not predicted', (
+    tester,
+  ) async {
+    final server = _Server()..hideAway = true;
+    await _open(tester, server, const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+
+    expect(_text(tester, '$fx1.away.hidden'), 'تظهر بعد انطلاق المباراة');
+    expect(find.byKey(const Key('$fx1.away.none')), findsNothing);
+    expect(_text(tester, '$fx1.home.pick'), '2 - 1');
+  });
+
+  testWidgets('a failed read says so and can be retried', (tester) async {
+    final server = _Server()..picksFail = true;
+    await _open(tester, server, const OwnerH2hSection());
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('$picks.error')), findsOneWidget);
+    expect(find.byKey(const Key(fx1)), findsNothing);
+
+    server.picksFail = false;
+    await tester.tap(find.byKey(const Key('$picks.retry')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('$picks.error')), findsNothing);
+    expect(_text(tester, '$fx1.home.pick'), '2 - 1');
+  });
+
+  testWidgets('an opened pair fits 360px at text x2', (tester) async {
+    await _open(tester, _Server(), const OwnerH2hSection(), textScale: 2);
+
+    await tester.tap(find.byKey(const Key(toggle)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key(fx3)), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
