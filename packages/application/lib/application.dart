@@ -121,6 +121,7 @@ export 'src/gamification/get_owner_h2h_cup.dart';
 export 'src/gamification/get_my_insights.dart';
 export 'src/gamification/get_my_streak.dart';
 export 'src/gamification/h2h_chat.dart';
+export 'src/gamification/h2h_cup_month_pick.dart';
 export 'src/gamification/h2h_cycle.dart';
 export 'src/gamification/h2h_group_pairs.dart';
 export 'src/gamification/h2h_month_book.dart';

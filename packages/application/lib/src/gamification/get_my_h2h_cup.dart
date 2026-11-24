@@ -11,6 +11,7 @@ library;
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/football_data/provider_sync_rules.dart'
     show riyadhDayOf;
+import 'package:application/src/gamification/h2h_cup_month_pick.dart';
 import 'package:application/src/gamification/ports/h2h_cup_store.dart';
 import 'package:application/src/gamification/ports/weekly_league_profile_reader.dart';
 import 'package:application/src/identity/authorization.dart';
@@ -220,11 +221,11 @@ final class GetMyH2hCup {
        _clock = clock;
 
   /// Days a finished cup stays on the caller's screen.
-  static const int lingerDays = 3;
+  static const int lingerDays = H2hCupMonthPicker.lingerDays;
 
   /// The path a player outside the cup may watch: the first places, the
   /// group leaders.
-  static const int spectatorPlace = 1;
+  static const int spectatorPlace = H2hCupMonthPicker.spectatorPlace;
 
   final H2hCupStore _cups;
   final WeeklyLeagueProfileReader _profiles;
@@ -237,74 +238,26 @@ final class GetMyH2hCup {
       return Result.err(auth.error);
     }
     final today = riyadhDayOf(_clock.nowUtc());
-    final current = H2hLeaguePolicy.monthStartOf(today);
-    final months = <DateTime>[
-      current,
-      DateTime.utc(current.year, current.month - 1),
-    ];
-    // The first open cup of the first places, kept for a caller who is in
-    // none of them: he may watch it, he does not play it.
-    ({DateTime month, H2hCupState state})? watch;
-    for (final month in months) {
-      if (!H2hLeaguePolicy.usesEliteDraw(month)) {
-        continue;
-      }
-      final read = await _cups.stateOf(month);
-      if (read is Err<H2hCupState>) {
-        return Result.err(read.error);
-      }
-      final state = (read as Ok<H2hCupState>).value;
-      if (_over(state, today)) {
-        continue;
-      }
-      final mine = _entryOf(state, principal.userId);
-      if (mine == null) {
-        if (watch == null && state.entriesOf(spectatorPlace).isNotEmpty) {
-          watch = (month: month, state: state);
-        }
-        continue;
-      }
-      return _view(
-        month,
-        state,
-        principal.userId,
-        place: mine.place,
-        groupNumber: mine.groupNumber,
-      );
+    final picked = await H2hCupMonthPicker.pick(
+      cups: _cups,
+      today: today,
+      user: principal.userId,
+    );
+    if (picked is Err<H2hCupMonthPick?>) {
+      return Result.err(picked.error);
     }
-    if (watch != null) {
-      return _view(
-        watch.month,
-        watch.state,
-        principal.userId,
-        place: spectatorPlace,
-        watching: true,
-      );
+    final pick = (picked as Ok<H2hCupMonthPick?>).value;
+    if (pick == null) {
+      return const Result.ok(MyH2hCup.notQualified);
     }
-    return const Result.ok(MyH2hCup.notQualified);
-  }
-
-  static H2hCupEntry? _entryOf(H2hCupState state, UserId user) {
-    for (final entry in state.entries) {
-      if (entry.userId == user) {
-        return entry;
-      }
-    }
-    return null;
-  }
-
-  /// Whether the cup is finished and has been for more than [lingerDays].
-  static bool _over(H2hCupState state, DateTime today) {
-    if (state.titles.length < H2hCupPolicy.places.length) {
-      return false;
-    }
-    DateTime? last;
-    for (final stage in state.stages) {
-      if (last == null || stage.day.isAfter(last)) {
-        last = stage.day;
-      }
-    }
-    return last == null || today.difference(last).inDays > lingerDays;
+    return _view(
+      pick.month,
+      pick.state,
+      principal.userId,
+      place: pick.place,
+      groupNumber: pick.groupNumber,
+      watching: pick.watching,
+    );
   }
 
   Future<Result<MyH2hCup>> _view(
