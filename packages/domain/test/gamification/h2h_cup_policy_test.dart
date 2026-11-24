@@ -198,9 +198,22 @@ void main() {
       expect(d.outcome, H2hCupOutcome.bothAbsent);
     });
 
-    test('the league tie-break: league points, points, exact, group', () {
+    // NK305_02
+    test('level on both: the month\'s prediction points beat the league '
+        'points (the 2026-11-23 semi-final)', () {
+      final d = H2hCupPolicy.decide(
+        home: _side(3, exact: 1),
+        away: _side(3, exact: 1),
+        homeEntry: _entry(1, league: 34, points: 126, exact: 37, group: 2),
+        awayEntry: _entry(2, league: 43, points: 123, exact: 41, group: 4),
+      );
+      expect(d.winner, _u(1));
+      expect(d.outcome, H2hCupOutcome.league);
+    });
+
+    test('the league tie-break: points, exact, league points, group', () {
       expect(
-        H2hCupPolicy.compareLeague(_entry(1, league: 41), _entry(2)),
+        H2hCupPolicy.compareLeague(_entry(1, points: 101), _entry(2)),
         lessThan(0),
       );
       expect(
@@ -212,9 +225,33 @@ void main() {
         lessThan(0),
       );
       expect(
+        H2hCupPolicy.compareLeague(_entry(1, league: 41), _entry(2)),
+        lessThan(0),
+      );
+      expect(
         H2hCupPolicy.compareLeague(_entry(1, group: 3), _entry(2, group: 2)),
         greaterThan(0),
       );
     });
+
+    test(
+      'the order of the tie-break: points over exact over league points',
+      () {
+        expect(
+          H2hCupPolicy.compareLeague(
+            _entry(1, league: 10, points: 101, exact: 1),
+            _entry(2, league: 50, exact: 9),
+          ),
+          lessThan(0),
+        );
+        expect(
+          H2hCupPolicy.compareLeague(
+            _entry(1, league: 10, exact: 6),
+            _entry(2, league: 50),
+          ),
+          lessThan(0),
+        );
+      },
+    );
   });
 }

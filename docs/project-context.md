@@ -7439,8 +7439,9 @@ player's cup screen and the admin's schedule board are script 185b.
   qualifying day with the same pairs (`attempt` 2, 3, ...).
 - **A pair** (`H2hCupPolicy.decide`): the side that predicted beats the
   side that did not; both present, the higher points on the stage's
-  fixtures, then more exact scorelines, then the better league month
-  (league points, prediction points, exact, group number); neither present,
+  fixtures, then more exact scorelines, then the better month in the league
+  (prediction points, exact, league points, group number; script 305: it
+  was league points first until 2026-11-24); neither present,
   both lose. A semi-final both lost sends the other winner to the title
   without a final (`walkover`); none left, the title is `vacant`.
 - **Tables** (all append-only, RLS on, nothing for anon/authenticated):
@@ -9564,6 +9565,35 @@ Elite Cup's matchups between the group leaders (the first places' path).
   `isMe`; no first places; a finished cup), `h2h_cup_route_test.dart`,
   `h2h_cup_card_test.dart`. Written without a Dart SDK in the assistant's
   sandbox: analyze and the tests run on the device, and were not run before.
+
+### The cup's last tie-break: the month's points first (script 305, 2026-11-24)
+
+- **Why** (owner decision 2026-11-24): the first path's second semi-final
+  (2026-11-23) ended 3-3 with equal exact scorelines and went to the league
+  month. Judged by league points first, Adi (43) beat Jayyash (34), though
+  Jayyash had the higher prediction points (126 against 123): league points
+  of two different groups are not level. The owner asked for the month's
+  prediction points to decide.
+- **Changed**: `H2hCupPolicy.compareLeague` now reads the month's prediction
+  points, then exact scorelines, then league points, then the lower group
+  number (it was league points, prediction points, exact, group). The
+  players' December rules line says so. `H2hCupOutcome.league` and the
+  stored outcome value are unchanged.
+- **Applies to** every pair the server judges after it is deployed. A
+  decided pair stays as stored (a stored one never changes by code). The
+  owner decided to apply it to the 2026-11-23 semi-final as well and moved
+  the same day's final accordingly through a one-off SQL outside the
+  repository (the cup tables are append-only by trigger; the SQL lifted the
+  two guards inside a single transaction and put them back). Paths 2 and 3
+  are judged by the new order only if the server is deployed before their
+  semi-finals are settled.
+- **Not changed**: no migration, no table, no other tie-break level, no
+  permission.
+- **Tests**: `h2h_cup_policy_test.dart` (the 2026-11-23 case with its real
+  numbers, each level of the order and their order against each other) and
+  `h2h_rules_by_month_test.dart` (the rules line). Written without a Dart
+  SDK in the assistant's sandbox: the script runs analyze and the tests on
+  the device, and they were not run before it.
 
 ## 3. Version-Verification Log
 

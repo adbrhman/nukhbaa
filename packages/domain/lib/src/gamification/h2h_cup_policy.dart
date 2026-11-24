@@ -18,11 +18,11 @@
 /// the next qualifying day with the same pairs; nothing is lost and nothing
 /// is shortened.
 ///
-/// A tie is judged on the stage's fixtures only (the monthly points never
-/// decide it): the side that predicted wins over the side that did not;
-/// with both present, the higher points, then more exact scorelines, then
-/// the better league month (league points, prediction points, exact
-/// scorelines, the group's number); with neither present both lose.
+/// A tie is judged on the stage's fixtures first: the side that predicted
+/// wins over the side that did not; with both present, the higher points,
+/// then more exact scorelines, then the better month in the league
+/// (prediction points, exact scorelines, league points, the group's number;
+/// script 305, owner decision 2026-11-24); with neither present both lose.
 library;
 
 import 'dart:math';
@@ -329,17 +329,20 @@ abstract final class H2hCupPolicy {
     );
   }
 
-  /// Negative when [a] had the better league month: league points, then
-  /// prediction points, then exact scorelines, then the lower group number.
+  // NK305_01
+  /// Negative when [a] had the better month in the league: prediction
+  /// points, then exact scorelines, then league points, then the lower group
+  /// number (owner decision 2026-11-24: the month's points first -- league
+  /// points alone are not level between two groups).
   static int compareLeague(H2hCupEntry a, H2hCupEntry b) {
-    if (a.leaguePoints != b.leaguePoints) {
-      return b.leaguePoints.compareTo(a.leaguePoints);
-    }
     if (a.pointsFor != b.pointsFor) {
       return b.pointsFor.compareTo(a.pointsFor);
     }
     if (a.exactCount != b.exactCount) {
       return b.exactCount.compareTo(a.exactCount);
+    }
+    if (a.leaguePoints != b.leaguePoints) {
+      return b.leaguePoints.compareTo(a.leaguePoints);
     }
     return a.groupNumber.compareTo(b.groupNumber);
   }
