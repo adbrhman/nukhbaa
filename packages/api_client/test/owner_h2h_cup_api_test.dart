@@ -91,4 +91,106 @@ void main() {
       );
     });
   });
+
+  // NK314_04
+  group('AdminApi.ownerH2hCupPicks', () {
+    test(
+      '200 -> Ok(H2hCupBoardDto), GET /owner/h2h-cup/picks?month=',
+      () async {
+        const expected = H2hCupBoardDto(
+          monthStart: '2026-11-01',
+          paths: [
+            H2hCupBoardPathDto(
+              place: 1,
+              stages: [
+                H2hCupBoardStageDto(
+                  round: 'semi',
+                  cupDay: 1,
+                  phase: 'scheduled',
+                  attempt: 1,
+                  day: '2026-11-22',
+                  pairs: [
+                    H2hCupBoardPairDto(
+                      slot: 1,
+                      home: H2hCupPlayerDto(
+                        userId: 'u-me',
+                        displayName: 'X',
+                        groupNumber: 2,
+                        isMe: true,
+                      ),
+                      away: H2hCupPlayerDto(
+                        userId: 'u-x',
+                        displayName: 'Y',
+                        groupNumber: 3,
+                        isMe: false,
+                      ),
+                      decided: false,
+                      fixtures: [
+                        H2hCupBoardFixtureDto(
+                          fixtureId: 'f-1',
+                          homeTeam: 'A',
+                          awayTeam: 'B',
+                          state: 'not_started',
+                          homeSide: H2hCupBoardSideDto(
+                            revealed: true,
+                            pick: H2hPickDto(
+                              homeGoals: 2,
+                              awayGoals: 1,
+                              isDouble: false,
+                            ),
+                          ),
+                          awaySide: H2hCupBoardSideDto.hidden(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        );
+        final ctx = buildTransport(
+          (_) async => okJson(expected.toJson()),
+          token: 'jwt-abc',
+        );
+
+        final result = await AdminApi(
+          ctx.transport,
+        ).ownerH2hCupPicks(month: '2026-11-01');
+
+        expect(
+          (result as Ok<H2hCupBoardDto>).value.toJson(),
+          expected.toJson(),
+        );
+        final req = ctx.captured.single;
+        expect(req.method, 'GET');
+        expect(req.url.path, '/owner/h2h-cup/picks');
+        expect(req.url.queryParameters['month'], '2026-11-01');
+        expect(req.headers['authorization'], 'Bearer jwt-abc');
+      },
+    );
+
+    test('without a month no query is sent', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(const H2hCupBoardDto().toJson()),
+      );
+
+      await AdminApi(ctx.transport).ownerH2hCupPicks();
+
+      expect(ctx.captured.single.url.queryParameters, isEmpty);
+    });
+
+    test('a refusal arrives as an error with its code', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(400, 'owner.h2h_month_invalid', 'no'),
+      );
+
+      final result = await AdminApi(ctx.transport).ownerH2hCupPicks(month: 'x');
+
+      expect(
+        (result as Err<H2hCupBoardDto>).error.code,
+        'owner.h2h_month_invalid',
+      );
+    });
+  });
 }

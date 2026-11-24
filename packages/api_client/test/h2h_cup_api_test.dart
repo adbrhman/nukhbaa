@@ -84,4 +84,116 @@ void main() {
       expect((result as Err<MyH2hCupDto>).error.code, 'h2h.cup_unknown');
     });
   });
+
+  // NK314_03
+  group('AuthApi.h2hCupBoard', () {
+    test('200 -> Ok(H2hCupBoardDto), GET /me/h2h-cup/board', () async {
+      const expected = H2hCupBoardDto(
+        monthStart: '2026-11-01',
+        paths: [
+          H2hCupBoardPathDto(
+            place: 1,
+            stages: [
+              H2hCupBoardStageDto(
+                round: 'semi',
+                cupDay: 1,
+                phase: 'scheduled',
+                attempt: 1,
+                day: '2026-11-22',
+                pairs: [
+                  H2hCupBoardPairDto(
+                    slot: 1,
+                    home: H2hCupPlayerDto(
+                      userId: 'u-me',
+                      displayName: 'X',
+                      groupNumber: 2,
+                      isMe: true,
+                    ),
+                    away: H2hCupPlayerDto(
+                      userId: 'u-x',
+                      displayName: 'Y',
+                      groupNumber: 3,
+                      isMe: false,
+                    ),
+                    decided: false,
+                    fixtures: [
+                      H2hCupBoardFixtureDto(
+                        fixtureId: 'f-1',
+                        homeTeam: 'A',
+                        awayTeam: 'B',
+                        state: 'not_started',
+                        homeSide: H2hCupBoardSideDto(
+                          revealed: true,
+                          pick: H2hPickDto(
+                            homeGoals: 2,
+                            awayGoals: 1,
+                            isDouble: false,
+                          ),
+                        ),
+                        awaySide: H2hCupBoardSideDto.hidden(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      final ctx = buildTransport(
+        (_) async => okJson(expected.toJson()),
+        token: 'jwt-abc',
+      );
+
+      final result = await AuthApi(ctx.transport).h2hCupBoard();
+
+      final board = (result as Ok<H2hCupBoardDto>).value;
+      expect(board.toJson(), expected.toJson());
+      final fixture =
+          board.paths.single.stages.single.pairs.single.fixtures.single;
+      expect(fixture.homeSide.pick?.homeGoals, 2);
+      expect(fixture.awaySide.revealed, isFalse);
+      expect(fixture.awaySide.pick, isNull);
+      final req = ctx.captured.single;
+      expect(req.method, 'GET');
+      expect(req.url.path, '/me/h2h-cup/board');
+      expect(req.headers['authorization'], 'Bearer jwt-abc');
+    });
+
+    test('a withheld side never reads a pick, even if one is sent', () {
+      final side = H2hCupBoardSideDto.fromJson(const <String, Object?>{
+        'revealed': false,
+        'pick': <String, Object?>{'home_goals': 9, 'away_goals': 9},
+      });
+
+      expect(side.revealed, isFalse);
+      expect(side.pick, isNull);
+      expect(side.toJson(), const <String, Object?>{'revealed': false});
+    });
+
+    test('no cup reads as an empty board, never a crash', () async {
+      final ctx = buildTransport(
+        (_) async => okJson(const <String, Object?>{}),
+      );
+
+      final result = await AuthApi(ctx.transport).h2hCupBoard();
+
+      final board = (result as Ok<H2hCupBoardDto>).value;
+      expect(board.monthStart, isNull);
+      expect(board.paths, isEmpty);
+    });
+
+    test('a refusal arrives as an error with its code', () async {
+      final ctx = buildTransport(
+        (_) async => errorEnvelope(401, 'auth.unauthenticated', 'no'),
+      );
+
+      final result = await AuthApi(ctx.transport).h2hCupBoard();
+
+      expect(
+        (result as Err<H2hCupBoardDto>).error.code,
+        'auth.unauthenticated',
+      );
+    });
+  });
 }

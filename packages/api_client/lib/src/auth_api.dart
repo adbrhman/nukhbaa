@@ -318,6 +318,20 @@ final class AuthApi {
     );
   }
 
+  // NK314_01
+  /// `GET /me/h2h-cup/board` -- the Elite Cup of the month with the two
+  /// players' picks on every fixture (script 312), for any player or
+  /// admin. A pick of another player is on the wire only once its
+  /// fixture has kicked off; a withheld side is `revealed: false` and
+  /// says nothing of whether the player predicted. No cup: no
+  /// `month_start` and no paths.
+  Future<Result<H2hCupBoardDto>> h2hCupBoard() {
+    return _transport.getObject<H2hCupBoardDto>(
+      '/me/h2h-cup/board',
+      parse: H2hCupBoardDto.fromJson,
+    );
+  }
+
   /// `GET /me/badges` -- every catalog badge with the caller's progress and
   /// the moment each held badge was granted.
   ///

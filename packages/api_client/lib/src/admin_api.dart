@@ -286,6 +286,21 @@ final class AdminApi {
     );
   }
 
+  // NK314_02
+  /// `GET /owner/h2h-cup/picks` -- the whole Elite Cup of a month with
+  /// EVERY player's picks on every fixture, before it kicks off too
+  /// (script 313). Read only; the same shape as the players' board, with
+  /// every side revealed. [month] (`YYYY-MM-DD`) picks the month; the
+  /// latest one holding a cup without it. An owner seat alone: anyone
+  /// else gets the 404 of a path with no route.
+  Future<Result<H2hCupBoardDto>> ownerH2hCupPicks({String? month}) {
+    return _transport.getObject<H2hCupBoardDto>(
+      '/owner/h2h-cup/picks',
+      query: month == null ? null : <String, String>{'month': month},
+      parse: H2hCupBoardDto.fromJson,
+    );
+  }
+
   // NK289_09
   /// `GET /owner/switches` -- the owners' switches, each with its state and
   /// its last change (script 289). An owner seat alone.
