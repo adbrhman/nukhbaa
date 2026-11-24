@@ -44,6 +44,8 @@ String h2hCupPhaseName(String phase) => switch (phase) {
 String h2hCupOutcomeName(String? outcome) => switch (outcome) {
   'points' => 'بفارق النقاط',
   'exact' => 'تعادل نقاط وحُسمت بالنتائج الصحيحة',
+  // NK320_01
+  'direction' => 'تعادل النقاط والنتائج الدقيقة وحُسمت بالاتجاه الصحيح',
   'league' => 'تعادل كامل وحُسمت بترتيب الدوري',
   'walkover' => 'لغياب الخصم',
   'both_absent' => 'غاب الطرفان',

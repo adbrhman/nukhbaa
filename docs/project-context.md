@@ -9595,6 +9595,38 @@ Elite Cup's matchups between the group leaders (the first places' path).
   SDK in the assistant's sandbox: the script runs analyze and the tests on
   the device, and they were not run before it.
 
+### The cup's tie-break gains the right direction (scripts 319-320, 2026-11-25)
+
+- **Why** (owner decision 2026-11-25): the first path's final (2026-11-24,
+  Fawzi against Jayyash) ended 3-3 on points with 1-1 exact scorelines and
+  went to the league month, which gave Jayyash the title. Counted on the
+  day's fixtures Fawzi had 7 right directions against 6 (read from the
+  database by the owner). The cup's order had no level for directions,
+  while the general ranking rule reads the exact scorelines and then the
+  right directions.
+- **Changed**: `H2hCupPolicy.decide` reads, after the exact scorelines, the
+  right directions (grade `correct_outcome`, the exact ones already
+  counted) on the stage's fixtures, then the month as before (prediction
+  points, exact scorelines, league points, group). New: `H2hCupSide.direction`
+  (default 0, so every caller compiles), `H2hCupOutcome.direction` (wire
+  `direction`), `direction_count` in the stage's `sidesSql`, migration 0226
+  (the check `h2h_cup_results_outcome_known` takes `direction`), the cup
+  card's wording for it, and the December rules line (`NK320_01`). Apply
+  0226 in the SQL Editor before the server with 319 is deployed.
+- **Applies to** every pair the server judges after it is deployed. A
+  decided pair stays as stored: a correction of the 2026-11-24 final is a
+  one-off SQL outside the repository, run by the owner when he decides
+  (the cup tables are append-only by trigger). The 2026-11-23 semi-final
+  stands: Jayyash and Adi were level on directions (1 and 1), so the month
+  decided it.
+- **Not changed**: no table, no column, no permission, no other tie-break
+  level, no dependency.
+- **Tests**: `h2h_cup_policy_test.dart` (`NK319_02` to `NK319_04`),
+  `postgres_h2h_cup_store_test.dart` (`NK319_05`),
+  `h2h_rules_by_month_test.dart` (the order of the cup line) and
+  `h2h_cup_outcome_text_test.dart` (`NK320_02`). Written without a Dart SDK
+  in the assistant's sandbox: analyze and the tests run on the device.
+
 ### The cup board and the opponents' picks, and the owner's page hidden (scripts 306-318, 2026-11-24)
 
 - **Why** (owner request 2026-11-24): the owner alone sees, in the general
