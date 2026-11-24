@@ -9636,9 +9636,11 @@ Elite Cup's matchups between the group leaders (the first places' path).
   held by the policy `fixture_predictions_select_own_or_locked` to the player's
   own pick or a fixture past its kickoff: the protection there is the RLS, not
   the grant. A hub test (`NK306_01`) proves an admin without a seat finds no
-  owner section. Open, owner's approval pending: 306b, sending the hub back to
-  its home when the owner's seat is withdrawn while it shows that section
-  (the title stays over an empty body; nobody reaches it today).
+  owner section. 306b (the owner approved it, 2026-11-25): when the owner's seat is
+  withdrawn while the hub shows that section, the hub shows the home page
+  and its title, not the owners' title over an empty body (`NK306B_01`; the
+  hub test `NK306B_02`, opened by a direct `initialSection` and by a seat
+  lost on the page).
 - **The rules**: the December rules (and every later month's) carry one line
   saying the cup tab shows a pick after its fixture's kickoff only (`NK318_01`).
 - **Not changed**: no migration, no table, no rule of the cup, no tie-break, no
@@ -9658,6 +9660,7 @@ Elite Cup's matchups between the group leaders (the first places' path).
   `docs/handoff/cup-visibility-plan.md`.
 
 <!-- NK318_03 -->
+<!-- NK306B_03 -->
 
 ## 3. Version-Verification Log
 

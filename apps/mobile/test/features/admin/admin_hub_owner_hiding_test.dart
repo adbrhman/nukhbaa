@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:mobile/features/admin/admin_hub_screen.dart';
 import 'package:mobile/features/admin/admin_providers.dart';
 import 'package:mobile/features/admin/admin_sections.dart';
+import 'package:mobile/features/auth/session_controller.dart';
 import 'package:mobile/features/competition/competition_providers.dart';
 import 'package:mobile/l10n/app_localizations.dart';
 
@@ -47,13 +48,14 @@ Future<void> _open(
   AuthenticatedUserDto me, {
   required Size size,
   AdminSection? initialSection,
+  Future<http.Response> Function(http.Request)? server,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final AuthHarness harness = buildAuthHarness(
-    _serverFor(me),
+    server ?? _serverFor(me),
     seedToken: 'admin-jwt',
   );
   addTearDown(harness.dispose);
@@ -107,6 +109,11 @@ Future<void> _open(
   await tester.pumpAndSettle();
 }
 
+// NK306B_02
+/// [text] in the app bar, where the section's title is drawn.
+Finder _inAppBar(String text) =>
+    find.descendant(of: find.byType(AppBar), matching: find.text(text));
+
 Future<void> _openDrawer(WidgetTester tester) async {
   await tester.tap(find.byIcon(Icons.menu));
   await tester.pumpAndSettle();
@@ -140,7 +147,7 @@ void main() {
     expect(find.text(_ownerPage), findsNothing);
   });
 
-  testWidgets('opening the owner page directly draws none of its tabs', (
+  testWidgets('opening the owner page directly lands on the home page', (
     tester,
   ) async {
     await _open(
@@ -150,10 +157,48 @@ void main() {
       initialSection: AdminSection.owner,
     );
 
-    expect(find.byKey(const Key('admin.owner.none')), findsOneWidget);
+    expect(_inAppBar(_ownerPage), findsNothing);
+    expect(find.byKey(const Key('admin.owner.none')), findsNothing);
     expect(find.text('المفاتيح'), findsNothing);
     expect(find.text('المخفيون'), findsNothing);
-    expect(find.text('المواجهات'), findsNothing);
+  });
+
+  testWidgets('an owner seat withdrawn while its page shows sends the hub '
+      'home, title and all', (tester) async {
+    AuthenticatedUserDto current = _owner;
+    await _open(
+      tester,
+      _owner,
+      size: wide,
+      server: (http.Request request) async => request.url.path.endsWith('/me')
+          ? okMe(current)
+          : http.Response(
+              '{}',
+              404,
+              headers: const <String, String>{
+                'content-type': 'application/json',
+              },
+            ),
+    );
+    await tester.tap(find.byKey(const Key('admin.shell.nav.owner')));
+    await tester.pumpAndSettle();
+
+    expect(_inAppBar(_ownerPage), findsOneWidget);
+    expect(find.byKey(const Key('admin.owner.none')), findsNothing);
+
+    current = _otherAdmin;
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(AdminHubScreen)),
+    );
+    await container
+        .read(sessionControllerProvider.notifier)
+        .signIn('admin-jwt');
+    await tester.pumpAndSettle();
+
+    expect(_inAppBar(_ownerPage), findsNothing);
+    expect(find.byKey(const Key('admin.owner.none')), findsNothing);
+    expect(find.byKey(const Key('admin.shell.nav.owner')), findsNothing);
+    expect(find.byKey(const Key('admin.shell.nav.dashboard')), findsOneWidget);
   });
 
   testWidgets('the owner seat\'s phone drawer lists the owner page', (

@@ -7,6 +7,7 @@ import '../../core/design/app_breakpoints.dart';
 import '../../core/design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/session_controller.dart';
+import '../auth/session_state.dart';
 import 'admin_nav_counts.dart';
 import 'admin_sections.dart';
 import 'admin_shell.dart';
@@ -48,22 +49,30 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppTokens t = context.tokens;
     final bool isMobile = AppBreakpoints.isMobile(context);
-    final bool owner = isOwnerAdminSession(
-      ref.watch(sessionControllerProvider).value,
-    );
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final bool owner = isOwnerAdminSession(session);
     final AdminSection home = _home(owner);
+    // NK306B_01
+    // A signed-in admin whose owner seat is gone, withdrawn while this page
+    // shows, sees the home page and its title, not the owners' title over an
+    // empty body. Until the session is read the section is kept, so a seat
+    // is not sent away while /me is still on its way.
+    final bool seatLost = session is SessionAuthenticated && !owner;
+    final AdminSection shown = seatLost && _selected == AdminSection.owner
+        ? home
+        : _selected;
 
     // script 124: back from a section opens the home page; only from the
     // home page does it leave the panel.
     return PopScope<Object?>(
-      canPop: _selected == home,
+      canPop: shown == home,
       onPopInvokedWithResult: (bool didPop, Object? _) {
         if (!didPop) _select(home);
       },
       child: Scaffold(
         key: const Key('admin.hub.scaffold'),
         backgroundColor: t.background,
-        appBar: AppBar(title: Text(adminSectionLabel(_selected, l10n))),
+        appBar: AppBar(title: Text(adminSectionLabel(shown, l10n))),
         drawer: isMobile
             ? Drawer(
                 key: const Key('admin.hub.drawer'),
@@ -75,7 +84,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
                       builder: (context, ref, _) => AdminNavList(
                         counts: ref.watch(adminNavCountsProvider),
                         owner: owner,
-                        selected: _selected,
+                        selected: shown,
                         onSelect: (AdminSection section) {
                           _select(section);
                           Navigator.of(drawerContext).pop();
@@ -87,7 +96,7 @@ class _AdminHubScreenState extends ConsumerState<AdminHubScreen> {
               )
             : null,
         body: SafeArea(
-          child: AdminShell(selected: _selected, onSelect: _select),
+          child: AdminShell(selected: shown, onSelect: _select),
         ),
       ),
     );
