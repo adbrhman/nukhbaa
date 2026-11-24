@@ -74,6 +74,21 @@ void main() {
       expect(november, isNot(contains('تستمر الجولات في الشهر التالي')));
     });
 
+    // NK318_02
+    test('December says the cup board shows a pick after its kickoff '
+        'only', () {
+      final String line = h2hDecemberRules.singleWhere(
+        (String r) => r.startsWith('في تبويب الكأس'),
+      );
+      expect(line, contains('توقعك أنت يظهر دائمًا'));
+      expect(line, contains('توقع كل خصم بعد انطلاق مباراته فقط'));
+      expect(line, contains('لا يظهر لك حتى هل توقّع'));
+      final String all = h2hDecemberRules.join('\n');
+      expect(all.indexOf('تُحسم مواجهة الكأس'), lessThan(all.indexOf(line)));
+      expect(h2hNovemberRules.join('\n'), isNot(contains('في تبويب الكأس')));
+      expect(h2hRules.join('\n'), isNot(contains('في تبويب الكأس')));
+    });
+
     test('a month that cannot be read keeps the rules it had', () {
       expect(h2hRulesForMonth(''), same(h2hRules));
       expect(h2hRulesForMonth('soon'), same(h2hRules));

@@ -1,6 +1,6 @@
 # خطة تنفيذ مستمرة: لوحة الكأس وتوقعات الخصوم وإخفاء إدارة المالك
 
-نخبة (nukhbaa). أُعدّت 2026-11-24 بقراءة الشجرة الفعلية للمستودع main عند الالتزام 25682ad5، وحُدّثت 2026-11-24 بعد نجاح السكربت 306 (الالتزام 60a27c99، غير مدفوع) وتسليم السكربت 307 الذي يحفظها في المستودع. تحليل Dart واختباره يجريان على جهاز المالك وحده، فبيئة الإعداد بلا Dart SDK.
+نخبة (nukhbaa). أُعدّت 2026-11-24 بقراءة الشجرة الفعلية للمستودع main عند الالتزام 25682ad5، وحُدّثت 2026-11-24 بعد نجاح السكربت 306 (الالتزام 60a27c99، غير مدفوع) وتسليم السكربت 307 الذي يحفظها في المستودع، ثم بعد نجاح 308 و309a، ثم بعد نجاح 309 و310 (أربعة التزامات محلية غير مدفوعة فوق 508322c7)، ثم بعد نجاح 316 (الالتزام d0b1058f) و317 (الالتزام ff7d9b76) وتسليم 318 الذي يحفظ هذه النسخة في المستودع. فإن رُفع هذا الملف مع الـzip فهو الأحدث وليس نسخة الـzip. تحليل Dart واختباره يجريان على جهاز المالك وحده، فبيئة الإعداد بلا Dart SDK.
 
 ## 1. كيف تبدأ جلسة جديدة (حساب آخر)
 
@@ -45,13 +45,45 @@
 - أُضيف اختبار هب جديد `apps/mobile/test/features/admin/admin_hub_owner_hiding_test.dart` (الوسم `// NK306_01`، خمس حالات): مشرف بلا مقعد لا يجد قسم المالك في درج الجوال ولا في الشريط الجانبي العريض ولا بفتحه مباشرة (`initialSection`)، وشاهدا ضبط للمالك في التخطيطين. نجح على الجهاز مع التحليل وimport_lint.
 - ثغرة شكلية معروفة (غير معالجة): إن سُحب مقعد المالك والهب مفتوح على صفحته، يبقى عنوان الشريط «الإدارة العامة للمالك» فوق جسم فارغ. لا يصل إليها أي مستدعٍ حاليًا (لا أحد يمرّر `initialSection: owner`). العلاج المقترح 306b أدناه، وهو بانتظار موافقة المالك.
 
-**الناقص (هو عمل هذه الخطة):**
+**نتائج 308 (منفَّذ، وسما `NK308_01` و`NK308_02`):**
 
-- لا توقع لأحد يعبر الخط في الكأس: `h2h_cup_dto.dart` و`owner_h2h_cup_dto.dart` يذكران ذلك صراحة. نقاط الزوج وحدها تُرسل.
+- `packages/contracts/lib/src/h2h_cup_board_dto.dart` ويُصدَّر في `contracts.dart`: `H2hCupBoardDto` ← `H2hCupBoardPathDto` ← `H2hCupBoardStageDto` ← `H2hCupBoardPairDto` ← `H2hCupBoardFixtureDto` ← `H2hCupBoardSideDto`.
+- الجانب (`H2hCupBoardSideDto`) فيه `revealed` و`pick` اختياري (`H2hPickDto` من `h2h_round_detail_dto.dart`). المحجوب يُسلسَل `{"revealed": false}` فقط. حمولة بلا `revealed` تُقرأ محجوبة، وتوقع على جانب محجوب يُسقَط عند القراءة ولا يُكتب. إنشاء جانب محجوب بتوقع يفشل بـassert. الجانب الظاهر بلا توقع يعني «لم يتوقع».
+- المباراة: `fixtureId` و`homeTeam` و`awayTeam` و`homeTeamId` و`awayTeamId` و`kickoffAt` و`state` (`not_started` أو `live` أو `finished` أو `void`) و`homeGoals` و`awayGoals` و`homeSide` و`awaySide` (جانبا اللاعبين home وaway من الزوج). الزوج: `slot` و`home` و`away` (`H2hCupPlayerDto`) و`decided` و`winnerUserId` و`fixtures`. المرحلة: `round` و`cupDay` و`phase` و`attempt` و`day` و`pairs` و`bye`. المسار: `place` و`stages` و`title` (`H2hCupTitleDto`). اللوحة: `monthStart` (null قبل قيام الكأس) و`paths` و`schemaVersion`.
+- انحرافات عن نص الخطة الأولى: أُعيد استخدام `H2hPickDto`، وأُضيف `attempt` و`bye` للمرحلة و`title` للمسار، ولم يُضف `isMine` للزوج (مشتق من `isMe` في اللاعبين).
+
+**نتائج 309a (منفَّذ، وسما `NK309_01` و`NK309_02`):**
+
+- استُخرج اختيار شهر الكأس من `GetMyH2hCup` إلى `packages/application/lib/src/gamification/h2h_cup_month_pick.dart`: `H2hCupMonthPicker.pick({cups, today, user})` يعيد `Result<H2hCupMonthPick?>` (month وstate وplace وgroupNumber وwatching)، و`isOver` و`entryOf`، والثابتان `lingerDays` (3) و`spectatorPlace` (1). `GetMyH2hCup` يستدعيه وثابتاه العامان باقيان بالقيمة نفسها. التصدير في `application.dart`.
+- اختبار جديد `packages/application/test/gamification/h2h_cup_month_pick_test.dart` (عشر حالات) ومعه اختبارات `get_my_h2h_cup_test.dart` القائمة نجحت على الجهاز (+21).
+
+**نتائج 309 (منفَّذ، وسوم `NK309_03` و`NK309_04` و`NK309_05`):**
+
+- المنفذ `packages/application/lib/src/gamification/ports/h2h_cup_pick_reader.dart` (`NK309_03`): `H2hCupPickReader.fixturesOf({stages, reader, nowUtc})` يعيد `Result<Map<H2hCupStageId, List<H2hCupStageFixture>>>` باستعلام واحد لكل المراحل. `H2hCupStageFixture` فيه `fixtureId` و`homeTeam` و`awayTeam` و`homeTeamId` و`awayTeamId` و`kickoffAt` و`counted` و`homeGoals` و`awayGoals` و`picks` (`Map<UserId, H2hFixturePick>`). عقد المنفذ: توقع القارئ دائمًا، وتوقع غيره لمباراة `kickoffAt <= nowUtc` فقط، ومباراة بلا موعد تحجب. المباراة التي غادرت يومها أو أُخفيت أو تجريبية تعود `counted: false` (تُعدّ void للجانبين). المحوّل الفعلي في 311.
+- حالة الاستخدام `packages/application/lib/src/gamification/get_h2h_cup_board.dart` (`NK309_04`): `GetH2hCupBoard({cups: H2hCupStore, picks: H2hCupPickReader, profiles: WeeklyLeagueProfileReader, clock: Clock})` و`call({required AuthenticatedUser principal})` يعيد `Result<H2hCupBoard>`. المصادقة `Authorization.requireRole(principal, PlatformRole.user)` فيدخل اللاعب والمشرف. الشهر من `H2hCupMonthPicker.pick` بـ`riyadhDayOf(nowUtc)`. لا كأس ← `H2hCupBoard.none`.
+- نماذج العرض في الملف نفسه: `H2hCupBoard` ← `H2hCupBoardPathView` ← `H2hCupBoardStageView` ← `H2hCupBoardPairView` ← `H2hCupBoardFixtureView` ← `H2hCupBoardSideView` (`revealed` و`pick`، و`.hidden()`، وassert أن الجانب المحجوب بلا توقع). المراحل المقروءة: `semi` و`finale`. الحجب يُعاد التحقق منه هنا بـ`GetMyH2hRound.hasKickedOff` على ساعة الخادم قبل بناء أي جانب، فلا يعتمد على المحوّل وحده.
+- التصدير في `application.dart` (`get_h2h_cup_board.dart` سطر 112 و`ports/h2h_cup_pick_reader.dart` سطر 137).
+- الاختبارات `packages/application/test/gamification/get_h2h_cup_board_test.dart` (`NK309_05`، 594 سطرًا، ثلاث مجموعات): ما يظهر في كل جانب (قبل الانطلاق توقعه وحده، والمحجوب واحد توقّع أم لا، لحظة الانطلاق بالضبط وقبلها بثانية، لاعب لم يتوقع، مباراة بلا موعد، مشاهد، مشرف)؛ اللوحة نفسها (حالات المباراة، الترتيب بالموعد، الزوجان يسردان المباريات نفسها، الأسماء والمجموعات والمستدعي، الفائز، bye، لقب المسار، كل مسارات الشهر)؛ والقراءة (لا كأس ← لا قراءة، لا مراحل ← لا قراءة مباريات، قراءة واحدة للشهر بصفة المستدعي وساعة الخادم، فشل القارئ يُعاد كما جاء).
+- النتيجة على الجهاز: التحليل والـimport_lint سليمان، `+41: All tests passed!`، ونطاق التغيير (`scope`) نظيف، والالتزام محلي بلا دفع. سجل التشغيل `309_cup_board_usecase_20261124_122350.log`.
+- ملاحظات `info` القديمة بقيت 31 كما كانت بعد 309a، أي لا جديد من ملفات 309 (ما يُرى منها في اللقطة كله في `packages/infrastructure/test/`).
+- لم يُنفَّذ بعد: أي محوّل Postgres (311) ولا مسار ولا تركيب في `composition_root.dart`. فاللوحة لا تُقرأ من الخادم حتى 312.
+
+**نتائج 310 (منفَّذ، وسوم `NK310_01` إلى `NK310_04`):**
+
+- منفذ مستقل `packages/application/lib/src/gamification/ports/h2h_cup_owner_pick_reader.dart` (`NK310_01`): `H2hCupOwnerPickReader.fixturesOfUnmasked({stages})` يعيد `Result<Map<H2hCupStageId, List<H2hCupStageFixture>>>` بلا حجب وبلا `reader` ولا `nowUtc`. اخترنا منفذًا مستقلًا لا طريقة ثانية في `H2hCupPickReader`، فحالة استخدام اللاعبين لا تستلم قارئًا قادرًا على التسريب. محوّل 311 ينفّذ المنفذين معًا.
+- `packages/application/lib/src/gamification/get_owner_h2h_cup_picks.dart` (`NK310_03`): `GetOwnerH2hCupPicks({cups: H2hCupStore, picks: H2hCupOwnerPickReader, profiles: WeeklyLeagueProfileReader, clock: Clock})` و`call({required AuthenticatedUser principal, DateTime? month})` يعيد `Result<H2hCupBoard>` (النموذج نفسه). دور admin (القفل الثاني بعد `ownerGate`). `month` بلا قيمة: آخر شهر فيه كأس من الشهر الحالي والشهرين قبله (ما يستخدم الدرجة النخبوية فقط)؛ شهر بلا كأس ← `H2hCupBoard.none` وبلا قراءة مباريات. كل جانب `revealed: true`، وجانب من لم يتوقع بلا توقع.
+- استُخرج بناء اللوحة من `GetH2hCupBoard` إلى `H2hCupBoardBuilder.build({state, monthStart, caller, nowUtc, unmasked, profiles, readFixtures})` في `get_h2h_cup_board.dart` نفسه (`NK310_02`)، وأُخفي من تصدير `application.dart` بـ`hide H2hCupBoardBuilder`، فلا يطلبه إلا كود داخل طبقة التطبيق. لا انحدار: اختبارات 309 نجحت كما هي.
+- الاختبارات `packages/application/test/gamification/get_owner_h2h_cup_picks_test.dart` (`NK310_04`، 13 حالة): جانبان ظاهران قبل الانطلاق، مباراة بلا موعد، لاعب لم يتوقع، حالات المباراة الأربع، كل المسارات بلا مستدعٍ فيها، الشهر (بلا طلب، بطلب، بلا كأس، لا كأس أصلًا)، لاعب مرفوض بلا قراءة، القراءة مرة واحدة بالمراحل بالترتيب، فشل القارئ، واختبار أن لوحة اللاعب فوق البيانات نفسها ما زالت تحجب.
+- النتيجة على الجهاز: التحليل (31 `info` قديمة بلا تغيير) وimport_lint سليمان، `+33: All tests passed!` (13 جديدة و20 من 309)، ونطاق التغيير نظيف، والالتزام محلي بلا دفع. سجل التشغيل `310_owner_cup_picks_usecase_20261124_123722.log`.
+- لم يُنفَّذ بعد: أي محوّل Postgres (311) ولا مسار ولا تركيب في `composition_root.dart`. فلا لوحة ولا توقعات تُقرأ من الخادم حتى 312 و313.
+
+**الناقص (هو عمل ما تبقى من هذه الخطة):**
+
+- لا توقع لأحد يعبر الخط في الكأس عبر `h2h_cup_dto.dart` و`owner_h2h_cup_dto.dart` (يذكران ذلك صراحة، ونقاط الزوج وحدها تُرسل). عقد اللوحة (308) وحالة استخدام اللاعبين (309) جاهزان؛ ينقص المحوّل (311) والمسارَان (312 و313). حالة استخدام المالك (310) جاهزة.
 - لا تبويب خامس. صف الأقسام (`SegmentedPills` في `h2h_screen.dart`، `h2hSectionLabels` في `h2h_texts.dart` سطر 88) أربعة أقسام، ولا يظهر إلا للاعب المقعَّد (`league.state == 'open'`)، و`_section` مقيَّد بـ`clamp(0, 3)`.
 - جداول البيانات المتاحة: `gamification.h2h_cup_stage_fixtures` (قائمة المباريات المجمَّدة للمرحلة)، `competition.fixture_schedules` (الانطلاق)، `prediction.fixture_predictions` (التوقعات)، `scoring.fixture_scores` (النقاط). طريقة قراءة مباريات المرحلة مبيّنة في أعلى `packages/infrastructure/lib/src/gamification/postgres_h2h_cup_store.dart`.
 
-**ملاحظات ترقيم:** `docs/project-context.md` فيه عنوانان يحملان «script 305» (الأول بتاريخ 11-23 للمشاهدة والثاني بتاريخ 11-24 للحسم)، والسكربت 304 هو تبويب المالك، والسكربت 306 هو تدقيق الإخفاء (منفَّذ). السكربت التالي 307. وملف `docs/next-task.md` متوقف عن الاستخدام، فلا يُكتب فيه.
+**ملاحظات ترقيم:** `docs/project-context.md` فيه عنوانان يحملان «script 305» (الأول بتاريخ 11-23 للمشاهدة والثاني بتاريخ 11-24 للحسم)، والسكربت 304 هو تبويب المالك، والسكربت 306 هو تدقيق الإخفاء (منفَّذ). السكربت التالي 311. وملف `docs/next-task.md` متوقف عن الاستخدام، فلا يُكتب فيه.
 
 ## 4. القرارات المعتمدة
 
@@ -61,7 +93,9 @@
 - مباراة انطلقت بلا توقع للاعب تُكتب «لم يتوقع». أما قبل الانطلاق فلا يظهر حتى هل توقّع اللاعب أم لا (كما في الدوري).
 - مباراة بلا موعد انطلاق مسجَّل تُعدّ «لم تبدأ».
 - لا تغيير في أي قاعدة للكأس أو الدرجات أو فك التعادل، ولا ترحيل (migration) متوقع. إن احتاج سكربت لترحيل فيكون إضافيًا فقط ويسجّل نفسه في `ops.applied_migrations` آخر جملة.
-- وسم الكود لكل سكربت بنمط المستودع `// NK306_01` ثم `NK306_02` وهكذا، وهو شرط الحارس في السكربت التالي. وسوم 306 المستخدمة: `NK306_01` (اختبار الهب). وسم السكربت 307 يبدأ من `NK307_01`.
+- عقد اللوحة: لا يحمل جانب محجوب مفتاح توقع ولا علمًا يقول هل توقّع صاحبه. مباراة لم تنطلق أو بلا موعد: جانب الخصم محجوب. جانب المستدعي نفسه ظاهر دائمًا.
+- سكربت 309 قُسم: 309a (استخراج اختيار الشهر) ثم 309 (المنفذ وحالة الاستخدام)، وكلاهما منفَّذ. والسكربتات الصغيرة بلا رقم إضافي تأخذ حرفًا (309a، 306b).
+- وسم الكود لكل سكربت بنمط المستودع `// NK306_01` ثم `NK306_02` وهكذا، وهو شرط الحارس في السكربت التالي. وسوم 306 المستخدمة: `NK306_01` (اختبار الهب). وسوم 309 المستخدمة: `NK309_01` إلى `NK309_05`. وسوم 310 المستخدمة: `NK310_01` إلى `NK310_04`. وسم السكربت 311 يبدأ من `NK311_01`.
 
 ## 5. قواعد العمل (من docs/agent-script-protocol.md، وهو المرجع الأصلي)
 
@@ -78,6 +112,10 @@
 - نمط اختبار الجلسة (من 306): جلسة اللاعب تأتي من `/me` عبر `buildAuthHarness` مع `seedToken`، وحاوية الـharness غير حاوية `ProviderScope`، فتُمرَّر `harness.overrides` داخل الـ`ProviderScope`. والهب يقرأ الجلسة عند أول بناء، فتكون قيد التحميل في الاختبار ويفتح على الرئيسية حتى للمالك؛ يُتحقق من ظهور القسم عبر مفاتيح القائمة `admin.shell.nav.*` لا عبر القسم المفتوح.
 - الرد بالعربية وباختصار، مع أمر التشغيل وأمر قراءة الفشل من السجل كما في القسم 6 من البروتوكول، وبيان ما لم يُختبر.
 - يُجرَّب السكربت قبل الإرسال على نسخة git بأدوات dart/flutter وهمية: النجاح، إعادة التشغيل، وفشل مفروض عند analyze والاختبارات، لإثبات أن التراجع يترك الشجرة نظيفة.
+- اختبارات الحزم (contracts وapplication وinfrastructure وapps/server) تُشغَّل على الجهاز بـ`flutter test --no-pub --reporter=failures-only <الملف>` من داخل مجلد الحزمة (`cd packages/application` مثلًا)، لا `dart test` (يفشل تحت `resolution: workspace`). أما CI فيشغّل `dart test` لكل حزمة غير Flutter عبر `melos run test`.
+- `dart analyze --fatal-warnings .` على الجهاز يطبع نحو 30 ملاحظة `info` قديمة في المستودع (31 بعد 309a و309 و310) ولا يفشل بها. الفحص: `grep -a "<اسم الملف الجديد>"` في السجل. 308 لم يُظهر شيئًا لملفاته، و309 لم تظهر فيه ملفات 309 (ما في السجل من `packages/infrastructure/test/`)، وعدد الملاحظات لم يتغير.
+- سكربت يُنشئ ملفًا جديدًا: إن وُجد الملف بعد إعادة تنسيقه فعلامة «تم» هي وسم الملف (`NK308_01`) لا مطابقة المحتوى، لأن `dart format` يعيد كتابته. وفي التراجع لا يُحذف إلا ما أنشأه هذا التشغيل (قائمة `CREATED`)، فلا يضيع ملف التزم في تشغيل سابق.
+- الشجرة الفعلية في الـzip بلا مجلد `.git`: حارس الالتزام يقرأ وسوم الملفات لا السجل.
 
 ## 6. خريطة السكربتات (من 306)
 
@@ -92,35 +130,37 @@
 
 ### المسار ب: الخادم
 
-**307_handoff_plan_doc** — docs فقط: ينشئ `docs/handoff/cup-visibility-plan.md` (هذه الخطة بجدول المتابعة) ويضيف سطرًا في `docs/checkpoints/session-log.md`، فتقرأها أي جلسة من الـzip. يتخطى التحليل والاختبارات.
+**307_handoff_plan_doc — منفَّذ.** docs فقط: `docs/handoff/cup-visibility-plan.md` وسطر في `docs/checkpoints/session-log.md`. ملاحظة: نسخة المستودع من الخطة قديمة (قبل 308)؛ تُحدَّث بهذا الملف في 318 أو بسكربت docs صغير قبله إن أراد المالك.
 
-**308_cup_board_dtos** — `packages/contracts/lib/src/h2h_cup_board_dto.dart` ويُصدَّر في `contracts.dart`.
+**308_cup_board_dtos — منفَّذ (نتائجه في القسم 3).** `packages/contracts/lib/src/h2h_cup_board_dto.dart` ويُصدَّر في `contracts.dart`.
 
-- الهيكل: اللوحة ← مسارات (1 و2 و3) ← مراحل (الجولة واليوم والطور) ← أزواج (slot، الجانبان، decided، الفائز) ← مباريات (fixtureId، الفريقان، الانطلاق، الحالة، النتيجة، توقع كل جانب).
-- يعيد استخدام `H2hCupPlayerDto` و`H2hCupTitleDto` من `h2h_cup_dto.dart`.
-- قاعدة العقد: جانب محجوب لا يحمل أي مفتاح توقع ولا علم «توقّع أم لا». اختبار round-trip، واختبار أن الجانب المحجوب يُسلسَل بلا مفاتيح توقع.
+**309a_cup_month_pick — منفَّذ (نتائجه في القسم 3).** استخراج اختيار الشهر من `GetMyH2hCup` دون تغيير سلوكه.
 
-**309_cup_board_usecase** — `ports/h2h_cup_pick_reader.dart` على غرار `h2h_round_fixture_reader.dart`، وحالة الاستخدام `GetH2hCupBoard` (أي مستخدم موثَّق، لاعبًا أو مشرفًا).
+**309_cup_board_usecase — منفَّذ (نتائجه في القسم 3).** المنفذ `H2hCupPickReader` وحالة الاستخدام `GetH2hCupBoard` واختباراتهما.
 
-- يعيد استخدام اختيار شهر الكأس نفسه في `get_my_h2h_cup.dart` (بما فيه `lingerDays`)، دون إعادة اختراعه.
-- التحقق من الانطلاق بـ`hasKickedOff` ببساطة (إن تعذّر الاستدعاء بين حالتي استخدام فيُستخرج في سكربت صغير مستقل باختباره).
-- الاختبارات بساعة ثابتة وقارئ وهمي: قبل الانطلاق، وعند لحظته، وبعده؛ لاعب بلا توقع؛ زوج المستدعي نفسه؛ مستدعٍ غير متأهل؛ مشرف؛ مرحلة لم تُقفَل قائمتها بعد؛ مباراة بلا موعد.
+**310_owner_cup_picks_usecase — منفَّذ (نتائجه في القسم 3).** `GetOwnerH2hCupPicks` والمنفذ `H2hCupOwnerPickReader` و`H2hCupBoardBuilder` المشترك.
 
-**310_owner_cup_picks_usecase** — `GetOwnerH2hCupPicks` بلا حجب، بمتر الشهر والمسار. المنفذ يحوي طريقتين منفصلتين (للاعب بحجب، وللمالك بلا حجب) كي لا يُستدعى غير المحجوب خطأً من مسار اللاعب. الاختبارات: المالك يرى توقعًا لمباراة لم تبدأ.
+**تفاصيل 310 كما صُمِّمت (للمرجع؛ نُفِّذت):**
 
-**311_cup_pick_reader_postgres** — `packages/infrastructure/lib/src/gamification/postgres_h2h_cup_pick_reader.dart` على نمط `PostgresH2hRoundFixtureReader`.
+- الأساس القائم: `GetH2hCupBoard` (309) يعرض كل مسارات الشهر بحجب. حالة المالك تبني اللوحة نفسها لكن بلا حجب، لذا اقرأ `get_h2h_cup_board.dart` أولًا ثم قرّر: إما إعادة استخدام نماذج العرض (`H2hCupBoard` وما تحتها) وإما نماذج مستقلة. نماذج `H2hCupBoardSideView` تسمح بجانب ظاهر بلا توقع («لم يتوقع») فتصلح للمالك كما هي. أيًّا كان الخيار فلا يُنسخ منطق بناء الحالات والترتيب والـbye والعنوان؛ يُستخرج مشترك صغير إن لزم (ويُعلَّل في الرد).
+- المنفذ: طريقة ثانية منفصلة في `H2hCupPickReader` (أو منفذ خاص بالمالك) تعيد كل التوقعات بلا حجب، بتسمية صريحة (`fixturesOfUnmasked` مثلًا)، كي لا تُستدعى غير المحجوبة خطأً من مسار اللاعب. حالة استخدام اللاعبين لا تُغيَّر لتستقبلها.
+- المصادقة: حالة الاستخدام لا تتحقق من مقعد المالك (ذلك لـ`ownerGate` على مسار `/owner`)؛ تكتفي بدور admin كما يفعل `GetOwnerH2hCup` — اقرأه واتبع نمطه.
+- الاختبارات: المالك يرى توقعًا لمباراة لم تبدأ؛ ويرى «لم يتوقع» لمن لم يتوقع؛ كل مسارات الشهر؛ لا كأس ← لوحة فارغة؛ فشل القارئ يُعاد كما جاء؛ واختبار أن حالة اللاعبين ما زالت تحجب (لا انحدار).
+- لا تنفِّذ أي SQL هنا (311).
 
-- مباريات المرحلة: القائمة المجمَّدة في `h2h_cup_stage_fixtures` إن قُفلت، وإلا مباريات يومها المرئية غير التجريبية. مباراة غادرت يومها أو أُخفيت تُعلَّم void.
+**311_cup_pick_reader_postgres — منفَّذ (وسم `NK311_01`، `postgres_h2h_cup_pick_reader.dart`، ينفّذ المنفذين، +23، الأشرطة 31 info بلا تغيير)** (التصميم للمرجع): — `packages/infrastructure/lib/src/gamification/postgres_h2h_cup_pick_reader.dart` على نمط `PostgresH2hRoundFixtureReader`، ينفّذ المنفذين معًا: `H2hCupPickReader.fixturesOf` (بحجب) و`H2hCupOwnerPickReader.fixturesOfUnmasked` (بلا حجب). اقرأ أولًا `postgres_h2h_round_fixture_reader.dart` و`postgres_h2h_cup_store.dart` (طريقة قراءة مباريات المرحلة) و`ports/h2h_cup_pick_reader.dart` و`ports/h2h_cup_owner_pick_reader.dart`. يُفضَّل تقاسم استعلام المباريات بين الطريقتين وتمييزهما بمعامل واحد فقط (هل تُحجب توقعات غير القارئ)، مع اختبار لكل طريقة.
+
+- مباريات المرحلة: القائمة المجمَّدة في `h2h_cup_stage_fixtures` إن قُفلت، وإلا مباريات يومها المرئية غير التجريبية. مباراة غادرت يومها أو أُخفيت تعود `counted: false`.
 - حساب المجموع على مشاركات اللاعب كما في `H2hFixturePick`، وحسابات الموقوفين تُعامَل كما يفعل `postgres_h2h_cup_store.dart`.
-- الحجب في SQL نفسه: عمود توقع الخصم NULL قبل الانطلاق، ثم تعيد حالة الاستخدام التحقق. استعلام واحد لمجموعة المراحل لا N+1.
-- اختبار بنمط `postgres_h2h_cup_store_test.dart`.
+- الحجب في SQL نفسه: عمود توقع الخصم NULL قبل الانطلاق (موعد بعد `nowUtc` أو بلا موعد)، ثم تعيد حالة الاستخدام التحقق. استعلام واحد لمجموعة المراحل لا N+1.
+- اختبار بنمط `postgres_h2h_cup_store_test.dart`: حجب توقع الخصم قبل الانطلاق وبلا موعد، توقع القارئ ظاهر دائمًا، عند لحظة الانطلاق بالضبط، مباراة غادرت يومها، ومسار المالك يعيد كل شيء.
 
-**312_me_cup_board_route** — `apps/server/routes/me/h2h-cup/board/index.dart`: GET فقط، يرث `bearerAuth` من `routes/me/_middleware.dart`.
+**312_me_cup_board_route (منفَّذ +13؛ حارسه الوسم `NK311_01`؛ وسوم `NK312_01` إلى `NK312_04`؛ mapper في `h2h_cup_board_dto_mapper.dart` يخدم 313)** — `apps/server/routes/me/h2h-cup/board/index.dart`: GET فقط، يرث `bearerAuth` من `routes/me/_middleware.dart`.
 
-- يضاف `getH2hCupBoard` إلى `composition_root.dart` بنمط `getMyH2hCup` (حقل وباني وقيمة `_absent...` افتراضية) وmapper في `apps/server/lib/http/`.
+- يضاف `getH2hCupBoard` إلى `composition_root.dart` بنمط `getMyH2hCup` (حقل وباني وقيمة `_absent...` افتراضية) وmapper في `apps/server/lib/http/` من نماذج العرض (309) إلى `H2hCupBoardDto` (308). المحوّل يُحقن في `GetH2hCupBoard` بوصفه `H2hCupPickReader` فقط. يُكتب الـmapper بحيث يخدم 313 أيضًا (النموذج نفسه).
 - اختبارات المسار: بلا توكن 401، POST ← 405، واستجابة تُفحَص نصًّا: لا مفتاح توقع ولا رقم توقع لمباراة لم تبدأ، للاعب والمشرف على السواء.
 
-**313_owner_cup_picks_route** — `apps/server/routes/owner/h2h-cup/picks/index.dart`: GET فقط خلف `ownerGate` تلقائيًا (`routes/owner/_middleware.dart`).
+**313_owner_cup_picks_route (منفَّذ؛ وسما `NK313_01` و`NK313_02` و`NK313_03`؛ الاختبار يمرّ عبر `ownerGate` الفعلي)** — `apps/server/routes/owner/h2h-cup/picks/index.dart`: GET فقط خلف `ownerGate` تلقائيًا (`routes/owner/_middleware.dart`)، يستدعي `GetOwnerH2hCupPicks` (310) ويقبل `month` اختياريًا كما يفعل `/owner/h2h-cup`، ويستعمل mapper 312 نفسه. يُحقن المحوّل في هذه الحالة وحدها بوصفه `H2hCupOwnerPickReader`.
 
 - اختبارات: مالك يرى كل التوقعات قبل الانطلاق. مشرف بلا مقعد ولاعب وبلا توكن يتلقون 404 المطابق (انسخ حالات `owner_gate_test.dart`). أي كتابة ← 404 أو 405.
 
@@ -128,33 +168,37 @@
 
 ### المسار ج: التطبيق
 
-**314_api_client_cup_board** — `h2hCupBoard()` في `packages/api_client/lib/src/auth_api.dart` حيث `myH2hCup`، و`ownerH2hCupPicks()` في `admin_api.dart` حيث `ownerH2hCup`. اختبارات بجانب `h2h_cup_api_test.dart` و`owner_h2h_cup_api_test.dart`.
+**314_api_client_cup_board (منفَّذ)** — `h2hCupBoard()` في `packages/api_client/lib/src/auth_api.dart` حيث `myH2hCup`، و`ownerH2hCupPicks()` في `admin_api.dart` حيث `ownerH2hCup`. اختبارات بجانب `h2h_cup_api_test.dart` و`owner_h2h_cup_api_test.dart`.
 
-**315_cup_board_widget** — `h2hCupBoardProvider` في `apps/mobile/lib/features/h2h/h2h_providers.dart`، والقطعة `widgets/h2h_cup_board.dart`، ونصوصها في `h2h_cup_texts.dart`.
+**315_cup_board_widget (منفَّذ)** — `h2hCupBoardProvider` في `apps/mobile/lib/features/h2h/h2h_providers.dart`، والقطعة `widgets/h2h_cup_board.dart`، ونصوصها في `h2h_cup_texts.dart`.
 
 - لكل مسار ثم مرحلة ثم زوج: المباريات بفريقيها وموعدها بتوقيت الرياض 24 ساعة، وتوقع الجانبين أو «تظهر بعد انطلاق المباراة» أو «لم يتوقع».
 - اختبارات بساعة ثابتة، وعند 360px ونص ×2، ومفاتيح فريدة.
 - لا تُربط بالشاشة بعد.
 
-**316_h2h_fifth_section** — ربط التبويب الخامس.
+**316_h2h_fifth_section (منفَّذ، الالتزام d0b1058f، +162)** — ربط التبويب الخامس.
 
 - إضافة «الكأس» إلى `h2hSectionLabels` وتعديل `clamp(0, 3)` وتعليق `initialSection` والـswitch النهائي في `h2h_screen.dart`.
 - حالة `_waiting` (غير المقعَّد) تعرض اللوحة تحت `_StateCard`. التحديث بالسحب يُبطِل `h2hCupBoardProvider` أيضًا.
 - تحديث اختبار `apps/mobile/test/features/h2h/h2h_group_matches_test.dart` (سطر 208) الذي يتوقع قائمة الأقسام، وفحص كل من يستدعي `H2hScreen` بـ`initialSection`.
 - `H2hCupCard` تبقى كما هي.
 
-**317_owner_tab_picks** — في `owner_h2h_section.dart`: كل زوج يتوسّع إلى توقعي اللاعبَين لكل مباراة، مع علامة «للمالك فقط: ترى التوقعات قبل الانطلاق»، وبلا أي زر تعديل. مزوّد جديد يستدعي `ownerH2hCupPicks`. اختبارات في `owner_h2h_section_test.dart`.
+**317_owner_tab_picks (منفَّذ، الالتزام ff7d9b76، +16؛ وسوم `NK317_01` إلى `NK317_05`)** — في `owner_h2h_section.dart`: كل زوج يتوسّع إلى توقعي اللاعبَين لكل مباراة، مع علامة «للمالك فقط: ترى التوقعات قبل الانطلاق»، وبلا أي زر تعديل. مزوّد جديد `ownerH2hCupPicksProvider` يستدعي `ownerH2hCupPicks`. اختبارات في `owner_h2h_section_test.dart`.
 
-**318_rules_and_docs** — سطر في قواعد المواجهات (`H2hRulesList`) يذكر أن توقع الخصم يظهر بعد انطلاق المباراة، وقسم في `docs/project-context.md`، وتعليم الجدول في `docs/handoff/cup-visibility-plan.md`.
+- يُطلب التوقعات عند أول فتح لزوج فقط، ويُبطَل المزوّد بعد «تشغيل المهام».
+- يُطابَق الزوج بالمسار والمرحلة والخانة ومعرّفَي اللاعبَين معًا؛ غير المطابق يقول «لا مباريات لهذا الزوج بعد».
+- جانب محجوب في الاستجابة يُعرض «تظهر بعد انطلاق المباراة» ولا يُقرأ «لم يتوقع» أبدًا.
+
+**318_rules_and_docs (منفَّذ؛ وسوم `NK318_01` إلى `NK318_05`)** — سطر في قواعد المواجهات (`H2hRulesList`) يذكر أن توقع الخصم يظهر بعد انطلاق المباراة، وقسم في `docs/project-context.md`، وتحديث `docs/handoff/cup-visibility-plan.md` بهذا الملف وتعليم الجدول.
 
 ## 7. ترتيب النشر والتحقق
 
-- نقاط التوقف الآمنة: بعد 306 (منفَّذ) و307 و313 (الخادم) و316 (اللاعبون يرون اللوحة) و317 و318.
+- نقاط التوقف الآمنة: بعد 306 (منفَّذ) و307 (منفَّذ) و313 (الخادم) و316 (اللاعبون يرون اللوحة) و317 و318.
 - بعد 313: بإذن المالك `git push origin main`، وانتظر Build Verification ثم Release Server (يلحقه تلقائيًا بنحو 9 دقائق، ويُتأكَّد من تبويب Actions). الخادم يُنشر قبل التطبيق دائمًا.
 - بعد نشر الخادم: مسار اللوحة بلا توكن يردّ 401، ومسار المالك بلا توكن مالك يردّ Route not found (404).
 - التطبيق (314–318): الدفع ثم بناء الـAPK عبر CI وتحديث OTA داخل التطبيق.
 - بعد التحديث يفحص المالك بنفسه: لاعب غير متأهل لا يرى توقعًا قبل الانطلاق، وتوقع مباراة بدأت يظهر للجميع، وتبويب «المواجهات» للمالك يعرض كل التوقعات بعلامة «للمالك فقط».
-- التزام 306 (60a27c99) محلي غير مدفوع. يُدفع مع التزامات الخادم عند الإذن، وتشغّل Build Verification اختباره مع الحزمة الكاملة.
+- التزامات 306 و308 و309a و309 و310 محلية غير مدفوعة (فوق 508322c7). تُدفع مع التزامات الخادم عند الإذن، وتشغّل Build Verification اختباراتها مع الحزمة الكاملة.
 
 ## 8. مخاطر ونقاط انتباه
 
@@ -164,6 +208,7 @@
 - لا تغيّر نتيجة أي زوج محفوظ ولا قاعدة حسم. هذه الخطة قراءة فقط على بيانات الكأس.
 - التسرب عبر ملفات التطبيق (نص «الإدارة العامة للمالك» داخل الـAPK) لا يُحجَب بالكود. الحماية الحقيقية على الخادم فقط.
 - قراءة التوقعات المباشرة من قاعدة البيانات محكومة بسياسة RLS (القسم 3). أي محوّل جديد في 311 يعمل على الخادم يجب أن يحجب في SQL نفسه ولا يعتمد على هذه السياسة، فالخادم قد يتصل بدور لا تسري عليه RLS.
+- طريقة المالك بلا حجب (310/311) يجب ألا تكون متاحة عبر المنفذ الذي تحقنه حالة استخدام اللاعبين: منفذان منفصلان أو طريقتان بأسماء لا تختلط، وتُحقن الثانية في مسار `/owner` وحده.
 - ~~لقطات المالك المعلَّمة لم تصل~~ حُسمت: فُتحت بحساب المالك الأساسي، ولا تسرّب.
 
 ## 9. جدول المتابعة
@@ -175,28 +220,30 @@
 | [x] | 306_owner_hiding_audit | تدقيق إخفاء المالك واختبار الهب وSQL قراءة (الالتزام 60a27c99) | نعم |
 | [ ] | 306b_owner_title_on_seat_loss | إرجاع الهب للرئيسية عند فقدان مقعد المالك (اختياري، بانتظار موافقة) | نعم |
 | [x] | 307_handoff_plan_doc | حفظ الخطة في المستودع (docs/handoff/cup-visibility-plan.md) | نعم |
-| [ ] | 308_cup_board_dtos | عقود اللوحة | لا |
-| [ ] | 309_cup_board_usecase | حالة استخدام للاعبين والمشرفين | لا |
-| [ ] | 310_owner_cup_picks_usecase | حالة استخدام المالك بلا حجب | لا |
-| [ ] | 311_cup_pick_reader_postgres | محوّل Postgres بحجب في SQL | لا |
-| [ ] | 312_me_cup_board_route | مسار /me/h2h-cup/board | لا |
-| [ ] | 313_owner_cup_picks_route | مسار /owner/h2h-cup/picks | نعم (الخادم كامل) |
-| [ ] | 314_api_client_cup_board | استدعاءات api_client | لا |
-| [ ] | 315_cup_board_widget | مزوّد وقطعة اللوحة | لا |
-| [ ] | 316_h2h_fifth_section | التبويب الخامس «الكأس» | نعم |
-| [ ] | 317_owner_tab_picks | توقعات الزوج في تبويب المالك | نعم |
-| [ ] | 318_rules_and_docs | القواعد والتوثيق | نعم |
+| [x] | 308_cup_board_dtos | عقود اللوحة (التزام محلي) | لا |
+| [x] | 309a_cup_month_pick | استخراج اختيار شهر الكأس (التزام محلي) | لا |
+| [x] | 309_cup_board_usecase | المنفذ وحالة استخدام اللاعبين والمشرفين (التزام محلي، +41) | لا |
+| [x] | 310_owner_cup_picks_usecase | حالة استخدام المالك بلا حجب (التزام محلي، +33) | لا |
+| [x] | 311_cup_pick_reader_postgres | محوّل Postgres بحجب في SQL (التزام محلي، +23) | لا |
+| [x] | 312_me_cup_board_route | مسار /me/h2h-cup/board (التزام محلي، +13) | لا |
+| [x] | 313_owner_cup_picks_route | مسار /owner/h2h-cup/picks | نعم (الخادم كامل) |
+| [x] | 314_api_client_cup_board | استدعاءات api_client | لا |
+| [x] | 315_cup_board_widget | مزوّد وقطعة اللوحة | لا |
+| [x] | 316_h2h_fifth_section | التبويب الخامس «الكأس» (الالتزام d0b1058f، +162) | نعم |
+| [x] | 317_owner_tab_picks | توقعات الزوج في تبويب المالك (الالتزام ff7d9b76، +16) | نعم |
+| [x] | 318_rules_and_docs | القواعد والتوثيق (هذا الالتزام) | نعم |
 
 ## 10. قالب ختام كل جلسة
 
-يكتبه المساعد في آخر رد قبل أن تنتهي الحصة، ليلصقه المالك في أول رسالة بالجلسة التالية. القيم الحالية (بعد جلسة 306):
+يكتبه المساعد في آخر رد قبل أن تنتهي الحصة، ليلصقه المالك في أول رسالة بالجلسة التالية. القيم الحالية (بعد جلسة 318):
 
-- آخر سكربت منفَّذ: 307_handoff_plan_doc (قبله 306_owner_hiding_audit بالالتزام 60a27c99)
-- آخر سكربت أُرسل ولم يُشغَّل: لا يوجد
-- ما لم يُختبر: لا شيء من 306 (التحليل وimport_lint والاختبار الجديد مرّت على الجهاز). و307 توثيق فقط بلا تحليل ولا اختبارات. الحزمة الكاملة تعمل في Build Verification عند الدفع.
-- السكربت التالي: 308_cup_board_dtos (حارسه: الوسم NK307_01 في docs/handoff/cup-visibility-plan.md)
-- ملاحظات وقرارات جديدة: 306b المقترح بانتظار موافقة المالك؛ استعلامات SQL القراءة طابقت المتوقع؛ تصحيح وصف صلاحية `authenticated` على `prediction.fixture_predictions` (القسم 3).
+- آخر سكربت منفَّذ: 318_rules_and_docs (يلي 317_owner_tab_picks بالالتزام ff7d9b76؛ قبله 316 d0b1058f و315 و314 و313 و312 و311 و310 و309 و309a و308 و307 و306). الالتزامات المحلية غير المدفوعة: 306 وما بعده فوق 508322c7.
+- آخر سكربت أُرسل ولم يُشغَّل: لا شيء
+- ما لم يُختبر: لا شيء مما نُفِّذ (التحليل وimport_lint والاختبارات مرّت على الجهاز؛ 317: +16 وimport_lint سليم؛ التحليل 33 ملاحظة `info` بلا سطر لملفات 317). الحزمة الكاملة تعمل في Build Verification عند الدفع.
+- السكربت التالي: لا سكربت في الخطة بعد 318 (306b وحده معلَّق بموافقة المالك). الدفع بإذن المالك: الخادم أولًا ثم التطبيق، وبعد التحديث يفحص المالك بنفسه كما في القسم 7.
+- ملاحظات وقرارات جديدة: 306b ما زال بانتظار موافقة المالك ويُتخطى حتى يوافق؛ منفذ المالك مستقل (`H2hCupOwnerPickReader`) والمحوّل ينفّذ المنفذين؛ `H2hCupBoardBuilder` مخفي من التصدير؛ نسخة الخطة في docs/handoff قديمة (قبل 308) وتُحدَّث في 318؛ لا دفع إلا بإذن المالك.
 
 عند التعارض بين هذا الملف والشجرة الفعلية أو `docs/project-context.md`، تُصحَّح هذه الخطة أولًا قبل أي سكربت.
 
 <!-- NK307_01 -->
+<!-- NK318_05 -->

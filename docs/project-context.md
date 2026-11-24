@@ -9595,6 +9595,70 @@ Elite Cup's matchups between the group leaders (the first places' path).
   SDK in the assistant's sandbox: the script runs analyze and the tests on
   the device, and they were not run before it.
 
+### The cup board and the opponents' picks, and the owner's page hidden (scripts 306-318, 2026-11-24)
+
+- **Why** (owner request 2026-11-24): the owner alone sees, in the general
+  admin's «المواجهات» tab, the details of every cup tie and both players'
+  picks of every fixture, even before kickoff, read only. The two players of a
+  tie see their tie, and a player's pick shows to the opponent after that
+  fixture's kickoff only. A fifth tab «الكأس» in the head-to-head screen shows
+  every cup fixture after round 19, with its players and their picks, to every
+  player and admin. «الإدارة العامة للمالك» shows to the owner alone, and the
+  protection is on the server, not in the screen.
+- **The rule**: an opponent's pick of a fixture whose kickoff is after now, or
+  has none, never leaves the adapter or the use case to anyone but its owner,
+  and never reaches the owner through `/owner` by the players' use case. The
+  caller's own pick always shows. A hidden side serialises as
+  `{"revealed": false}` and nothing else: no pick key and no flag saying
+  whether the player predicted. A fixture with no kickoff counts as not
+  started. The same pattern was already in the league (`GetMyH2hRound.hasKickedOff`).
+- **The layers**: `H2hCupBoardDto` and its parts in `packages/contracts`
+  (308); `H2hCupMonthPicker` out of `GetMyH2hCup` (309a); `H2hCupPickReader`
+  and `GetH2hCupBoard`, which checks the kickoff again on the server clock
+  (309); `H2hCupOwnerPickReader`, `GetOwnerH2hCupPicks` and the shared
+  `H2hCupBoardBuilder`, hidden from `application.dart` (310);
+  `PostgresH2hCupPickReader` implements both ports and masks in the SQL itself,
+  one query for all the stages (311); `GET /me/h2h-cup/board` for players and
+  admins (312); `GET /owner/h2h-cup/picks` behind `ownerGate`, answering 404
+  to anyone but an owner seat (313); `AuthApi.h2hCupBoard` and
+  `AdminApi.ownerH2hCupPicks` (314); `h2hCupBoardProvider` and
+  `H2hCupBoardView` (315); the fifth tab, and the board under the state card of
+  a player without a seat (316); in the owner's tab each pair opens to both
+  players' picks of every fixture, labelled «للمالك فقط», with no edit control
+  (317). The two ports are separate on purpose: the players' use case is never
+  handed a reader able to leak.
+- **The owner's page hidden** (306, an audit with no production change): no
+  leak to a non-owner in the code, from the screens through `isOwnerAdminSession`
+  and the `/me` flag to `ownerGate` and `admin.platform_owners`. The read SQL
+  the owner ran in Supabase matched: two active seats, no grant to `anon` or
+  `authenticated` on the `admin` schema, RLS on its five tables.
+  `authenticated` can read `prediction.fixture_predictions` (migration 0019),
+  held by the policy `fixture_predictions_select_own_or_locked` to the player's
+  own pick or a fixture past its kickoff: the protection there is the RLS, not
+  the grant. A hub test (`NK306_01`) proves an admin without a seat finds no
+  owner section. Open, owner's approval pending: 306b, sending the hub back to
+  its home when the owner's seat is withdrawn while it shows that section
+  (the title stays over an empty body; nobody reaches it today).
+- **The rules**: the December rules (and every later month's) carry one line
+  saying the cup tab shows a pick after its fixture's kickoff only (`NK318_01`).
+- **Not changed**: no migration, no table, no rule of the cup, no tie-break, no
+  stored outcome, no permission, no new dependency. The cup tables stay as
+  they were.
+- **Tests**, all run on the owner's device by the scripts: contracts and
+  application (309 +41, 310 +33), infrastructure (311 +23), server routes (312
+  +13, 313), api_client (314), widgets (315), the screen (316 +162), the owner's
+  tab (317 +16), and `h2h_rules_by_month_test.dart` for the rule line (`NK318_02`).
+  The full suites run in Build Verification on every push.
+- **State**: the commits from script 306 on are local, above `508322c7`, and
+  not pushed. The owner pushes when he decides: the server first, then the app
+  (CI builds the APK, installed by the in-app OTA update). After the update the
+  owner checks by himself that a player outside the cup sees no pick before
+  kickoff, that a started fixture's picks show to everyone, and that his own
+  tab shows every pick marked «للمالك فقط». The plan with its table is kept in
+  `docs/handoff/cup-visibility-plan.md`.
+
+<!-- NK318_03 -->
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
