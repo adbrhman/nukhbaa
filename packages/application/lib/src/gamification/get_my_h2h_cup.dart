@@ -323,7 +323,7 @@ final class GetMyH2hCup {
           round: step.round,
           cupDay: step.cupDay,
           expectedDay: step.expectedDay,
-          phase: _phaseOf(step, stage, entries.length, title),
+          phase: phaseOf(step, stage, entries.length, title),
           attempt: stage?.attempt ?? 1,
           day: stage?.day,
           fixtureCount: stage?.fixtureCount,
@@ -336,7 +336,7 @@ final class GetMyH2hCup {
                       home: player(pair.home),
                       away: player(pair.away),
                       isMine: pair.home == me || pair.away == me,
-                      result: _resultOf(stage, pair.slot),
+                      result: resultOf(stage, pair.slot),
                     ),
                 ],
           bye: bye == null ? null : player(bye),
@@ -363,7 +363,11 @@ final class GetMyH2hCup {
     );
   }
 
-  static MyH2hCupPhase _phaseOf(
+  /// Where one stage of a path stands: [stage] is the stage stored for
+  /// [step], or null before it exists; [entrants] counts the path's
+  /// qualifiers and [title] is the path's title once decided. Shared with
+  /// the cup board (`GetH2hCupBoard`), so both name a stage the same way.
+  static MyH2hCupPhase phaseOf(
     H2hCupStep step,
     H2hCupStage? stage,
     int entrants,
@@ -381,7 +385,9 @@ final class GetMyH2hCup {
     return stage.locked ? MyH2hCupPhase.live : MyH2hCupPhase.scheduled;
   }
 
-  static H2hCupResult? _resultOf(H2hCupStage stage, int slot) {
+  /// The result stored for pair [slot] of [stage], or null until the stage
+  /// is decided. Shared with the cup board (`GetH2hCupBoard`).
+  static H2hCupResult? resultOf(H2hCupStage stage, int slot) {
     for (final result in stage.results) {
       if (result.slot == slot) {
         return result;
