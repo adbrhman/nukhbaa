@@ -164,6 +164,7 @@ final class CompositionRoot {
     required this.getH2hEliteTables,
     required this.getMyH2hCup,
     required this.getOwnerH2hCup,
+    required this.getH2hCupBoard,
     required this.getMyH2hRound,
     required this.getMyH2hGroupRound,
     required this.listH2hRounds,
@@ -413,6 +414,7 @@ final class CompositionRoot {
     GetH2hEliteTables? getH2hEliteTables,
     GetMyH2hCup? getMyH2hCup,
     GetOwnerH2hCup? getOwnerH2hCup,
+    GetH2hCupBoard? getH2hCupBoard,
     GetMyH2hRound? getMyH2hRound,
     GetMyH2hGroupRound? getMyH2hGroupRound,
     ListH2hRounds? listH2hRounds,
@@ -707,6 +709,7 @@ final class CompositionRoot {
        getH2hEliteTables = getH2hEliteTables ?? _absentGetH2hEliteTables(),
        getMyH2hCup = getMyH2hCup ?? _absentGetMyH2hCup(),
        getOwnerH2hCup = getOwnerH2hCup ?? _absentGetOwnerH2hCup(),
+       getH2hCupBoard = getH2hCupBoard ?? _absentGetH2hCupBoard(),
        getMyH2hRound = getMyH2hRound ?? _absentGetMyH2hRound(),
        getMyH2hGroupRound = getMyH2hGroupRound ?? _absentGetMyH2hGroupRound(),
        listH2hRounds = listH2hRounds ?? _absentListH2hRounds(),
@@ -1556,6 +1559,14 @@ final class CompositionRoot {
   static GetOwnerH2hCup _absentGetOwnerH2hCup() => GetOwnerH2hCup(
     cups: _UnwiredH2hCups(),
     rounds: _unwiredH2h,
+    profiles: _UnwiredWeeklyLeagueProfileReader(),
+    clock: _unwiredClock,
+  );
+
+  // NK312_03
+  static GetH2hCupBoard _absentGetH2hCupBoard() => GetH2hCupBoard(
+    cups: _UnwiredH2hCups(),
+    picks: _UnwiredH2hCupPickReader(),
     profiles: _UnwiredWeeklyLeagueProfileReader(),
     clock: _unwiredClock,
   );
@@ -2606,6 +2617,12 @@ final class CompositionRoot {
   /// The whole Elite Cup of a month for the owners' page (backs
   /// `GET /owner/h2h-cup`, script 304).
   final GetOwnerH2hCup getOwnerH2hCup;
+
+  /// The whole Elite Cup of the month for any player or admin, a pick of
+  /// another player only once its fixture has kicked off (backs
+  /// `GET /me/h2h-cup/board`, script 312). Wired with the masking reader
+  /// port alone: the owners' unmasked port is never injected here.
+  final GetH2hCupBoard getH2hCupBoard;
 
   /// One head-to-head round of the caller in detail; the opponent's picks
   /// only on fixtures that kicked off by the server clock (backs
@@ -4031,6 +4048,12 @@ final class CompositionRoot {
           clock: clock,
         ),
         rounds: PostgresH2hRoundStore(connection),
+        clock: clock,
+      ),
+      getH2hCupBoard: GetH2hCupBoard(
+        cups: PostgresH2hCupStore(connection),
+        picks: PostgresH2hCupPickReader(connection),
+        profiles: PostgresWeeklyLeagueProfileReader(connection),
         clock: clock,
       ),
       getOwnerH2hCup: GetOwnerH2hCup(
@@ -6632,6 +6655,19 @@ final class _UnwiredH2hNewcomers implements H2hNewcomerStore {
     required int slot,
     int? startFrom,
   }) => _unwired();
+}
+
+/// Backs the absent Elite Cup board: its masking pick reader throws if a
+/// test reaches it unwired.
+final class _UnwiredH2hCupPickReader implements H2hCupPickReader {
+  @override
+  Future<Result<Map<H2hCupStageId, List<H2hCupStageFixture>>>> fixturesOf({
+    required List<H2hCupStage> stages,
+    required UserId reader,
+    required DateTime nowUtc,
+  }) => throw StateError(
+    'The Elite Cup picks were not wired into this test root',
+  );
 }
 
 /// Backs every "absent" use-case of relegation for absence (0189): each
