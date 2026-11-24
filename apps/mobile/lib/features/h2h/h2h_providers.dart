@@ -57,6 +57,23 @@ final myH2hCupProvider = FutureProvider.autoDispose<MyH2hCupDto>((ref) async {
   };
 }, retry: (_, _) => null);
 
+// NK315_01
+/// `GET /me/h2h-cup/board` -- the whole Elite Cup of the month: the three
+/// paths, their stages, pairs and fixtures, with the two players' picks on
+/// each fixture. The server withholds a pick of another player until its
+/// fixture has kicked off and says nothing of whether he predicted; nothing
+/// here reads the clock or reveals anything. A failed read shows a message
+/// with a retry button instead of spinning through automatic retries.
+final h2hCupBoardProvider = FutureProvider.autoDispose<H2hCupBoardDto>((
+  ref,
+) async {
+  final AuthApi api = ref.watch(authApiProvider);
+  return switch (await api.h2hCupBoard()) {
+    Ok<H2hCupBoardDto>(:final value) => value,
+    Err<H2hCupBoardDto>(:final error) => throw error,
+  };
+}, retry: (_, _) => null);
+
 /// `GET /me/h2h-league/elite` -- the tables of the four elite groups, the
 /// caller's own line marked. The server orders and counts everything.
 final h2hEliteTablesProvider = FutureProvider.autoDispose<H2hAdminGroupsDto>((

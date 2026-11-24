@@ -7,6 +7,8 @@ library;
 
 import 'package:contracts/contracts.dart';
 
+import 'h2h_texts.dart';
+
 /// The card's title.
 const String h2hCupTitle = 'كأس النخبة';
 
@@ -61,6 +63,72 @@ H2hCupStageDto? h2hCupFocusStage(MyH2hCupDto cup) {
   }
   return cup.stages.isEmpty ? null : cup.stages.last;
 }
+
+// NK315_02
+/// The board's empty state: no cup stands for the month yet.
+const String h2hCupBoardEmpty =
+    'لم يقم كأس النخبة بعد. تظهر هنا مبارياته وتوقعات الخصوم حين يبدأ.';
+
+/// The board could not be read.
+const String h2hCupBoardLoadFailed = 'تعذّر تحميل لوحة الكأس';
+
+/// The retry button under a failed board.
+const String h2hCupBoardRetry = 'إعادة المحاولة';
+
+/// In place of a player's pick of a fixture that has not kicked off.
+const String h2hCupPickHidden = 'تظهر بعد انطلاق المباراة';
+
+/// A player other than the caller whose fixture kicked off without his pick.
+const String h2hCupNoPickOther = 'لم يتوقع';
+
+/// The caller's own side of a fixture he did not predict.
+const String h2hCupNoPickMine = 'لم تتوقع';
+
+/// A fixture that counts for neither player.
+const String h2hCupBoardVoidNote =
+    'لا تُحتسب: أُجّلت أو خرجت من يوم المرحلة أو تأخّرت نتيجتها.';
+
+/// A fixture with no registered kickoff (it counts as not started).
+const String h2hCupNoKickoff = 'بلا موعد';
+
+/// A kickoff as `HH:MM` on the Riyadh clock, or a word when the fixture has
+/// none, never a bare dash.
+String h2hCupKickoffLabel(String? iso) {
+  if (iso == null || DateTime.tryParse(iso) == null) return h2hCupNoKickoff;
+  return h2hKickoffTime(iso);
+}
+
+/// What a stage without pairs says: skipped, or not drawn yet.
+String h2hCupBoardStageEmpty(String phase) => phase == 'skipped'
+    ? 'لا تُلعب هذه المرحلة في هذا المسار'
+    : 'تُسحب المواجهات عند جدولة المرحلة';
+
+/// How a decided pair ended, or an empty string while it is undecided.
+String h2hCupBoardPairResult(H2hCupBoardPairDto pair) {
+  if (!pair.decided) return '';
+  final String? winner = pair.winnerUserId;
+  if (winner == null) return 'انتهت بلا فائز';
+  final H2hCupPlayerDto won = pair.home.userId == winner
+      ? pair.home
+      : pair.away;
+  return 'الفائز: ${h2hCupNameOf(won)}';
+}
+
+/// A path's title line once decided.
+String h2hCupBoardTitleLine(H2hCupTitleDto title) {
+  final H2hCupPlayerDto? champion = title.champion;
+  if (champion == null) return 'اللقب شاغر في هذا المسار';
+  return champion.isMe
+      ? 'أنت بطل هذا المسار'
+      : 'بطل المسار: ${h2hCupNameOf(champion)}';
+}
+
+/// The extras under a revealed pick: the double, the exact hit, the points.
+String h2hCupPickExtras(H2hPickDto pick) => <String>[
+  if (pick.isDouble) 'مضاعفة',
+  if (pick.exact) 'دقيقة',
+  if (pick.points != null) '+${pick.points} ن',
+].join(' · ');
 
 /// The caller's pair in [stage], or null (a bye, a stage not drawn, or a
 /// stage the caller is out of).
