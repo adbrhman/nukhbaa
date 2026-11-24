@@ -197,6 +197,8 @@ SELECT pl.user_id::text                                    AS user_id,
        COALESCE(sum(s.points), 0)::integer                 AS points,
        count(s.fixture_id) FILTER (
          WHERE s.grade = 'exact_scoreline')::integer       AS exact_count,
+       count(s.fixture_id) FILTER (
+         WHERE s.grade = 'correct_outcome')::integer       AS direction_count,
        count(fp.id)::integer                               AS predicted_count
 FROM players pl
 JOIN competition.participants p ON p.user_id = pl.user_id
@@ -509,6 +511,8 @@ ON CONFLICT DO NOTHING
       final points = _int(row['points']);
       final exact = _int(row['exact_count']);
       final predicted = _int(row['predicted_count']);
+      // NK319_01
+      final direction = _int(row['direction_count']) ?? 0;
       if (user is Err<UserId> ||
           points == null ||
           exact == null ||
@@ -519,6 +523,7 @@ ON CONFLICT DO NOTHING
         points: points,
         exact: exact,
         predicted: predicted,
+        direction: direction,
       );
     }
     return Result.ok(

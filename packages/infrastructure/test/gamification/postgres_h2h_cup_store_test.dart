@@ -194,6 +194,40 @@ void main() {
     expect(figures.sideOf(const UserId(_u2)).present, isFalse);
   });
 
+  // NK319_05
+  test('figuresOf reads the right directions of every side', () async {
+    final connection = _answers([
+      [
+        {'fixtures': 11, 'settled': 11},
+      ],
+      [
+        {
+          'user_id': _u1,
+          'points': 3,
+          'exact_count': 1,
+          'direction_count': 7,
+          'predicted_count': 11,
+        },
+        {
+          'user_id': _u2,
+          'points': 3,
+          'exact_count': 1,
+          'direction_count': 6,
+          'predicted_count': 11,
+        },
+      ],
+    ]);
+
+    final result = await PostgresH2hCupStore(
+      connection,
+    ).figuresOf(const H2hCupStageId(_stage));
+
+    final figures = (result as Ok<H2hCupStageFigures>).value;
+    expect(figures.sideOf(const UserId(_u1)).direction, 7);
+    expect(figures.sideOf(const UserId(_u2)).direction, 6);
+    expect(PostgresH2hCupStore.sidesSql, contains("'correct_outcome'"));
+  });
+
   test('decide and crown bind every value; a failure is returned', () async {
     final connection = _answers([[]]);
     final store = PostgresH2hCupStore(connection);

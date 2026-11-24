@@ -20,7 +20,8 @@
 ///
 /// A tie is judged on the stage's fixtures first: the side that predicted
 /// wins over the side that did not; with both present, the higher points,
-/// then more exact scorelines, then the better month in the league
+/// then more exact scorelines, then more right directions (NK319_01, owner
+/// decision 2026-11-25), then the better month in the league
 /// (prediction points, exact scorelines, league points, the group's number;
 /// script 305, owner decision 2026-11-24); with neither present both lose.
 library;
@@ -162,6 +163,7 @@ final class H2hCupSide {
     required this.points,
     required this.exact,
     required this.predicted,
+    this.direction = 0,
   });
 
   /// No prediction on the stage's fixtures.
@@ -180,6 +182,11 @@ final class H2hCupSide {
   /// Predictions made on them.
   final int predicted;
 
+  // NK319_01
+  /// Right directions on them: the right outcome without the exact
+  /// scoreline. The cup's tie-break after the exact scorelines.
+  final int direction;
+
   /// Whether the side predicted at least one of them.
   bool get present => predicted > 0;
 }
@@ -191,6 +198,10 @@ enum H2hCupOutcome {
 
   /// Level on points, more exact scorelines.
   exact('exact'),
+
+  // NK319_01
+  /// Level on both, more right directions.
+  direction('direction'),
 
   /// Level on both, the better league month.
   league('league'),
@@ -319,6 +330,15 @@ abstract final class H2hCupPolicy {
       return H2hCupDecision(
         winner: home.exact > away.exact ? homeEntry.userId : awayEntry.userId,
         outcome: H2hCupOutcome.exact,
+      );
+    }
+    // NK319_01
+    if (home.direction != away.direction) {
+      return H2hCupDecision(
+        winner: home.direction > away.direction
+            ? homeEntry.userId
+            : awayEntry.userId,
+        outcome: H2hCupOutcome.direction,
       );
     }
     return H2hCupDecision(

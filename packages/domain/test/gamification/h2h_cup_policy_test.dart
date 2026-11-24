@@ -28,8 +28,17 @@ H2hCupEntry _entry(
   exactCount: exact,
 );
 
-H2hCupSide _side(int points, {int exact = 0, int predicted = 6}) =>
-    H2hCupSide(points: points, exact: exact, predicted: predicted);
+H2hCupSide _side(
+  int points, {
+  int exact = 0,
+  int predicted = 6,
+  int direction = 0,
+}) => H2hCupSide(
+  points: points,
+  exact: exact,
+  predicted: predicted,
+  direction: direction,
+);
 
 void main() {
   group('the order', () {
@@ -209,6 +218,51 @@ void main() {
       );
       expect(d.winner, _u(1));
       expect(d.outcome, H2hCupOutcome.league);
+    });
+
+    // NK319_02
+    test('level on points and exact: more right directions win before the '
+        'month (the 2026-11-24 final)', () {
+      final d = H2hCupPolicy.decide(
+        home: _side(3, exact: 1, predicted: 11, direction: 7),
+        away: _side(3, exact: 1, predicted: 11, direction: 6),
+        homeEntry: _entry(1, league: 30, points: 120, exact: 30, group: 2),
+        awayEntry: _entry(2, league: 40, points: 130, exact: 40, group: 1),
+      );
+      expect(d.winner, _u(1));
+      expect(d.outcome, H2hCupOutcome.direction);
+    });
+
+    // NK319_03
+    test('level on directions too: the month decides, as before', () {
+      final d = H2hCupPolicy.decide(
+        home: _side(3, exact: 1, direction: 1),
+        away: _side(3, exact: 1, direction: 1),
+        homeEntry: _entry(1, league: 34, points: 126, exact: 37, group: 2),
+        awayEntry: _entry(2, league: 43, points: 123, exact: 41, group: 4),
+      );
+      expect(d.winner, _u(1));
+      expect(d.outcome, H2hCupOutcome.league);
+    });
+
+    // NK319_04
+    test('points and exact scorelines still come before directions', () {
+      final byPoints = H2hCupPolicy.decide(
+        home: _side(9),
+        away: _side(6, direction: 5),
+        homeEntry: _entry(1),
+        awayEntry: _entry(2),
+      );
+      expect(byPoints.winner, _u(1));
+      expect(byPoints.outcome, H2hCupOutcome.points);
+      final byExact = H2hCupPolicy.decide(
+        home: _side(6, exact: 1),
+        away: _side(6, direction: 5),
+        homeEntry: _entry(1),
+        awayEntry: _entry(2),
+      );
+      expect(byExact.winner, _u(1));
+      expect(byExact.outcome, H2hCupOutcome.exact);
     });
 
     test('the league tie-break: points, exact, league points, group', () {
