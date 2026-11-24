@@ -482,7 +482,8 @@ class _CurrentMonthFixturesScreenState
 }
 
 /// The mark's share of the wordmark's width, from the left (script 302).
-const double _markShare = 0.313;
+// NK320_01
+const double _markShare = 0.293;
 
 /// The «الكل» row above the leagues (script 302).
 class _AllLeagues {
