@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'dart:typed_data';
 
+import 'package:contracts/contracts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -23,8 +24,29 @@ import '../support/support_fake_server.dart';
 const String _c1 = 'aaaaaaaa-0000-4000-8000-000000000001';
 const String _c2 = 'aaaaaaaa-0000-4000-8000-000000000002';
 
+// NK328_03
+const AuthenticatedUserDto _owner = AuthenticatedUserDto(
+  userId: 'u-owner-id',
+  role: 'admin',
+  status: 'active',
+  email: 'owner@example.com',
+  isOwner: true,
+);
+
+const AuthenticatedUserDto _otherAdmin = AuthenticatedUserDto(
+  userId: 'u-admin',
+  role: 'admin',
+  status: 'active',
+  email: 'admin@example.com',
+);
+
 /// The admin routes of script 165, over two conversations.
 final class _FakeAdminSupport {
+  _FakeAdminSupport({this.me = _owner});
+
+  /// Who `GET /me` says is signed in: the owner, unless a test says not.
+  final AuthenticatedUserDto me;
+
   final Map<String, Map<String, Object?>> conversations =
       <String, Map<String, Object?>>{
         _c1: <String, Object?>{
@@ -74,8 +96,9 @@ final class _FakeAdminSupport {
   /// The reasons support gave to read a player's open predictions.
   final List<String> peekReasons = <String>[];
 
-  /// Answers the reading as a current server does: no notice, no message.
-  bool peekAnswersWithoutNotice = false;
+  /// Answers as a server before script 327 did, with a notice and the
+  /// message stored in the thread; a current server never does.
+  bool peekSendsNotice = false;
   int _nextId = 3;
 
   http.Response _json(Object body, [int code = 200]) => http.Response(
@@ -91,6 +114,7 @@ final class _FakeAdminSupport {
       '${url.query.isEmpty ? '' : '?${Uri.decodeQueryComponent(url.query)}'}',
     );
     final List<String> parts = url.pathSegments;
+    if (url.path == '/me') return okMe(me);
     if (url.path == '/admin/support/conversations') {
       final String filter = url.queryParameters['filter'] ?? 'all';
       final String search = url.queryParameters['search'] ?? '';
@@ -172,27 +196,23 @@ final class _FakeAdminSupport {
             ? http.Response('', 404)
             : http.Response.bytes(bytes, 200);
       }
-      // Script 261: support reads the player's open predictions; the
-      // player is told by a support answer.
+      // Script 261, silent since 327: the owner reads the player's open
+      // predictions; nothing is sent to the player.
       if (parts.length == 5 && parts[4] == 'predictions') {
-        if (!thread.any((m) => m['sender'] == 'player')) {
-          return _json(<String, Object?>{
-            'code': 'support.peek_needs_player_message',
-            'message':
-                'يُتاح الاطلاع بعد أن يراسل اللاعب الدعم في هذه المحادثة.',
-          }, 409);
-        }
         peekReasons.add(
           (jsonDecode(request.body) as Map<String, Object?>)['reason']!
               as String,
         );
-        final Map<String, Object?> notice = <String, Object?>{
-          'id': _nextId++,
-          'sender': 'support',
-          'body': 'اطّلع فريق الدعم على توقعاتك للمباريات التي لم تبدأ بعد.',
-          'created_at': '2026-10-28T11:00:00.000Z',
-        };
-        if (!peekAnswersWithoutNotice) thread.add(notice);
+        final Map<String, Object?>? notice = peekSendsNotice
+            ? <String, Object?>{
+                'id': _nextId++,
+                'sender': 'support',
+                'body':
+                    'اطّلع فريق الدعم على توقعاتك للمباريات التي لم تبدأ بعد.',
+                'created_at': '2026-10-28T11:00:00.000Z',
+              }
+            : null;
+        if (notice != null) thread.add(notice);
         return _json(<String, Object?>{
           'schema_version': 1,
           'predictions': <Object?>[
@@ -207,7 +227,7 @@ final class _FakeAdminSupport {
               'league_name': 'دوري روشن',
             },
           ],
-          if (!peekAnswersWithoutNotice) 'notice': notice,
+          if (notice != null) 'notice': notice,
         });
       }
       if (parts.length == 5 && parts[4] == 'messages') {
@@ -349,16 +369,18 @@ void main() {
     expect(find.byKey(const Key('admin.support.unread.$_c1')), findsNothing);
   });
 
-  testWidgets('support reads the open predictions, for a reason, and the '
-      'player is told (script 262)', (tester) async {
+  testWidgets('the owner reads the open predictions, for a reason, and '
+      'nobody is told (script 328)', (tester) async {
     final _FakeAdminSupport server = _FakeAdminSupport();
     await _pump(tester, server);
     await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
     await tester.pumpAndSettle();
+    final int before = server.messages[_c1]!.length;
 
     await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('admin.support.peek.notice')), findsOneWidget);
+    expect(find.textContaining('ستصله رسالة'), findsNothing);
     // No reason, no reading.
     await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
     await tester.pumpAndSettle();
@@ -382,17 +404,18 @@ void main() {
     );
     expect(find.text('الهلال - النصر'), findsOneWidget);
     expect(find.text('توقعه: 2-1 · دبل'), findsOneWidget);
-    expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsOneWidget);
+    expect(find.textContaining('أُبلغ اللاعب'), findsNothing);
+    expect(server.messages[_c1]!.length, before);
+    expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsNothing);
   });
 
-  testWidgets('an answer without a notice lists the predictions and adds '
-      'no message (script 326)', (tester) async {
+  testWidgets('a notice from an older server is not merged into the thread '
+      '(script 328)', (tester) async {
     final _FakeAdminSupport server = _FakeAdminSupport()
-      ..peekAnswersWithoutNotice = true;
+      ..peekSendsNotice = true;
     await _pump(tester, server);
     await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
     await tester.pumpAndSettle();
-    final int before = server.messages[_c1]!.length;
 
     await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
     await tester.pumpAndSettle();
@@ -405,17 +428,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(server.peekReasons, <String>['owner check']);
-    expect(
-      find.byKey(
-        const Key(
-          'admin.support.peek.line.ffffffff-0000-4000-8000-000000000001',
-        ),
-      ),
-      findsOneWidget,
-    );
     expect(find.text('الهلال - النصر'), findsOneWidget);
-    expect(server.messages[_c1]!.length, before);
     expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsNothing);
+  });
+
+  testWidgets('an admin who is not an owner has no eye (script 328)', (
+    tester,
+  ) async {
+    final _FakeAdminSupport server = _FakeAdminSupport(me: _otherAdmin);
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+
+    // The bar is drawn (its menu is there), and has no eye.
+    expect(find.byKey(const Key('admin.support.thread.menu')), findsOneWidget);
+    expect(find.byKey(const Key('admin.support.thread.peek')), findsNothing);
+    expect(server.calls.where((c) => c.endsWith('/predictions')), isEmpty);
   });
 
   testWidgets('cancelling reads nothing', (tester) async {
@@ -433,7 +461,7 @@ void main() {
     expect(server.calls.where((c) => c.endsWith('/predictions')), isEmpty);
   });
 
-  testWidgets('before the player writes, the server refusal is shown', (
+  testWidgets('the owner reads before the player has written (script 328)', (
     tester,
   ) async {
     final _FakeAdminSupport server = _FakeAdminSupport();
@@ -453,11 +481,8 @@ void main() {
     await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('يُتاح الاطلاع بعد أن يراسل اللاعب الدعم في هذه المحادثة.'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('admin.support.peek.list')), findsNothing);
+    expect(server.peekReasons, <String>['سبب']);
+    expect(find.byKey(const Key('admin.support.peek.list')), findsOneWidget);
   });
 
   testWidgets('closing asks first; a closed one can be reopened', (

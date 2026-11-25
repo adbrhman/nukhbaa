@@ -22,10 +22,12 @@ import '../../../core/providers.dart';
 import '../../../core/ui/app_dialog.dart';
 import '../../../core/ui/app_error_state.dart';
 import '../../../core/ui/app_skeleton.dart';
+import '../../auth/session_controller.dart';
 import '../../support/support_chat_widgets.dart';
 import '../../support/support_images.dart';
 import '../admin_support_providers.dart';
 import '../widgets/support_predictions_peek.dart';
+import 'sections/hidden_accounts_section.dart' show isOwnerAdminSession;
 
 /// The conversation: the player's messages, the answers, a box to answer,
 /// and the status (open, closed, archived) in the bar's menu. The
@@ -242,7 +244,9 @@ class _AdminSupportConversationScreenState
     }
   }
 
-  /// Reads the player's open predictions, for a reason, telling him.
+  /// Reads the player's open predictions, for a reason. The reading is
+  /// silent: nobody is told, so an answer's notice (an older server sent
+  /// one) is not merged into the thread.
   Future<void> _peek() async {
     final String? reason = await askSupportPeekReason(context);
     if (reason == null || !mounted) return;
@@ -255,10 +259,6 @@ class _AdminSupportConversationScreenState
     setState(() => _peeking = false);
     switch (result) {
       case Ok<SupportPredictionsPeekDto>(:final value):
-        final SupportMessageDto? notice = value.notice;
-        if (notice != null) {
-          setState(() => _merge(<SupportMessageDto>[notice]));
-        }
         await showSupportPeekedPredictions(context, value);
       case Err<SupportPredictionsPeekDto>(:final error):
         messenger.showSnackBar(
@@ -271,6 +271,10 @@ class _AdminSupportConversationScreenState
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final SupportConversationDto? c = _conversation;
+    // NK328_01: only an owner seat reads a player's open predictions.
+    final bool owner = isOwnerAdminSession(
+      ref.watch(sessionControllerProvider).value,
+    );
     final String status = c?.status ?? 'open';
     final String name = (c?.playerName ?? widget.playerName).trim().isEmpty
         ? 'لاعب'
@@ -280,7 +284,7 @@ class _AdminSupportConversationScreenState
       appBar: AppBar(
         title: Text(name, key: const Key('admin.support.thread.title')),
         actions: <Widget>[
-          if (c != null)
+          if (c != null && owner)
             IconButton(
               key: const Key('admin.support.thread.peek'),
               tooltip: 'توقعاته القادمة',

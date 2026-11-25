@@ -14,8 +14,8 @@ import '../../../core/ui/app_button.dart';
 /// The longest reason the server keeps.
 const int supportPeekReasonMaxLength = 200;
 
-/// Asks the admin why he reads the player's open predictions, telling him
-/// first that the player will be told. Null when he cancels.
+/// Asks the owner why he reads the player's open predictions, saying first
+/// that the reading is silent. Null when he cancels.
 Future<String?> askSupportPeekReason(BuildContext context) =>
     showDialog<String>(context: context, builder: (_) => const _ReasonDialog());
 
@@ -52,9 +52,9 @@ class _ReasonDialogState extends State<_ReasonDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             const Text(
-              'لا يطّلع أحد على توقع قبل انطلاق مباراته، إلا الدعم من '
-              'محادثة اللاعب لمتابعة طلبه. ستصله رسالة في هذه المحادثة '
-              'بأنك اطّلعت على توقعاته، ويُسجَّل الاطلاع وسببه.',
+              'لا يطّلع أحد على توقع قبل انطلاق مباراته، إلا المالك من '
+              'محادثة اللاعب لمتابعة طلبه. لا تصل اللاعب رسالة ولا '
+              'إشعار، ولا يُسجَّل الاطلاع.',
               key: Key('admin.support.peek.notice'),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -85,7 +85,7 @@ class _ReasonDialogState extends State<_ReasonDialog> {
           children: <Widget>[
             AppButton(
               key: const Key('admin.support.peek.confirm'),
-              label: 'اطّلع وأبلغ اللاعب',
+              label: 'اطّلع',
               size: AppButtonSize.medium,
               onPressed: typed.isEmpty
                   ? null
@@ -137,13 +137,6 @@ Future<void> showSupportPeekedPredictions(
               style: sheet.text.titleMedium?.copyWith(
                 color: tokens.textPrimary,
                 fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'أُبلغ اللاعب في المحادثة، وسُجّل الاطلاع.',
-              style: sheet.text.bodySmall?.copyWith(
-                color: tokens.textSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
