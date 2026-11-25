@@ -77,11 +77,29 @@ void main() {
     );
 
     expect(back.predictions, dto.predictions);
-    expect(back.notice.body, 'اطّلع فريق الدعم على توقعاتك');
-    expect(back.notice.sender, 'support');
+    expect(back.notice!.body, 'اطّلع فريق الدعم على توقعاتك');
+    expect(back.notice!.sender, 'support');
     expect(back.schemaVersion, 1);
     final Map<String, Object?> second =
         (json['predictions']! as List<Object?>)[1]! as Map<String, Object?>;
     expect(second.containsKey('league_name'), isFalse);
+  });
+
+  test('a reading with no notice omits the key and reads back null', () {
+    const SupportPredictionsPeekDto dto = SupportPredictionsPeekDto(
+      predictions: <SupportPeekedPredictionDto>[],
+    );
+
+    final Map<String, Object?> json = dto.toJson();
+
+    expect(json.containsKey('notice'), isFalse);
+    expect(SupportPredictionsPeekDto.fromJson(json).notice, isNull);
+    expect(
+      SupportPredictionsPeekDto.fromJson(<String, Object?>{
+        ...json,
+        'notice': null,
+      }).notice,
+      isNull,
+    );
   });
 }

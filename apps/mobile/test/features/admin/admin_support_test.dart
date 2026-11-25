@@ -73,6 +73,9 @@ final class _FakeAdminSupport {
 
   /// The reasons support gave to read a player's open predictions.
   final List<String> peekReasons = <String>[];
+
+  /// Answers the reading as a current server does: no notice, no message.
+  bool peekAnswersWithoutNotice = false;
   int _nextId = 3;
 
   http.Response _json(Object body, [int code = 200]) => http.Response(
@@ -189,7 +192,7 @@ final class _FakeAdminSupport {
           'body': 'اطّلع فريق الدعم على توقعاتك للمباريات التي لم تبدأ بعد.',
           'created_at': '2026-10-28T11:00:00.000Z',
         };
-        thread.add(notice);
+        if (!peekAnswersWithoutNotice) thread.add(notice);
         return _json(<String, Object?>{
           'schema_version': 1,
           'predictions': <Object?>[
@@ -204,7 +207,7 @@ final class _FakeAdminSupport {
               'league_name': 'دوري روشن',
             },
           ],
-          'notice': notice,
+          if (!peekAnswersWithoutNotice) 'notice': notice,
         });
       }
       if (parts.length == 5 && parts[4] == 'messages') {
@@ -380,6 +383,39 @@ void main() {
     expect(find.text('الهلال - النصر'), findsOneWidget);
     expect(find.text('توقعه: 2-1 · دبل'), findsOneWidget);
     expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsOneWidget);
+  });
+
+  testWidgets('an answer without a notice lists the predictions and adds '
+      'no message (script 326)', (tester) async {
+    final _FakeAdminSupport server = _FakeAdminSupport()
+      ..peekAnswersWithoutNotice = true;
+    await _pump(tester, server);
+    await tester.tap(find.byKey(const Key('admin.support.conversation.$_c1')));
+    await tester.pumpAndSettle();
+    final int before = server.messages[_c1]!.length;
+
+    await tester.tap(find.byKey(const Key('admin.support.thread.peek')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('admin.support.peek.reason')),
+      'owner check',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('admin.support.peek.confirm')));
+    await tester.pumpAndSettle();
+
+    expect(server.peekReasons, <String>['owner check']);
+    expect(
+      find.byKey(
+        const Key(
+          'admin.support.peek.line.ffffffff-0000-4000-8000-000000000001',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('الهلال - النصر'), findsOneWidget);
+    expect(server.messages[_c1]!.length, before);
+    expect(find.textContaining('اطّلع فريق الدعم على توقعاتك'), findsNothing);
   });
 
   testWidgets('cancelling reads nothing', (tester) async {

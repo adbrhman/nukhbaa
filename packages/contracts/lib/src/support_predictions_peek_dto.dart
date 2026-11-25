@@ -105,7 +105,7 @@ final class SupportPredictionsPeekDto {
   /// Creates the reading.
   const SupportPredictionsPeekDto({
     required this.predictions,
-    required this.notice,
+    this.notice,
     this.schemaVersion = currentSchemaVersion,
   });
 
@@ -118,7 +118,9 @@ final class SupportPredictionsPeekDto {
               in (json['predictions'] as List<Object?>?) ?? const <Object?>[])
             SupportPeekedPredictionDto.fromJson(_map(line)),
         ],
-        notice: SupportMessageDto.fromJson(_map(json['notice'])),
+        notice: json['notice'] is Map<Object?, Object?>
+            ? SupportMessageDto.fromJson(_map(json['notice']))
+            : null,
       );
 
   /// The current schema version for this DTO.
@@ -127,8 +129,10 @@ final class SupportPredictionsPeekDto {
   /// The player's predictions of the matches not yet started, by kickoff.
   final List<SupportPeekedPredictionDto> predictions;
 
-  /// The message stored in his conversation to tell him.
-  final SupportMessageDto notice;
+  /// The message stored in the conversation, when the server sends one. The
+  /// owner's reading tells nobody (decided 2026-11-25), so a current server
+  /// omits it; a server before that still sends it.
+  final SupportMessageDto? notice;
 
   /// The schema version of this payload.
   final int schemaVersion;
@@ -137,6 +141,6 @@ final class SupportPredictionsPeekDto {
   Map<String, Object?> toJson() => {
     'schema_version': schemaVersion,
     'predictions': [for (final line in predictions) line.toJson()],
-    'notice': notice.toJson(),
+    if (notice case final SupportMessageDto message) 'notice': message.toJson(),
   };
 }

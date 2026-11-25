@@ -42,7 +42,7 @@ void main() {
 
       final read = (result as Ok<SupportPredictionsPeekDto>).value;
       expect(read.predictions, dto.predictions);
-      expect(read.notice.body, 'اطّلع فريق الدعم على توقعاتك');
+      expect(read.notice!.body, 'اطّلع فريق الدعم على توقعاتك');
       final sent = ctx.captured.single;
       expect(sent.method, 'POST');
       expect(
@@ -54,4 +54,40 @@ void main() {
       });
     },
   );
+
+  test('peekSupportPredictions reads an answer without a notice', () async {
+    final ctx = buildTransport(
+      (request) async => okJson(<String, Object?>{
+        'schema_version': 1,
+        'predictions': <Object?>[
+          <String, Object?>{
+            'fixture_id': 'aaaaaaaa-0000-4000-8000-000000000002',
+            'home_team': 'HOME',
+            'away_team': 'AWAY',
+            'kickoff_at': '2026-11-12T18:00:00.000Z',
+            'home_goals': 1,
+            'away_goals': 1,
+            'is_double': false,
+          },
+        ],
+      }),
+    );
+
+    final result = await AdminApi(
+      ctx.transport,
+    ).peekSupportPredictions(conversation, reason: 'owner check');
+
+    final read = (result as Ok<SupportPredictionsPeekDto>).value;
+    expect(read.notice, isNull);
+    expect(read.predictions.single.homeTeam, 'HOME');
+    expect(read.predictions.single.homeGoals, 1);
+    expect(ctx.captured.single.method, 'POST');
+    expect(
+      ctx.captured.single.url.path,
+      '/admin/support/conversations/$conversation/predictions',
+    );
+    expect(jsonDecode(ctx.captured.single.body), <String, Object?>{
+      'reason': 'owner check',
+    });
+  });
 }

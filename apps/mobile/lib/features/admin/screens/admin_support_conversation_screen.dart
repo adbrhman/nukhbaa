@@ -255,7 +255,10 @@ class _AdminSupportConversationScreenState
     setState(() => _peeking = false);
     switch (result) {
       case Ok<SupportPredictionsPeekDto>(:final value):
-        setState(() => _merge(<SupportMessageDto>[value.notice]));
+        final SupportMessageDto? notice = value.notice;
+        if (notice != null) {
+          setState(() => _merge(<SupportMessageDto>[notice]));
+        }
         await showSupportPeekedPredictions(context, value);
       case Err<SupportPredictionsPeekDto>(:final error):
         messenger.showSnackBar(
