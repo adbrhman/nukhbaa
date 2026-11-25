@@ -3,15 +3,18 @@ import 'package:domain/domain.dart';
 import 'package:shared/shared.dart';
 import 'package:test/test.dart';
 
-import '../admin/fakes.dart'
-    show InMemoryAuditLogRepository, auditRecorderOver, FakeClock;
+import '../admin/fakes.dart' show FakeClock;
 import '../prediction/fake_fixture_prediction_repository.dart';
 import '../prediction/fake_fixture_schedule_repository.dart';
 
-/// Script 261: support reads one player's predictions of the matches not
-/// yet started, from his conversation -- the one reading of a prediction
-/// before its kickoff. A reason is required, the reading is audited and
-/// the player is told in the conversation; nothing else is shown.
+// NK327_01
+/// Script 261, reshaped by scripts 325-327 (decided 2026-11-25): the owner
+/// reads one player's predictions of the matches not yet started, from his
+/// conversation -- the one reading of a prediction before its kickoff. A
+/// reason is required; the reading is silent: no message to the player, no
+/// push, no audit row, and the player need not have written first. The
+/// use-case no longer takes a reply or an audit collaborator, so a test
+/// that builds it without them is the proof that it cannot write either.
 
 const String _conversation = 'cccccccc-0000-4000-8000-000000000001';
 const String _player = '22222222-2222-4222-8222-222222222222';
@@ -31,7 +34,6 @@ final DateTime _now = DateTime.utc(2026, 11, 12, 15);
 /// The conversation of [_player], and the support answers stored in it.
 final class _Chats implements SupportChatRepository {
   final List<String> replies = <String>[];
-  bool replyFails = false;
 
   /// Whether the player wrote in the conversation.
   bool playerWrote = true;
@@ -93,9 +95,6 @@ final class _Chats implements SupportChatRepository {
     required SupportMessageBody body,
     required DateTime at,
   }) async {
-    if (replyFails) {
-      return const Result.err(AppError.transient('db.down', 'down'));
-    }
     replies.add(body.value);
     return Result.ok(
       SupportMessageStored(
@@ -137,10 +136,8 @@ final class _Owners implements OwnerNotices {
   }) async => const Result.ok(null);
 }
 
-({SupportPeekPredictions peek, _Chats chats, InMemoryAuditLogRepository audit})
-_harness({_Owners? owners}) {
+({SupportPeekPredictions peek, _Chats chats}) _harness({_Owners? owners}) {
   final chats = _Chats();
-  final audit = InMemoryAuditLogRepository();
   final predictions = FakeFixturePredictionRepository()
     ..seedParticipantOwner(
       const ParticipantId(_participant),
@@ -173,25 +170,20 @@ _harness({_Owners? owners}) {
       _now.subtract(const Duration(days: 1)),
     );
   }
-  final clock = FakeClock(_now);
   return (
     peek: SupportPeekPredictions(
       chats: chats,
       owners: owners ?? _Owners(),
-      reply: AdminReplySupport(chats: chats, clock: clock),
       predictions: predictions,
       schedules: schedules,
-      audit: auditRecorderOver(audit, now: _now),
-      clock: clock,
+      clock: FakeClock(_now),
     ),
     chats: chats,
-    audit: audit,
   );
 }
 
 void main() {
-  test('reads the open predictions only, by kickoff, audits and tells the '
-      'player', () async {
+  test('the owner reads the open predictions only, by kickoff', () async {
     final h = _harness();
 
     final result = await h.peek(
@@ -208,15 +200,34 @@ void main() {
     expect(peek.predictions.first.homeGoals, 2);
     expect(peek.predictions.first.isDouble, isTrue);
     expect(peek.predictions.first.leagueName, 'دوري روشن');
+  });
 
-    final row = h.audit.rows.single;
-    expect(row.action, AuditAction.supportPredictionsViewed);
-    expect(row.targetRef, _player);
-    expect(row.reason, 'يقول إن توقعه لم يُحفظ');
-    expect(row.actorId, _admin.userId);
+  test('the reading is silent: no message reaches the conversation', () async {
+    final h = _harness();
 
-    expect(h.chats.replies, [SupportPeekPredictions.noticeText]);
-    expect(peek.notice.message.body, SupportPeekPredictions.noticeText);
+    final result = await h.peek(
+      principal: _admin,
+      conversationId: _conversation,
+      reason: 'سبب',
+    );
+
+    expect(result, isA<Ok<SupportPredictionsPeek>>());
+    expect(h.chats.replies, isEmpty);
+  });
+
+  test('the player need not have written first', () async {
+    final h = _harness();
+    h.chats.playerWrote = false;
+
+    final result = await h.peek(
+      principal: _admin,
+      conversationId: _conversation,
+      reason: 'سبب',
+    );
+
+    final peek = (result as Ok<SupportPredictionsPeek>).value;
+    expect(peek.predictions, hasLength(2));
+    expect(h.chats.replies, isEmpty);
   });
 
   test('a player is refused before anything is read', () async {
@@ -235,7 +246,6 @@ void main() {
       (result as Err<SupportPredictionsPeek>).error.code,
       'auth.insufficient_role',
     );
-    expect(h.audit.rows, isEmpty);
     expect(h.chats.replies, isEmpty);
   });
 
@@ -253,7 +263,6 @@ void main() {
       final error = (result as Err<SupportPredictionsPeek>).error;
       expect(error.code, 'support.peek_reason_invalid');
       expect(error.kind, ErrorKind.validation);
-      expect(h.audit.rows, isEmpty);
       expect(h.chats.replies, isEmpty);
     });
   }
@@ -271,39 +280,7 @@ void main() {
       (result as Err<SupportPredictionsPeek>).error.code,
       'support.conversation_not_found',
     );
-    expect(h.audit.rows, isEmpty);
     expect(h.chats.replies, isEmpty);
-  });
-
-  test('before the player writes, nothing is read', () async {
-    final h = _harness();
-    h.chats.playerWrote = false;
-
-    final result = await h.peek(
-      principal: _admin,
-      conversationId: _conversation,
-      reason: 'سبب',
-    );
-
-    expect(
-      (result as Err<SupportPredictionsPeek>).error.code,
-      'support.peek_needs_player_message',
-    );
-    expect(h.audit.rows, isEmpty);
-    expect(h.chats.replies, isEmpty);
-  });
-
-  test('when the player cannot be told, nothing is shown', () async {
-    final h = _harness();
-    h.chats.replyFails = true;
-
-    final result = await h.peek(
-      principal: _admin,
-      conversationId: _conversation,
-      reason: 'سبب',
-    );
-
-    expect((result as Err<SupportPredictionsPeek>).error.code, 'db.down');
   });
 
   // NK325_01
@@ -323,7 +300,6 @@ void main() {
 
       final error = (result as Err<SupportPredictionsPeek>).error;
       expect(error.code, 'auth.insufficient_role');
-      expect(h.audit.rows, isEmpty);
       expect(h.chats.replies, isEmpty);
     },
   );
@@ -341,6 +317,7 @@ void main() {
     );
 
     expect(result, isA<Ok<SupportPredictionsPeek>>());
+    expect(h.chats.replies, isEmpty);
   });
 
   test('when the seat lookup fails, nothing is read (fail closed)', () async {
@@ -354,7 +331,6 @@ void main() {
     );
 
     expect((result as Err<SupportPredictionsPeek>).error.code, 'db.down');
-    expect(h.audit.rows, isEmpty);
     expect(h.chats.replies, isEmpty);
   });
 }

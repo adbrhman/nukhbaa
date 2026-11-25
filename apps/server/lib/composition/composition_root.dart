@@ -3966,7 +3966,8 @@ final class CompositionRoot {
         opener: PostgresSupportConversationOpener(connection),
         reply: AdminReplySupport(chats: supportChats, clock: clock),
       ),
-      // The one reading of a prediction before kickoff (script 261).
+      // The one reading of a prediction before kickoff (script 261);
+      // silent, owner only (script 327).
       supportPeekPredictions: SupportPeekPredictions(
         chats: supportChats,
         owners: OwnerInbox(
@@ -3980,10 +3981,8 @@ final class CompositionRoot {
           idGenerator: idGenerator,
           clock: clock,
         ),
-        reply: AdminReplySupport(chats: supportChats, clock: clock),
         predictions: fixturePredictionRepository,
         schedules: fixtureScheduleRepository,
-        audit: auditRecorder,
         clock: clock,
       ),
       adminErrorReleases: AdminErrorReleases(

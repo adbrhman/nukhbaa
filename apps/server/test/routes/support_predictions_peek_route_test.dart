@@ -25,25 +25,9 @@ final class _Chats implements SupportChatRepository {
   final List<String> replies = <String>[];
 
   @override
-  Future<Result<SupportThread>> conversationThread({
-    required SupportConversationId conversationId,
-    required int? beforeId,
-    required int limit,
-  }) async => Result.ok(
-    SupportThread(
-      status: SupportConversationStatus.open,
-      unread: 1,
-      hasMore: false,
-      messages: <SupportMessage>[
-        SupportMessage(
-          id: 1,
-          senderRole: SupportSenderRole.player,
-          body: 'توقعي لم يُحفظ',
-          createdAt: _now.subtract(const Duration(hours: 1)),
-        ),
-      ],
-    ),
-  );
+  Future<Result<List<String>>> playerPushTokens(
+    SupportConversationId conversationId,
+  ) async => const Result.ok(<String>['player-token']);
 
   @override
   Future<Result<SupportConversationSummary>> conversation(
@@ -111,6 +95,29 @@ final class _Owners implements OwnerNotices {
   }) async => const Result.ok(null);
 }
 
+/// No admin has a phone registered: only the player's side can ring.
+final class _NoAdmins implements AdminPushTargetReader {
+  @override
+  Future<Result<List<String>>> tokensForActiveAdmins() async =>
+      const Result.ok(<String>[]);
+}
+
+/// The pushes sent, by body.
+final class _Pushes implements PushSender {
+  final List<String> sent = <String>[];
+
+  @override
+  Future<Result<List<String>>> send({
+    required List<String> tokens,
+    required String title,
+    required String body,
+    String? link,
+  }) async {
+    sent.add(body);
+    return const Result.ok(<String>[]);
+  }
+}
+
 /// [kTargetUserId]'s predictions: one played, one not yet started.
 final class _Predictions implements FixturePredictionRepository {
   @override
@@ -139,15 +146,20 @@ final class _Predictions implements FixturePredictionRepository {
       throw UnimplementedError(invocation.memberName.toString());
 }
 
-/// Script 261: support reads one player's predictions of the matches not
-/// yet started, from his conversation, through the real wiring.
+// NK327_01
+/// Script 261, reshaped by scripts 325-327 (decided 2026-11-25): the owner
+/// reads one player's predictions of the matches not yet started, from his
+/// conversation, through the real wiring -- silently: no message, no push,
+/// no audit row. The use-case is built without a reply or an audit
+/// collaborator, so a test that builds it without them is the proof that it
+/// cannot write either; the push and the stored message are watched here.
 void main() {
   late _Chats chats;
-  late InMemoryAuditLogRepository audit;
+  late _Pushes pushes;
 
   CompositionRoot root({bool wired = true}) {
     chats = _Chats();
-    audit = InMemoryAuditLogRepository();
+    pushes = _Pushes();
     final clock = FixedClock(_now);
     final schedules = InMemoryFixtureScheduleRepository()
       ..seed(
@@ -168,18 +180,17 @@ void main() {
         ),
       );
     return CompositionRoot.forTesting(
+      notifySupportMessage: NotifySupportMessage(
+        chats: chats,
+        admins: _NoAdmins(),
+        sender: pushes,
+      ),
       supportPeekPredictions: wired
           ? SupportPeekPredictions(
               chats: chats,
               owners: _Owners(),
-              reply: AdminReplySupport(chats: chats, clock: clock),
               predictions: _Predictions(),
               schedules: schedules,
-              audit: AuditRecorder(
-                auditLog: audit,
-                idGenerator: ScriptedIdGenerator([kAuditEntryId]),
-                clock: clock,
-              ),
               clock: clock,
             )
           : null,
@@ -198,7 +209,7 @@ void main() {
   );
 
   test(
-    'an admin reads the open predictions; audited, the player told',
+    'the owner reads the open predictions; no message, no push, no audit',
     () async {
       final r = root();
 
@@ -212,16 +223,34 @@ void main() {
       expect(lines.single['home_goals'], 3);
       expect(lines.single['is_double'], isTrue);
       expect(lines.single['league_name'], 'دوري روشن');
-      final notice = body['notice']! as Map<String, Object?>;
-      expect(notice['body'], SupportPeekPredictions.noticeText);
-      expect(notice['sender'], 'support');
-      expect(chats.replies, [SupportPeekPredictions.noticeText]);
-      final entry = audit.entries.single;
-      expect(entry.action, AuditAction.supportPredictionsViewed);
-      expect(entry.targetRef, kTargetUserId);
-      expect(entry.reason, 'يقول إن توقعه لم يُحفظ');
+      expect(body.containsKey('notice'), isFalse);
+      expect(chats.replies, isEmpty);
+      // The push of an answer is sent after the response, so wait for it.
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(pushes.sent, isEmpty);
     },
   );
+
+  test('control: this harness does push a support answer', () async {
+    final r = root();
+
+    final sent = await r.notifySupportMessage(
+      SupportMessageStored(
+        conversationId: const SupportConversationId(_conversation),
+        playerName: 'خالد',
+        message: SupportMessage(
+          id: 9,
+          senderRole: SupportSenderRole.support,
+          body: 'رد الدعم',
+          createdAt: _now,
+        ),
+        unreadBefore: 0,
+      ),
+    );
+
+    expect(sent, isA<Ok<bool>>());
+    expect(pushes.sent, ['رد الدعم']);
+  });
 
   // NK325_01
   test('an admin who is not the owner is a 401 and nothing is read', () async {
@@ -237,7 +266,7 @@ void main() {
 
     expect(response.statusCode, HttpStatus.unauthorized);
     expect(chats.replies, isEmpty);
-    expect(audit.entries, isEmpty);
+    expect(pushes.sent, isEmpty);
   });
 
   test('without a reason it is a 400 and nothing is read', () async {
@@ -247,8 +276,8 @@ void main() {
 
     expect(response.statusCode, HttpStatus.badRequest);
     expect((await decodeBody(response))['code'], 'support.peek_reason_invalid');
-    expect(audit.entries, isEmpty);
     expect(chats.replies, isEmpty);
+    expect(pushes.sent, isEmpty);
   });
 
   test('a player is refused', () async {
@@ -257,8 +286,8 @@ void main() {
     final response = await send(r, userPrincipal());
 
     expect((await decodeBody(response))['code'], 'auth.insufficient_role');
-    expect(audit.entries, isEmpty);
     expect(chats.replies, isEmpty);
+    expect(pushes.sent, isEmpty);
   });
 
   test('an unknown conversation is a 409', () async {

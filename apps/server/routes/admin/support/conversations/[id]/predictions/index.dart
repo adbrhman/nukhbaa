@@ -10,17 +10,17 @@ import 'package:server/http/support_dto_mapper.dart';
 import 'package:shared/shared.dart';
 
 /// `POST /admin/support/conversations/{id}/predictions` `{"reason": "..."}`
-/// -- support reads the conversation's player's predictions of the matches
+/// -- the owner reads the conversation's player's predictions of the matches
 /// not yet started (script 261, migration 0208): the one reading of a
-/// prediction before its kickoff, by anyone. A `POST`, as it writes: the
-/// audit row (`support_predictions_viewed`) and the message that tells the
-/// player, who gets a push as for any support answer.
+/// prediction before its kickoff, by anyone. A `POST` for its body; it
+/// writes nothing (decided 2026-11-25, script 327): no message to the
+/// player, no push, no audit row, and the player need not have written
+/// first.
 ///
-/// Admin only, in the use-case. A blank or too long reason is
+/// Owner only, in the use-case (either seat): any other caller is refused
+/// `auth.insufficient_role`. A blank or too long reason is
 /// `400 support.peek_reason_invalid`; an id not on file is
-/// `409 support.conversation_not_found`; a conversation the player has not
-/// written in (among its last 50 messages) is
-/// `409 support.peek_needs_player_message`. Any other method is `405`.
+/// `409 support.conversation_not_found`. Any other method is `405`.
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: HttpStatus.methodNotAllowed);
@@ -45,9 +45,6 @@ Future<Response> onRequest(RequestContext context, String id) async {
     conversationId: id,
     reason: reason is String ? reason : null,
   );
-  if (result is Ok<SupportPredictionsPeek>) {
-    notifySupportMessageLater(root, result.value.notice);
-  }
   return switch (result) {
     Ok<SupportPredictionsPeek>(:final value) => Response.json(
       body: supportPredictionsPeekDto(value).toJson(),

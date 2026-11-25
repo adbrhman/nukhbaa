@@ -37,7 +37,8 @@ SupportConversationDto supportConversationDto(SupportConversationSummary c) =>
       playerUnread: c.playerUnread,
     );
 
-/// Support's reading of a player's open predictions (script 261).
+/// The owner's reading of a player's open predictions (script 261); it
+/// tells nobody (script 327), so the answer carries no notice.
 SupportPredictionsPeekDto supportPredictionsPeekDto(
   SupportPredictionsPeek peek,
 ) => SupportPredictionsPeekDto(
@@ -54,7 +55,6 @@ SupportPredictionsPeekDto supportPredictionsPeekDto(
         leagueName: p.leagueName,
       ),
   ],
-  notice: supportMessageDto(peek.notice.message),
 );
 
 /// Rings the other side's phone for [stored], after the answer: the
