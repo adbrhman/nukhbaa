@@ -256,3 +256,38 @@ String h2hCupBoardPathStatus(H2hCupBoardPathDto path) {
   if (stage == null) return h2hCupPhaseName('waiting');
   return '${h2hCupRoundName(stage.round)} · ${h2hCupPhaseName(stage.phase)}';
 }
+
+// NK332_01
+/// The words of the duel card (script 332). The server decides every figure;
+/// these only say what it sent. The caller's own mark under his name in the
+/// card.
+const String h2hCupYouLabel = 'أنت';
+
+/// The label under the points of the duel.
+const String h2hCupDuelPointsLabel = 'نقاط المواجهة';
+
+/// In place of the duel's points when the server sends none for the pair.
+const String h2hCupVersus = 'ضد';
+
+/// The caller's own pick of the fixture the duel stands at.
+const String h2hCupMyPickLabel = 'توقعك';
+
+/// The opponent's pick of that fixture.
+const String h2hCupTheirPickLabel = 'توقعه';
+
+/// What closes the line under two picks of a fixture that has not finished.
+const String h2hCupSettlesAtFullTime = 'تُحسم بعد صافرة النهاية';
+
+/// The distance between two picks, in goals: the gap of the home goals plus
+/// the gap of the away goals. A figure of the display only, never points.
+int h2hCupPickGap(H2hPickDto a, H2hPickDto b) =>
+    (a.homeGoals - b.homeGoals).abs() + (a.awayGoals - b.awayGoals).abs();
+
+/// The distance between two picks, in words.
+String h2hCupPickGapLine(int goals) => switch (goals) {
+  0 => 'التوقعان متطابقان',
+  1 => 'المسافة بين التوقعين هدف واحد',
+  2 => 'المسافة بين التوقعين هدفان',
+  <= 10 => 'المسافة بين التوقعين $goals أهداف',
+  _ => 'المسافة بين التوقعين $goals هدفاً',
+};
