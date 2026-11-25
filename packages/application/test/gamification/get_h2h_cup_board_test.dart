@@ -160,6 +160,16 @@ H2hCupStageFixture _fixture(
 
 DateTime _in(Duration d) => _now.add(d);
 
+// NK330_04
+/// A pick with the points a stored score gave it (null while none is stored).
+H2hFixturePick _scored(int home, int away, int? points) => H2hFixturePick(
+  homeGoals: home,
+  awayGoals: away,
+  isDouble: false,
+  points: points,
+  exact: false,
+);
+
 Future<H2hCupBoard> _read(
   H2hCupState state,
   _Picks picks, {
@@ -589,6 +599,170 @@ void main() {
       final error = (result as Err<H2hCupBoard>).error;
       expect(error.kind, ErrorKind.transient);
       expect(error.code, 'db.down');
+    });
+  });
+
+  // NK330_05
+  group('GetH2hCupBoard: the points of a pair', () {
+    final past = _in(const Duration(hours: -3));
+
+    H2hCupBoardPairView firstPair(H2hCupBoard board) =>
+        _path(board, 1).stages.first.pairs.first;
+
+    test('an undecided pair adds the points of the counted fixtures it '
+        'shows, and a voided fixture adds none', () async {
+      final board = await _read(
+        _state([_pathOneSemi()]),
+        _Picks({
+          _stageOne: [
+            _fixture(
+              'f1',
+              kickoffAt: past,
+              homeGoals: 2,
+              awayGoals: 1,
+              picks: {userNo(1): _scored(2, 1, 5), userNo(3): _scored(1, 0, 3)},
+            ),
+            _fixture(
+              'f2',
+              kickoffAt: past,
+              homeGoals: 0,
+              awayGoals: 0,
+              picks: {
+                userNo(1): _scored(0, 0, 2),
+                userNo(3): _scored(1, 1, null),
+              },
+            ),
+            _fixture(
+              'f3',
+              kickoffAt: past,
+              counted: false,
+              homeGoals: 1,
+              awayGoals: 1,
+              picks: {userNo(1): _scored(1, 1, 9), userNo(3): _scored(1, 1, 9)},
+            ),
+          ],
+        }),
+      );
+
+      final pair = firstPair(board);
+      expect(pair.decided, isFalse);
+      expect(pair.homePoints, 7);
+      expect(pair.awayPoints, 3);
+
+      final other = _path(board, 1).stages.first.pairs.last;
+      expect(other.homePoints, 0);
+      expect(other.awayPoints, 0);
+    });
+
+    test('a side that is withheld adds nothing, whatever the reader '
+        'handed over', () async {
+      final board = await _read(
+        _state([_pathOneSemi()]),
+        _Picks({
+          _stageOne: [
+            _fixture(
+              'f1',
+              kickoffAt: _in(const Duration(hours: 2)),
+              picks: {
+                userNo(1): _scored(1, 0, null),
+                userNo(3): _scored(2, 2, 99),
+              },
+            ),
+          ],
+        }),
+      );
+
+      expect(_fixtures(board).single.awaySide.revealed, isFalse);
+      final pair = firstPair(board);
+      expect(pair.homePoints, 0);
+      expect(pair.awayPoints, 0);
+    });
+
+    test(
+      'a watcher reads both sides once the fixture has kicked off',
+      () async {
+        final board = await _read(
+          _state([_pathOneSemi()]),
+          _Picks({
+            _stageOne: [
+              _fixture(
+                'f1',
+                kickoffAt: past,
+                homeGoals: 1,
+                awayGoals: 0,
+                picks: {
+                  userNo(1): _scored(1, 0, 4),
+                  userNo(3): _scored(0, 1, 6),
+                },
+              ),
+              _fixture(
+                'f2',
+                kickoffAt: _in(const Duration(hours: 2)),
+                picks: {
+                  userNo(1): _scored(1, 0, 8),
+                  userNo(3): _scored(0, 1, 8),
+                },
+              ),
+            ],
+          }),
+          who: AuthenticatedUser(userId: userNo(99), role: PlatformRole.user),
+        );
+
+        final pair = firstPair(board);
+        expect(pair.homePoints, 4);
+        expect(pair.awayPoints, 6);
+      },
+    );
+
+    test(
+      'a decided pair carries the figures the cup decided it with',
+      () async {
+        final board = await _read(
+          _state([
+            _pathOneSemi(
+              results: [
+                H2hCupResult(
+                  slot: 1,
+                  winner: userNo(3),
+                  outcome: H2hCupOutcome.points.wire,
+                  home: const H2hCupSide(points: 7, exact: 1, predicted: 6),
+                  away: const H2hCupSide(points: 9, exact: 0, predicted: 6),
+                ),
+              ],
+            ),
+          ]),
+          _Picks({
+            _stageOne: [
+              _fixture(
+                'f1',
+                kickoffAt: past,
+                homeGoals: 1,
+                awayGoals: 0,
+                picks: {
+                  userNo(1): _scored(1, 0, 1),
+                  userNo(3): _scored(0, 1, 1),
+                },
+              ),
+            ],
+          }),
+        );
+
+        final pair = firstPair(board);
+        expect(pair.decided, isTrue);
+        expect(pair.homePoints, 7);
+        expect(pair.awayPoints, 9);
+      },
+    );
+
+    test('a pair with no fixture reads 0 and 0', () async {
+      final board = await _read(
+        _state([_pathOneSemi()]),
+        _Picks({_stageOne: <H2hCupStageFixture>[]}),
+      );
+
+      final pair = firstPair(board);
+      expect(pair.homePoints, 0);
+      expect(pair.awayPoints, 0);
     });
   });
 }

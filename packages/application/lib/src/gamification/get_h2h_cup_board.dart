@@ -107,6 +107,8 @@ final class H2hCupBoardPairView {
     required this.away,
     required this.decided,
     required this.winner,
+    required this.homePoints,
+    required this.awayPoints,
     required this.fixtures,
   });
 
@@ -124,6 +126,16 @@ final class H2hCupBoardPairView {
 
   /// The winner, or null when undecided or when both lost.
   final UserId? winner;
+
+  // NK330_01
+  /// The first player's prediction points on the stage's fixtures: the
+  /// figure the cup decided the pair with once it is [decided]; until then
+  /// the stored points of the counted fixtures this board shows for his
+  /// side (0 before any score).
+  final int homePoints;
+
+  /// The second player's prediction points, as [homePoints].
+  final int awayPoints;
 
   /// The stage's fixtures, by kickoff, with each player's side.
   final List<H2hCupBoardFixtureView> fixtures;
@@ -372,13 +384,8 @@ final class H2hCupBoardBuilder {
     required DateTime nowUtc,
     required bool unmasked,
     required MyH2hCupPlayer Function(UserId) player,
-  }) => H2hCupBoardPairView(
-    slot: pair.slot,
-    home: player(pair.home),
-    away: player(pair.away),
-    decided: result != null,
-    winner: result?.winner,
-    fixtures: <H2hCupBoardFixtureView>[
+  }) {
+    final views = <H2hCupBoardFixtureView>[
       for (final fixture in fixtures)
         _fixtureView(
           fixture: fixture,
@@ -387,8 +394,40 @@ final class H2hCupBoardBuilder {
           nowUtc: nowUtc,
           unmasked: unmasked,
         ),
-    ],
-  );
+    ];
+    // NK330_02
+    return H2hCupBoardPairView(
+      slot: pair.slot,
+      home: player(pair.home),
+      away: player(pair.away),
+      decided: result != null,
+      winner: result?.winner,
+      homePoints: result?.home.points ?? _pointsOf(views, home: true),
+      awayPoints: result?.away.points ?? _pointsOf(views, home: false),
+      fixtures: views,
+    );
+  }
+
+  // NK330_03
+  /// The points of one side of a pair the cup has not decided: the stored
+  /// points of its picks on the fixtures that still count, as the stage sums
+  /// them (a score still pending is 0). It adds only what [fixtures] already
+  /// show, so a side that is withheld contributes nothing, and no figure
+  /// reaches a reader that its pick would not.
+  static int _pointsOf(
+    List<H2hCupBoardFixtureView> fixtures, {
+    required bool home,
+  }) {
+    var total = 0;
+    for (final fixture in fixtures) {
+      if (fixture.state == H2hFixtureState.voided) {
+        continue;
+      }
+      final side = home ? fixture.homeSide : fixture.awaySide;
+      total += side.pick?.points ?? 0;
+    }
+    return total;
+  }
 
   static H2hCupBoardFixtureView _fixtureView({
     required H2hCupStageFixture fixture,
