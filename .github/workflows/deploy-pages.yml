@@ -131,7 +131,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
     steps:
       # github.sha, the commit dispatch_gate checked, not github.ref: a push
       # landing during the run would move the branch past it.
@@ -321,9 +321,26 @@ jobs:
           git push -f -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" web-dist
           echo "web-dist now holds the build of $SHORT_SHA"
 
+      # NK324_01 -- the same artifact is listed in the run's summary, yet
+      # runs #912, #914 and #915 failed at once with "No artifacts named
+      # github-pages were found" while #913, on the same commit as #912,
+      # deployed: the lookup, not the build, is what fails. One more try a
+      # minute later, from the same artifact, AFTER the mirror is published
+      # so nukhbaa.app never waits on Pages. (A retry of the whole run
+      # cannot do this: it fails on the duplicate artifact.)
+      - name: Wait before the second try
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages (second try)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
       # Script 252: the mirror is out; a Pages failure is still reported.
       - name: GitHub Pages deployed?
-        if: steps.deployment.outcome != 'success'
+        if: steps.deployment.outcome != 'success' && steps.deployment_retry.outcome != 'success'
         run: |
           echo "::error::GitHub Pages did not deploy (outcome: ${{ steps.deployment.outcome }}). nukhbaa.app (web-dist) was published. For github.io, start a new run (Run workflow) later: a re-run of this run fails on its duplicate github-pages artifact."
           exit 1
