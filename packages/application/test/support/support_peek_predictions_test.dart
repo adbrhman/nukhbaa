@@ -16,6 +16,7 @@ import '../prediction/fake_fixture_schedule_repository.dart';
 const String _conversation = 'cccccccc-0000-4000-8000-000000000001';
 const String _player = '22222222-2222-4222-8222-222222222222';
 const String _participant = '44444444-4444-4444-8444-444444444444';
+const String _backup = '11111111-1111-4111-8111-1111111111bb';
 const String _played = 'aaaaaaaa-0000-4000-8000-000000000001';
 const String _soon = 'aaaaaaaa-0000-4000-8000-000000000002';
 const String _later = 'aaaaaaaa-0000-4000-8000-000000000003';
@@ -116,8 +117,28 @@ final class _Chats implements SupportChatRepository {
       throw UnimplementedError(invocation.memberName.toString());
 }
 
+/// The seats: [_admin] is the owner, [_backup] the backup; [fails] breaks
+/// every lookup.
+final class _Owners implements OwnerNotices {
+  bool fails = false;
+
+  @override
+  Future<Result<UserId?>> ownerId() async => Result.ok(_admin.userId);
+
+  @override
+  Future<Result<bool>> isOwner(UserId user) async => fails
+      ? const Result.err(AppError.transient('db.down', 'down'))
+      : Result.ok(user == _admin.userId || user == const UserId(_backup));
+
+  @override
+  Future<Result<void>> tell({
+    required String title,
+    required String body,
+  }) async => const Result.ok(null);
+}
+
 ({SupportPeekPredictions peek, _Chats chats, InMemoryAuditLogRepository audit})
-_harness() {
+_harness({_Owners? owners}) {
   final chats = _Chats();
   final audit = InMemoryAuditLogRepository();
   final predictions = FakeFixturePredictionRepository()
@@ -156,6 +177,7 @@ _harness() {
   return (
     peek: SupportPeekPredictions(
       chats: chats,
+      owners: owners ?? _Owners(),
       reply: AdminReplySupport(chats: chats, clock: clock),
       predictions: predictions,
       schedules: schedules,
@@ -282,5 +304,57 @@ void main() {
     );
 
     expect((result as Err<SupportPredictionsPeek>).error.code, 'db.down');
+  });
+
+  // NK325_01
+  test(
+    'an admin who is not an owner is refused before anything is read',
+    () async {
+      final h = _harness();
+
+      final result = await h.peek(
+        principal: const AuthenticatedUser(
+          userId: UserId('33333333-3333-4333-8333-333333333333'),
+          role: PlatformRole.admin,
+        ),
+        conversationId: _conversation,
+        reason: 'سبب',
+      );
+
+      final error = (result as Err<SupportPredictionsPeek>).error;
+      expect(error.code, 'auth.insufficient_role');
+      expect(h.audit.rows, isEmpty);
+      expect(h.chats.replies, isEmpty);
+    },
+  );
+
+  test('the backup owner reads as the owner does', () async {
+    final h = _harness();
+
+    final result = await h.peek(
+      principal: const AuthenticatedUser(
+        userId: UserId(_backup),
+        role: PlatformRole.admin,
+      ),
+      conversationId: _conversation,
+      reason: 'سبب',
+    );
+
+    expect(result, isA<Ok<SupportPredictionsPeek>>());
+  });
+
+  test('when the seat lookup fails, nothing is read (fail closed)', () async {
+    final owners = _Owners()..fails = true;
+    final h = _harness(owners: owners);
+
+    final result = await h.peek(
+      principal: _admin,
+      conversationId: _conversation,
+      reason: 'سبب',
+    );
+
+    expect((result as Err<SupportPredictionsPeek>).error.code, 'db.down');
+    expect(h.audit.rows, isEmpty);
+    expect(h.chats.replies, isEmpty);
   });
 }

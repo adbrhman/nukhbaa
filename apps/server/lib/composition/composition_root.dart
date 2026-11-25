@@ -3969,6 +3969,17 @@ final class CompositionRoot {
       // The one reading of a prediction before kickoff (script 261).
       supportPeekPredictions: SupportPeekPredictions(
         chats: supportChats,
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
         reply: AdminReplySupport(chats: supportChats, clock: clock),
         predictions: fixturePredictionRepository,
         schedules: fixtureScheduleRepository,

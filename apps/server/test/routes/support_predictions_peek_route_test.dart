@@ -95,6 +95,22 @@ final class _Chats implements SupportChatRepository {
       throw UnimplementedError(invocation.memberName.toString());
 }
 
+/// [kAdminId] holds the owner seat.
+final class _Owners implements OwnerNotices {
+  @override
+  Future<Result<UserId?>> ownerId() async => const Result.ok(UserId(kAdminId));
+
+  @override
+  Future<Result<bool>> isOwner(UserId user) async =>
+      Result.ok(user == const UserId(kAdminId));
+
+  @override
+  Future<Result<void>> tell({
+    required String title,
+    required String body,
+  }) async => const Result.ok(null);
+}
+
 /// [kTargetUserId]'s predictions: one played, one not yet started.
 final class _Predictions implements FixturePredictionRepository {
   @override
@@ -155,6 +171,7 @@ void main() {
       supportPeekPredictions: wired
           ? SupportPeekPredictions(
               chats: chats,
+              owners: _Owners(),
               reply: AdminReplySupport(chats: chats, clock: clock),
               predictions: _Predictions(),
               schedules: schedules,
@@ -205,6 +222,23 @@ void main() {
       expect(entry.reason, 'يقول إن توقعه لم يُحفظ');
     },
   );
+
+  // NK325_01
+  test('an admin who is not the owner is a 401 and nothing is read', () async {
+    final r = root();
+
+    final response = await send(
+      r,
+      const AuthenticatedUser(
+        userId: UserId('99999999-9999-4999-8999-999999999999'),
+        role: PlatformRole.admin,
+      ),
+    );
+
+    expect(response.statusCode, HttpStatus.unauthorized);
+    expect(chats.replies, isEmpty);
+    expect(audit.entries, isEmpty);
+  });
 
   test('without a reason it is a 400 and nothing is read', () async {
     final r = root();

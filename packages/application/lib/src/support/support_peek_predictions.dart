@@ -2,6 +2,7 @@ import 'package:application/src/admin/audit_recorder.dart';
 import 'package:application/src/common/clock.dart';
 import 'package:application/src/competition/ports/fixture_schedule_repository.dart';
 import 'package:application/src/identity/authorization.dart';
+import 'package:application/src/notification/owner_inbox.dart';
 import 'package:application/src/prediction/fixture_prediction_view.dart';
 import 'package:application/src/prediction/ports/fixture_prediction_repository.dart';
 import 'package:application/src/support/ports/support_chat_repository.dart';
@@ -83,18 +84,22 @@ final class SupportPredictionsPeek {
 ///   support answer that reaches his phone.
 ///
 /// The predictions are read first and returned last: a failed audit or a
-/// failed notice returns its error and shows nothing. Admin only. Never
+/// failed notice returns its error and shows nothing. Owner only (either
+/// seat, [OwnerNotices.isOwner]; decided 2026-11-25, script 325): any other
+/// admin is refused `auth.insufficient_role` before anything is read. Never
 /// throws; returns a typed [Result].
 final class SupportPeekPredictions {
   /// Creates the use-case over its collaborators.
   const SupportPeekPredictions({
     required SupportChatRepository chats,
+    required OwnerNotices owners,
     required AdminReplySupport reply,
     required FixturePredictionRepository predictions,
     required FixtureScheduleRepository schedules,
     required AuditRecorder audit,
     required Clock clock,
   }) : _chats = chats,
+       _owners = owners,
        _reply = reply,
        _predictions = predictions,
        _schedules = schedules,
@@ -102,6 +107,7 @@ final class SupportPeekPredictions {
        _clock = clock;
 
   final SupportChatRepository _chats;
+  final OwnerNotices _owners;
   final AdminReplySupport _reply;
   final FixturePredictionRepository _predictions;
   final FixtureScheduleRepository _schedules;
@@ -132,6 +138,12 @@ final class SupportPeekPredictions {
     'يُتاح الاطلاع بعد أن يراسل اللاعب الدعم في هذه المحادثة.',
   );
 
+  /// Not an owner seat: refused as any non-admin is.
+  static const AppError ownerOnly = AppError.authorization(
+    'auth.insufficient_role',
+    'Requires the owner',
+  );
+
   /// Reads the open predictions of [conversationId]'s player for
   /// [principal], who must be an admin, for [reason].
   Future<Result<SupportPredictionsPeek>> call({
@@ -141,6 +153,10 @@ final class SupportPeekPredictions {
   }) async {
     final auth = Authorization.requireRole(principal, PlatformRole.admin);
     if (auth is Err<AuthenticatedUser>) return Result.err(auth.error);
+    // NK325_01
+    final seat = await _owners.isOwner(principal.userId);
+    if (seat is Err<bool>) return Result.err(seat.error);
+    if (!(seat as Ok<bool>).value) return const Result.err(ownerOnly);
     final id = SupportConversationId.tryParse(conversationId);
     if (id is Err<SupportConversationId>) return Result.err(id.error);
     final why = (reason ?? '').trim();
