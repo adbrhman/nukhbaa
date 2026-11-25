@@ -105,9 +105,39 @@ MyH2hCupDto _qualified({List<H2hCupStageDto>? stages, H2hCupTitleDto? title}) =>
       title: title,
     );
 
+H2hCupBoardPairDto _bPair(
+  int slot,
+  H2hCupPlayerDto home,
+  H2hCupPlayerDto away, {
+  String? winner,
+}) => H2hCupBoardPairDto(
+  slot: slot,
+  home: home,
+  away: away,
+  decided: winner != null,
+  fixtures: const <H2hCupBoardFixtureDto>[],
+  winnerUserId: winner,
+);
+
+H2hCupBoardStageDto _bStage(
+  String round,
+  int cupDay,
+  String phase,
+  List<H2hCupBoardPairDto> pairs, {
+  String? day,
+}) => H2hCupBoardStageDto(
+  round: round,
+  cupDay: cupDay,
+  phase: phase,
+  attempt: 1,
+  pairs: pairs,
+  day: day,
+);
+
 Future<void> _open(
   WidgetTester tester, {
   MyH2hCupDto? cup,
+  H2hCupBoardDto? board,
   bool cupFails = false,
   double width = 1080,
   double textScale = 1,
@@ -117,6 +147,10 @@ Future<void> _open(
     if (request.url.path == '/me/h2h-cup') {
       if (cupFails || cup == null) return http.Response('not found', 404);
       return _json(cup.toJson());
+    }
+    if (request.url.path == '/me/h2h-cup/board') {
+      if (board == null) return http.Response('not found', 404);
+      return _json(board.toJson());
     }
     return http.Response('not found', 404);
   }
@@ -299,6 +333,78 @@ void main() {
     expect(_text(tester, 'h2h.cup.path'), contains('مشاهدة'));
     expect(find.byKey(const Key('h2h.cup.focus')), findsNothing);
     expect(find.byKey(const Key('h2h.cup.pair.semi.1')), findsOneWidget);
+  });
+
+  // NK323_04
+  testWidgets('a spectator reads the whole cup day by day, firsts first', (
+    WidgetTester tester,
+  ) async {
+    final MyH2hCupDto q = _qualified();
+    await _open(
+      tester,
+      cup: MyH2hCupDto(
+        state: 'spectator',
+        monthStart: q.monthStart,
+        place: 1,
+        entrants: <H2hCupPlayerDto>[_omar, _noura, _huda],
+        stages: const <H2hCupStageDto>[],
+      ),
+      board: H2hCupBoardDto(
+        monthStart: '2026-11-01',
+        paths: <H2hCupBoardPathDto>[
+          H2hCupBoardPathDto(
+            place: 1,
+            title: H2hCupTitleDto(
+              how: 'final',
+              champion: _omar,
+              runnerUp: _huda,
+            ),
+            stages: <H2hCupBoardStageDto>[
+              _bStage('semi', 1, 'decided', <H2hCupBoardPairDto>[
+                _bPair(1, _omar, _noura, winner: 'u-o'),
+              ], day: '2026-11-23'),
+              _bStage('final', 2, 'decided', <H2hCupBoardPairDto>[
+                _bPair(1, _omar, _huda, winner: 'u-o'),
+              ], day: '2026-11-24'),
+            ],
+          ),
+          H2hCupBoardPathDto(
+            place: 2,
+            stages: <H2hCupBoardStageDto>[
+              _bStage('semi', 3, 'scheduled', <H2hCupBoardPairDto>[
+                _bPair(1, _noura, _huda),
+              ], day: '2026-11-25'),
+              _bStage('final', 4, 'waiting', const <H2hCupBoardPairDto>[]),
+            ],
+          ),
+          H2hCupBoardPathDto(
+            place: 3,
+            stages: <H2hCupBoardStageDto>[
+              _bStage('semi', 3, 'scheduled', <H2hCupBoardPairDto>[
+                _bPair(1, _omar, _noura),
+              ], day: '2026-11-25'),
+              _bStage('final', 4, 'waiting', const <H2hCupBoardPairDto>[]),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byKey(const Key('h2h.cup.days')), findsOneWidget);
+    expect(_text(tester, 'h2h.cup.path'), contains('حسب الأيام'));
+    expect(_text(tester, 'h2h.cup.path'), contains('مشاهدة'));
+    expect(_text(tester, 'h2h.cup.days.1'), contains('اليوم الأول'));
+    expect(_text(tester, 'h2h.cup.days.1'), contains('23 نوفمبر'));
+    expect(_text(tester, 'h2h.cup.days.3'), contains('25 نوفمبر'));
+    expect(_text(tester, 'h2h.cup.days.title.1'), contains('عمر'));
+    expect(find.byKey(const Key('h2h.cup.days.4.2.empty')), findsOneWidget);
+    expect(find.byKey(const Key('h2h.cup.stage.semi')), findsNothing);
+
+    double top(String key) => tester.getTopLeft(find.byKey(Key(key))).dy;
+    expect(top('h2h.cup.days.1') < top('h2h.cup.days.2'), isTrue);
+    expect(top('h2h.cup.days.2') < top('h2h.cup.days.3'), isTrue);
+    expect(top('h2h.cup.days.3') < top('h2h.cup.days.4'), isTrue);
+    expect(top('h2h.cup.days.3.2') < top('h2h.cup.days.3.3'), isTrue);
   });
 
   testWidgets('a player outside every open cup sees no card', (

@@ -12,6 +12,20 @@ import 'h2h_texts.dart';
 /// The card's title.
 const String h2hCupTitle = 'كأس النخبة';
 
+// NK323_02
+/// The heading of the cup laid out by day, shown to a player who watches it.
+const String h2hCupDaysHeading = 'جدول الكأس حسب الأيام';
+
+/// A cup day (1 to 4, the match days of the cup, not the calendar's) by its
+/// number.
+String h2hCupDayName(int day) => switch (day) {
+  1 => 'اليوم الأول',
+  2 => 'اليوم الثاني',
+  3 => 'اليوم الثالث',
+  4 => 'اليوم الرابع',
+  _ => 'اليوم $day',
+};
+
 /// A player's name, or a neutral word when the server has none.
 String h2hCupNameOf(H2hCupPlayerDto player) =>
     player.displayName.trim().isEmpty ? 'لاعب' : player.displayName.trim();

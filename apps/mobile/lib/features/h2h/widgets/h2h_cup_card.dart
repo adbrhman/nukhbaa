@@ -16,6 +16,7 @@ import '../../../core/ui/app_card.dart';
 import '../h2h_cup_texts.dart';
 import '../h2h_providers.dart';
 import '../h2h_texts.dart';
+import 'h2h_cup_days.dart';
 
 /// كأس النخبة: مساره للمتأهل، ومسار أوائل المجموعات لغيره، أو لا شيء.
 class H2hCupCard extends ConsumerWidget {
@@ -29,6 +30,14 @@ class H2hCupCard extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final bool mine = cup.state == 'qualified';
+    // NK323_03: a player who only watches reads the whole cup day by day
+    // from the board; without it (loading, failed) he keeps the first path.
+    final H2hCupBoardDto? board = mine
+        ? null
+        : ref.watch(h2hCupBoardProvider).value;
+    final H2hCupBoardDto? days = board != null && board.paths.isNotEmpty
+        ? board
+        : null;
     final AppTokens t = context.tokens;
     final H2hCupStageDto? focus = mine ? h2hCupFocusStage(cup) : null;
     return Padding(
@@ -56,13 +65,13 @@ class H2hCupCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '${h2hCupPathName(cup.place)}'
+              '${days == null ? h2hCupPathName(cup.place) : h2hCupDaysHeading}'
               '${mine ? ' · مجموعة ${cup.groupNumber}' : ' · مشاهدة'}'
               '${cup.monthStart == null ? '' : ' · ${h2hMonthLabel(cup.monthStart!)}'}',
               key: const Key('h2h.cup.path'),
               style: context.text.bodySmall?.copyWith(color: t.textSecondary),
             ),
-            if (cup.title != null) ...<Widget>[
+            if (days == null && cup.title != null) ...<Widget>[
               const SizedBox(height: AppSpacing.md),
               _TitleLine(title: cup.title!),
             ],
@@ -71,8 +80,11 @@ class H2hCupCard extends ConsumerWidget {
               _Focus(stage: focus),
             ],
             const SizedBox(height: AppSpacing.md),
-            for (final H2hCupStageDto stage in cup.stages)
-              _StageBlock(stage: stage, mine: mine),
+            if (days != null)
+              H2hCupDays(board: days)
+            else
+              for (final H2hCupStageDto stage in cup.stages)
+                _StageBlock(stage: stage, mine: mine),
           ],
         ),
       ),
