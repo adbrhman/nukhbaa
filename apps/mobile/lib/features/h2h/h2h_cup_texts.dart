@@ -155,3 +155,104 @@ H2hCupPairDto? h2hCupMyPair(H2hCupStageDto stage) {
   }
   return null;
 }
+
+// NK331_01
+/// The section headings of the cup tab (script 331). A player who is in the
+/// cup reads "your duel now", the fixtures of that duel, "your path" and the
+/// other paths; one who only watches reads the three paths in their place.
+const String h2hCupNowHeading = 'مواجهتك الآن';
+
+/// The heading of the fixtures of the caller's duel.
+const String h2hCupFixturesHeading = 'مباريات المواجهة';
+
+/// The heading of the caller's own path, for a player who is in the cup.
+const String h2hCupMyPathHeading = 'مسارك';
+
+/// The heading of the paths the caller is not in.
+const String h2hCupOtherPathsHeading = 'بقية المسارات';
+
+/// The heading of the three paths, for a player who only watches.
+const String h2hCupThreePathsHeading = 'المسارات الثلاثة';
+
+/// The heading of the tree of rounds.
+const String h2hCupTreeHeading = 'شجرة الأدوار';
+
+/// The badge of a fixture that is being played.
+const String h2hCupLiveBadge = 'مباشر الآن';
+
+/// The badge [fixture] wears, or null when it is not being played. Only the
+/// server's state decides: nothing here reads the clock.
+String? h2hCupBoardLiveBadge(H2hCupBoardFixtureDto fixture) =>
+    fixture.state == 'live' ? h2hCupLiveBadge : null;
+
+/// The stage of [path] that stands now: the first one still to play, else the
+/// last one, or null for a path without stages. A stage left out of the path
+/// (`skipped`) is not still to play.
+H2hCupBoardStageDto? h2hCupBoardFocusStage(H2hCupBoardPathDto path) {
+  for (final H2hCupBoardStageDto stage in path.stages) {
+    if (stage.phase != 'decided' && stage.phase != 'skipped') return stage;
+  }
+  return path.stages.isEmpty ? null : path.stages.last;
+}
+
+/// The path of [board] the caller is in: the one where he has a pair or the
+/// bye of a stage. A player who only watches is in none, so this is null.
+H2hCupBoardPathDto? h2hCupBoardMyPath(H2hCupBoardDto board) {
+  for (final H2hCupBoardPathDto path in board.paths) {
+    for (final H2hCupBoardStageDto stage in path.stages) {
+      if (stage.bye?.isMe ?? false) return path;
+      for (final H2hCupBoardPairDto pair in stage.pairs) {
+        if (pair.home.isMe || pair.away.isMe) return path;
+      }
+    }
+  }
+  return null;
+}
+
+/// The duel "your duel now" shows: the caller's path, its stage and his pair.
+typedef H2hCupNow = ({
+  H2hCupBoardPathDto path,
+  H2hCupBoardStageDto stage,
+  H2hCupBoardPairDto pair,
+});
+
+/// The caller's pair in the first stage of his path that is not decided, or
+/// null when he only watches, or has no pair in that stage (a bye, a stage
+/// not drawn yet, or a stage he is out of), or his path is over.
+H2hCupNow? h2hCupBoardNow(H2hCupBoardDto board) {
+  final H2hCupBoardPathDto? path = h2hCupBoardMyPath(board);
+  if (path == null) return null;
+  for (final H2hCupBoardStageDto stage in path.stages) {
+    if (stage.phase == 'decided' || stage.phase == 'skipped') continue;
+    for (final H2hCupBoardPairDto pair in stage.pairs) {
+      if (pair.home.isMe || pair.away.isMe) {
+        return (path: path, stage: stage, pair: pair);
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
+/// The fixture of [pair] the duel stands at: the one being played, else the
+/// first that has not started (the server sends them by kickoff), or null
+/// when every fixture is finished or void.
+H2hCupBoardFixtureDto? h2hCupBoardCurrentFixture(H2hCupBoardPairDto pair) {
+  for (final H2hCupBoardFixtureDto fixture in pair.fixtures) {
+    if (fixture.state == 'live') return fixture;
+  }
+  for (final H2hCupBoardFixtureDto fixture in pair.fixtures) {
+    if (fixture.state == 'not_started') return fixture;
+  }
+  return null;
+}
+
+/// A path's status line: its title once decided, else the stage it stands at
+/// and where that stage stands.
+String h2hCupBoardPathStatus(H2hCupBoardPathDto path) {
+  final H2hCupTitleDto? title = path.title;
+  if (title != null) return h2hCupBoardTitleLine(title);
+  final H2hCupBoardStageDto? stage = h2hCupBoardFocusStage(path);
+  if (stage == null) return h2hCupPhaseName('waiting');
+  return '${h2hCupRoundName(stage.round)} · ${h2hCupPhaseName(stage.phase)}';
+}
