@@ -214,5 +214,39 @@ void main() {
         'paths': <Object?>[],
       });
     });
+
+    // NK330B_02
+    test('a pair keeps its points, a zero included, and leaves the keys '
+        'out when it has none', () {
+      const scored = H2hCupBoardPairDto(
+        slot: 1,
+        home: _alice,
+        away: _bob,
+        decided: false,
+        homePoints: 7,
+        awayPoints: 0,
+        fixtures: [],
+      );
+      final json = _wire(scored.toJson());
+      expect(json['home_points'], 7);
+      expect(json['away_points'], 0);
+      final back = H2hCupBoardPairDto.fromJson(json);
+      expect(back.homePoints, 7);
+      expect(back.awayPoints, 0);
+
+      const bare = H2hCupBoardPairDto(
+        slot: 1,
+        home: _alice,
+        away: _bob,
+        decided: false,
+        fixtures: [],
+      );
+      final bareJson = _wire(bare.toJson());
+      expect(bareJson.containsKey('home_points'), isFalse);
+      expect(bareJson.containsKey('away_points'), isFalse);
+      final old = H2hCupBoardPairDto.fromJson(bareJson);
+      expect(old.homePoints, isNull);
+      expect(old.awayPoints, isNull);
+    });
   });
 }

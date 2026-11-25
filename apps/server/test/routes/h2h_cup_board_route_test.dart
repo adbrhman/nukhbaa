@@ -128,8 +128,8 @@ final class _LeakyPicks implements H2hCupPickReader {
             homeGoals: null,
             awayGoals: null,
             picks: {
-              const UserId(_me): pick(2, 2, 0),
-              const UserId(_c): pick(3, 1, 0),
+              const UserId(_me): pick(2, 2, 4), // NK330B_03
+              const UserId(_c): pick(3, 1, 6),
             },
           ),
         ],
@@ -267,6 +267,37 @@ void main() {
       final body = await decodeBody(response);
       expect(body.containsKey('month_start'), isFalse);
       expect(_list(body['paths']), isEmpty);
+    });
+
+    // NK330B_04
+    test('each pair carries its points: the started fixtures it shows, '
+        'nothing of a withheld side', () async {
+      final body = await _get(userPrincipal());
+      final stage = _list(_list(body['paths']).single['stages']).first;
+      final pairs = _list(stage['pairs']);
+
+      final first = pairs.singleWhere((p) => p['slot'] == 1);
+      expect(first['home_points'], 4);
+      expect(first['away_points'], 6);
+      final second = pairs.singleWhere((p) => p['slot'] == 2);
+      expect(second['home_points'], 0);
+      expect(second['away_points'], 0);
+      expect(jsonEncode(body), isNot(contains('_points":77')));
+    });
+
+    test('a player outside the cup reads the same pair totals from the '
+        'started fixtures alone', () async {
+      final body = await _get(
+        const AuthenticatedUser(
+          userId: UserId('00000000-0000-4000-9000-000000000099'),
+          role: PlatformRole.user,
+        ),
+      );
+      final stage = _list(_list(body['paths']).single['stages']).first;
+      final first = _list(stage['pairs']).singleWhere((p) => p['slot'] == 1);
+      expect(first['home_points'], 4);
+      expect(first['away_points'], 6);
+      expect(jsonEncode(body), isNot(contains('_points":77')));
     });
 
     test('a POST is 405', () async {

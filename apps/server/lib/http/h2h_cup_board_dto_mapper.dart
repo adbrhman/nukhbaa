@@ -59,6 +59,8 @@ H2hCupBoardPairDto _pair(H2hCupBoardPairView pair) => H2hCupBoardPairDto(
   away: h2hCupPlayerToDto(pair.away),
   decided: pair.decided,
   winnerUserId: pair.winner?.value,
+  homePoints: pair.homePoints,
+  awayPoints: pair.awayPoints,
   fixtures: [for (final f in pair.fixtures) _fixture(f)],
 );
 

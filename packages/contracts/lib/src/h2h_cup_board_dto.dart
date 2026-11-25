@@ -143,6 +143,8 @@ final class H2hCupBoardPairDto {
     required this.decided,
     required this.fixtures,
     this.winnerUserId,
+    this.homePoints,
+    this.awayPoints,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -153,6 +155,8 @@ final class H2hCupBoardPairDto {
         away: _player(json['away']),
         decided: (json['decided'] as bool?) ?? false,
         winnerUserId: json['winner_user_id'] as String?,
+        homePoints: json['home_points'] as int?,
+        awayPoints: json['away_points'] as int?,
         fixtures: [
           for (final Object? f in (json['fixtures'] as List<Object?>?) ?? [])
             if (f is Map<String, Object?>) H2hCupBoardFixtureDto.fromJson(f),
@@ -174,6 +178,16 @@ final class H2hCupBoardPairDto {
   /// The winner, or null when undecided or when both lost.
   final String? winnerUserId;
 
+  // NK330B_01
+  /// The first player's prediction points on the stage's fixtures, or null
+  /// from a server that does not send it: the figure the cup decided the
+  /// pair with once it is [decided], until then the points of the fixtures
+  /// the board shows for his side (0 before any score).
+  final int? homePoints;
+
+  /// The second player's prediction points, as [homePoints].
+  final int? awayPoints;
+
   /// The stage's fixtures, by kickoff, with each player's side.
   final List<H2hCupBoardFixtureDto> fixtures;
 
@@ -184,6 +198,8 @@ final class H2hCupBoardPairDto {
     'away': away.toJson(),
     'decided': decided,
     if (winnerUserId != null) 'winner_user_id': winnerUserId,
+    if (homePoints != null) 'home_points': homePoints,
+    if (awayPoints != null) 'away_points': awayPoints,
     'fixtures': [for (final H2hCupBoardFixtureDto f in fixtures) f.toJson()],
   };
 }
