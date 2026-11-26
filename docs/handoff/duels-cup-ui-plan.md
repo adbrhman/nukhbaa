@@ -60,7 +60,7 @@
 | 332 | «مواجهتك الآن» و«مباريات المواجهة» (ودجة جديدة) | widgets/h2h_cup_now.dart + اختبار | ✓ |
 | 333 | «مسارك» و«المسارات الثلاثة» (ودجة جديدة) | widgets/h2h_cup_path.dart + اختبار | ✓ |
 | 334 | «شجرة الأدوار» (ودجة جديدة) | widgets/h2h_cup_tree.dart + اختبار | ✓ |
-| 335 | «جدول الأيام» بشريط الأيام | h2h_cup_days.dart + اختبار | - |
+| 335 | «جدول الأيام» بشريط الأيام | h2h_cup_days.dart + اختبار | ✓ |
 | 336 | التركيب: `H2hCupBoardView` يرتّب الأقسام بحسب مشارك أو مشاهد، وإزالة `H2hCupCard` من أعلى التبويبات، وتحديث الاختبارات القديمة (board وcard وtab وscreen) | h2h_cup_board.dart, h2h_cup_card.dart, h2h_screen.dart، اختبارات h2h | - |
 
 بعد 336: التبويبات الأخرى (مواجهتي، الترتيب، الجولات، المجموعات) من `Duels_Home` و`Duels_Standings` و`Duels_Rounds` و`Duels_Groups`، دفعات لاحقة بخطة مستقلة.

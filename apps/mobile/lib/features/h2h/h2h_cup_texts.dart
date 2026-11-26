@@ -439,3 +439,103 @@ String h2hCupTreeChampionSemantics(H2hCupBoardPathDto path) {
       : h2hCupTreeChampionText(path);
   return '$h2hCupTreeChampionLabel: $said';
 }
+
+// NK335_01
+/// The words and pure helpers of the days table (script 335). The server
+/// decides every stage, day and pair; these only lay out what it sent.
+const String h2hCupDaysTableHeading = 'جدول الأيام';
+
+/// One stage of one path, kept with its path for the cup day it is played.
+typedef H2hCupDaySlot = ({H2hCupBoardPathDto path, H2hCupBoardStageDto stage});
+
+/// One cup day: its number, its Riyadh date when a stage of it has one, and
+/// the stages played on it (the first places' path first).
+typedef H2hCupDayEntry = ({
+  int cupDay,
+  String? date,
+  List<H2hCupDaySlot> slots,
+});
+
+/// The cup of [board] by day, in cup-day order. A day with no stage is not
+/// listed.
+List<H2hCupDayEntry> h2hCupBoardDays(H2hCupBoardDto board) {
+  final Map<int, List<H2hCupDaySlot>> byDay = <int, List<H2hCupDaySlot>>{};
+  for (final H2hCupBoardPathDto path in board.paths) {
+    for (final H2hCupBoardStageDto stage in path.stages) {
+      byDay.putIfAbsent(stage.cupDay, () => <H2hCupDaySlot>[]).add((
+        path: path,
+        stage: stage,
+      ));
+    }
+  }
+  final List<int> order = byDay.keys.toList()..sort();
+  return <H2hCupDayEntry>[
+    for (final int cupDay in order) _h2hCupDayEntry(cupDay, byDay[cupDay]!),
+  ];
+}
+
+H2hCupDayEntry _h2hCupDayEntry(int cupDay, List<H2hCupDaySlot> slots) {
+  final List<H2hCupDaySlot> sorted = <H2hCupDaySlot>[...slots]
+    ..sort(
+      (H2hCupDaySlot a, H2hCupDaySlot b) =>
+          a.path.place.compareTo(b.path.place),
+    );
+  String? date;
+  for (final H2hCupDaySlot slot in sorted) {
+    final String? day = slot.stage.day;
+    if (day != null && day.isNotEmpty) {
+      date = day;
+      break;
+    }
+  }
+  return (cupDay: cupDay, date: date, slots: sorted);
+}
+
+/// The day the table opens on: the first with a stage being played, else the
+/// first with a stage still to play, else the last; null when there is no day.
+/// Only the server's phases decide: nothing here reads the clock.
+int? h2hCupBoardDefaultDay(List<H2hCupDayEntry> days) {
+  if (days.isEmpty) return null;
+  for (final H2hCupDayEntry day in days) {
+    if (day.slots.any((H2hCupDaySlot s) => s.stage.phase == 'live')) {
+      return day.cupDay;
+    }
+  }
+  for (final H2hCupDayEntry day in days) {
+    if (day.slots.any(
+      (H2hCupDaySlot s) =>
+          s.stage.phase != 'decided' && s.stage.phase != 'skipped',
+    )) {
+      return day.cupDay;
+    }
+  }
+  return days.last.cupDay;
+}
+
+/// A day's tab in one sentence for a screen reader: its name, then its date
+/// when it has one.
+String h2hCupDayTabLabel(H2hCupDayEntry day) {
+  final String? date = day.date;
+  final String name = h2hCupDayName(day.cupDay);
+  return date == null ? name : '$name · ${h2hDayLabel(date)}';
+}
+
+/// A stage on its day as a title: the path, then the round.
+String h2hCupDaySlotTitle(H2hCupDaySlot slot) =>
+    '${h2hCupPathShortName(slot.path.place)} · '
+    '${h2hCupRoundName(slot.stage.round)}';
+
+/// Where a pair stands in words: ended once decided, else its stage's phase.
+String h2hCupPairStatus(H2hCupBoardStageDto stage, H2hCupBoardPairDto pair) =>
+    h2hCupPhaseName(pair.decided ? 'decided' : stage.phase);
+
+/// A pair's row in one sentence for a screen reader: the two players, the
+/// points when the server sent them, then where the pair stands.
+String h2hCupDayPairLabel(H2hCupBoardStageDto stage, H2hCupBoardPairDto pair) {
+  final int? home = pair.homePoints;
+  final int? away = pair.awayPoints;
+  final String duel =
+      '${h2hCupNameOf(pair.home)} $h2hCupVersus ${h2hCupNameOf(pair.away)}';
+  final String score = home == null || away == null ? '' : ' · $home : $away';
+  return '$duel$score · ${h2hCupPairStatus(stage, pair)}';
+}
