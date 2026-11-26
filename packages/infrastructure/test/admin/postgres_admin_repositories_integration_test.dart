@@ -46,6 +46,10 @@ import 'package:test/test.dart';
 ///     id DESC`, capped at `LIMIT` — the ordering the in-memory fake asserts by
 ///     construction is confirmed against the real `0010` indexes
 ///     (`audit_log_occurred_at_idx` / the PK).
+///  6. **The owner seats stay out of the admins' trail (script 344).** With
+///     one row by an owner seat (`admin.platform_owners`) and one by an
+///     admin, `list` returns the admin's row alone, whether or not the
+///     seat is in `admin.active_owners` (a disabled seat stays out too).
 ///
 /// Each `test(..., skip: 'requires a live Postgres (CI integration job)')`
 /// below documents one such scenario; the CI harness (the same one that boots
@@ -82,6 +86,14 @@ void main() {
     test(
       'list returns real rows newest-first (occurred_at DESC, id DESC) capped '
       'at LIMIT',
+      () {},
+      skip: 'requires a live Postgres (CI integration job)',
+    );
+
+    // NK344_03
+    test(
+      'list leaves out a row whose actor is in admin.platform_owners and '
+      'returns the admin row alone',
       () {},
       skip: 'requires a live Postgres (CI integration job)',
     );

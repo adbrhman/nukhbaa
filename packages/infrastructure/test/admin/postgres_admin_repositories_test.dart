@@ -318,6 +318,29 @@ void main() {
       },
     );
 
+    // NK344_02
+    test(
+      'leaves the owner seats out in SQL, before the ordering and the cap',
+      () async {
+        final conn = _rows([_auditRow()]);
+        final repo = PostgresAuditLogRepository(conn);
+
+        await repo.list(limit: 25);
+
+        final sql = conn.sqls.single;
+        const seats =
+            'WHERE actor_id NOT IN (SELECT user_id FROM admin.platform_owners)';
+        expect(sql, contains(seats));
+        expect(
+          sql.indexOf(seats),
+          greaterThan(sql.indexOf('FROM admin.audit_log')),
+        );
+        expect(sql.indexOf(seats), lessThan(sql.indexOf('ORDER BY')));
+        expect(sql, isNot(contains('active_owners')));
+        expect(conn.parameters.single, {'limit': 25});
+      },
+    );
+
     test('maps a row with a NULL reason (reason omitted → null)', () async {
       final repo = PostgresAuditLogRepository(_rows([_auditRow(reason: null)]));
       final result = await repo.list(limit: 10);

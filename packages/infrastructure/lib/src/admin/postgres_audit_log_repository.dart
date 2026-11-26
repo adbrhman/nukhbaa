@@ -88,9 +88,15 @@ RETURNING id
   // list — the audit trail newest-first, capped at limit
   // --------------------------------------------------------------------------
 
+  // NK344_01
+  // The owner seats are left out here, in SQL (script 344, plan 339 to 348):
+  // what an owner does is read through `/owner/audit`, never in the admins'
+  // trail. The seat table, not `admin.active_owners`, so it holds if a seat
+  // is later disabled or removed. No row is deleted.
   static const String _listSql = '''
 SELECT id, actor_id, action::text, target_ref, reason, occurred_at
 FROM admin.audit_log
+WHERE actor_id NOT IN (SELECT user_id FROM admin.platform_owners)
 ORDER BY occurred_at DESC, id DESC
 LIMIT @limit
 ''';
