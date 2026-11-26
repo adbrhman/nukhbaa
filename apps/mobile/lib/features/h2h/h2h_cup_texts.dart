@@ -291,3 +291,74 @@ String h2hCupPickGapLine(int goals) => switch (goals) {
   <= 10 => 'المسافة بين التوقعين $goals أهداف',
   _ => 'المسافة بين التوقعين $goals هدفاً',
 };
+
+// NK333_01
+/// The words of the path sections (script 333). The server decides every
+/// stage, day and champion; these only say what it sent.
+const String h2hCupChampionBadge = 'بطل';
+
+/// Said of the caller on the bye of a stage: he is through without a pair.
+const String h2hCupMyByeLine = 'تأهلت مباشرة';
+
+/// A path by its short name, as a row of the paths names it.
+String h2hCupPathShortName(int place) => switch (place) {
+  1 => 'أوائل المجموعات',
+  2 => 'ثواني المجموعات',
+  3 => 'ثوالث المجموعات',
+  _ => 'الكأس',
+};
+
+/// A stage of a path as a title: the round, then its Riyadh day when it has
+/// one (`نصف النهائي · 25 نوفمبر`).
+String h2hCupBoardStageTitle(H2hCupBoardStageDto stage) {
+  final String? day = stage.day;
+  final String round = h2hCupRoundName(stage.round);
+  return day == null ? round : '$round · ${h2hDayLabel(day)}';
+}
+
+/// The line under a stage of the caller's own path: where the stage stands,
+/// then his opponent and how the duel ended, or that he is through on the
+/// bye.
+String h2hCupMyStageLine(H2hCupBoardStageDto stage) {
+  H2hCupBoardPairDto? mine;
+  for (final H2hCupBoardPairDto pair in stage.pairs) {
+    if (pair.home.isMe || pair.away.isMe) mine = pair;
+  }
+  final List<String> parts = <String>[h2hCupPhaseName(stage.phase)];
+  if (mine != null) {
+    final H2hCupPlayerDto opponent = mine.home.isMe ? mine.away : mine.home;
+    parts.add('$h2hCupVersus ${h2hCupNameOf(opponent)}');
+    final String result = h2hCupBoardPairResult(mine);
+    if (result.isNotEmpty) parts.add(result);
+  } else if (stage.bye?.isMe ?? false) {
+    parts.add(h2hCupMyByeLine);
+  }
+  return parts.join(' · ');
+}
+
+/// The last step of a path: its champion once decided, else who it waits for.
+String h2hCupBoardChampionLine(H2hCupBoardPathDto path) {
+  final H2hCupTitleDto? title = path.title;
+  return title == null
+      ? 'بطل ${h2hCupPathName(path.place)}'
+      : h2hCupBoardTitleLine(title);
+}
+
+/// The step of [path] that stands now, counted from 1 (the stage that
+/// [h2hCupBoardFocusStage] picks), or 0 for a path without stages.
+int h2hCupBoardPathStep(H2hCupBoardPathDto path) {
+  final H2hCupBoardStageDto? stage = h2hCupBoardFocusStage(path);
+  return stage == null ? 0 : path.stages.indexOf(stage) + 1;
+}
+
+/// The step of a path in words, for the dots that show it.
+String h2hCupPathStepLabel(int step, int total) {
+  final String ordinal = switch (step) {
+    1 => 'الأولى',
+    2 => 'الثانية',
+    3 => 'الثالثة',
+    _ => '$step',
+  };
+  final String count = total == 3 ? 'ثلاث' : '$total';
+  return 'المرحلة $ordinal من $count';
+}
