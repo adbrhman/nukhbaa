@@ -30,10 +30,12 @@ end $$;
 
 insert into auth.users (id, email, email_confirmed_at) values
   ('00000000-0224-4000-8224-000000000001', 'aa1@t.io', now()),
-  ('00000000-0224-4000-8224-000000000002', 'pp1@t.io', now());
+  ('00000000-0224-4000-8224-000000000002', 'pp1@t.io', now()),
+  ('00000000-0224-4000-8224-000000000003', 'oo1@t.io', now());
 insert into identity.users (id, email, display_name, role) values
   ('00000000-0224-4000-8224-000000000001', 'aa1@t.io', 'Admin One', 'admin'),
-  ('00000000-0224-4000-8224-000000000002', 'pp1@t.io', 'Player Two', 'user');
+  ('00000000-0224-4000-8224-000000000002', 'pp1@t.io', 'Player Two', 'user'),
+  ('00000000-0224-4000-8224-000000000003', 'oo1@t.io', 'Owner Three', 'admin');
 
 -- The adapter's own statement.
 insert into admin.admin_activity_log (actor_id, method, path, status)
@@ -46,9 +48,25 @@ select pg_temp.check(
     where actor_id = '00000000-0224-4000-8224-000000000001'),
   'an admin change is kept with its time');
 
--- The owners' read (PostgresAdminActivityLog.latest), as the server runs it.
+-- NK345_03: an owner seat acts inside the admin tools (script 345). The row
+-- is kept, but the admins' list leaves it out.
+insert into admin.platform_owners (user_id, seat)
+values ('00000000-0224-4000-8224-000000000003', 'backup');
+insert into admin.admin_activity_log (actor_id, method, path, status)
+values ('00000000-0224-4000-8224-000000000003', 'POST',
+        '/admin/users/00000000-0224-4000-8224-000000000002/display-name', 200);
+
 select pg_temp.check(
-  (select actor_name = 'Admin One' and target = 'Player Two' and result is null
+  (select count(*) = 1 from admin.admin_activity_log
+    where actor_id = '00000000-0224-4000-8224-000000000003'),
+  'an owner seat change is kept, not deleted');
+
+-- The owners' read (PostgresAdminActivityLog.latest), as the server runs it.
+-- Only the admin's row is read: the owner seat's newer row is left out.
+select pg_temp.check(
+  (select count(*) = 1
+          and bool_and(actor_name = 'Admin One' and target = 'Player Two'
+                       and result is null)
      from (SELECT l.id,
        coalesce(a.display_name, '') AS actor_name,
        l.method,
@@ -68,11 +86,11 @@ LEFT JOIN LATERAL (
 LEFT JOIN identity.users u ON u.id = t.id
 LEFT JOIN competition.fixture_schedules fs ON fs.fixture_id = t.id
 LEFT JOIN scoring.fixture_results fr ON fr.fixture_id = t.id
+WHERE l.actor_id NOT IN (SELECT user_id FROM admin.platform_owners)
 ORDER BY l.occurred_at DESC, l.id DESC
 LIMIT 10
-) r
-    limit 1),
-  'the read names the admin and the player he changed');
+) r),
+  'the read names the admin and the player he changed, and no owner seat');
 
 select pg_temp.check(
   pg_temp.refusal($q$insert into admin.admin_activity_log (actor_id, method, path, status)

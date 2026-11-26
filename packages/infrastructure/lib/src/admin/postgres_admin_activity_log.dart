@@ -21,8 +21,14 @@ INSERT INTO admin.admin_activity_log (actor_id, method, path, status)
 VALUES (@actor, @method, @path, @status)
 ''';
 
+  // NK345_01
   /// Checked against the table by
   /// `supabase/tests/0224_admin_activity_log_test.sql`.
+  ///
+  /// The owner seats' own rows are left out (script 345): the owners read
+  /// those through `OwnerAuditReader`, so this list shows the admins alone.
+  /// The seats are `admin.platform_owners`, not `admin.active_owners`, so a
+  /// seat that is later disabled or removed stays out. No row is deleted.
   static const String latestSql = r'''
 SELECT l.id,
        coalesce(a.display_name, '') AS actor_name,
@@ -43,6 +49,7 @@ LEFT JOIN LATERAL (
 LEFT JOIN identity.users u ON u.id = t.id
 LEFT JOIN competition.fixture_schedules fs ON fs.fixture_id = t.id
 LEFT JOIN scoring.fixture_results fr ON fr.fixture_id = t.id
+WHERE l.actor_id NOT IN (SELECT user_id FROM admin.platform_owners)
 ORDER BY l.occurred_at DESC, l.id DESC
 LIMIT @limit
 ''';

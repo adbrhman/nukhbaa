@@ -90,6 +90,26 @@ void main() {
     expect(connection.parameters.single, {'limit': 5});
   });
 
+  // NK345_02
+  test('leaves the owner seats out in SQL, before the ordering', () async {
+    final connection = _Connection([const Result.ok([])]);
+
+    final result = await PostgresAdminActivityLog(connection).latest(limit: 5);
+
+    expect(result, isA<Ok<List<AdminActivity>>>());
+    final String sql = connection.sql.single;
+    const String seats =
+        'WHERE l.actor_id NOT IN (SELECT user_id FROM admin.platform_owners)';
+    expect(sql, contains(seats));
+    expect(
+      sql.indexOf(seats),
+      greaterThan(sql.indexOf('LEFT JOIN scoring.fixture_results')),
+    );
+    expect(sql.indexOf(seats), lessThan(sql.indexOf('ORDER BY')));
+    expect(sql, isNot(contains('active_owners')));
+    expect(connection.parameters.single, {'limit': 5});
+  });
+
   test('a malformed row is a transient error', () async {
     final connection = _Connection([
       const Result.ok([
