@@ -12,6 +12,7 @@ export 'src/admin/postgres_new_player_reader.dart';
 export 'src/admin/postgres_admin_roster.dart';
 export 'src/admin/postgres_admin_activity_log.dart';
 export 'src/admin/postgres_owner_audit_log.dart';
+export 'src/admin/postgres_owner_audit_reader.dart';
 export 'src/admin/postgres_owner_registry.dart';
 export 'src/admin/postgres_owner_switches.dart';
 export 'src/admin/postgres_person_link_store.dart';
