@@ -454,7 +454,7 @@ void main() {
   testWidgets('the owner page has the tab, last', (tester) async {
     await _open(tester, _Server(), const OwnerGeneralSection());
 
-    expect(find.byKey(const Key('admin.owner.tab.7')), findsOneWidget);
+    expect(find.byKey(const Key('admin.owner.tab.8')), findsOneWidget);
     expect(find.text('المواجهات'), findsOneWidget);
   });
 

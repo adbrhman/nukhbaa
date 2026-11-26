@@ -30,6 +30,7 @@ import 'screens/sections/new_players_section.dart';
 import 'screens/sections/owner_admin_activity_section.dart';
 import 'screens/sections/owner_admins_section.dart';
 import 'screens/sections/owner_announcements_section.dart';
+import 'screens/sections/owner_audit_section.dart';
 import 'screens/sections/owner_h2h_section.dart';
 import 'screens/sections/owner_switches_section.dart';
 import 'screens/sections/person_links_section.dart';
@@ -460,6 +461,8 @@ class OwnerGeneralSection extends ConsumerWidget {
         ('المشرفون', OwnerAdminsSection()),
         // script 300: what the admins changed, for the owners to check.
         ('سجل المشرفين', OwnerAdminActivitySection()),
+        // script 347: what an owner seat did, for the owners alone.
+        ('سجلي', OwnerAuditSection()),
         ('الشعارات', ClubCrestsSection()),
         ('المخفيون', HiddenAccountsSection()),
         ('الأشخاص', PersonLinksSection()),
