@@ -388,7 +388,7 @@ class _DayPairMiddle extends StatelessWidget {
           key: Key('$prefix.status'),
           textAlign: TextAlign.center,
           style: context.text.labelSmall?.copyWith(
-            color: live ? t.primary : t.textSecondary,
+            color: live ? t.primaryText : t.textSecondary,
             fontWeight: live ? FontWeight.w800 : FontWeight.w500,
           ),
         ),

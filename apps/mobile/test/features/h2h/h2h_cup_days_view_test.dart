@@ -358,7 +358,7 @@ void main() {
     expect(_text(tester, '$mine.homePoints'), '3');
     expect(_text(tester, '$mine.awayPoints'), '5');
     expect(_text(tester, '$mine.status'), 'جارية');
-    expect(_textColor(tester, '$mine.status'), t.primary);
+    expect(_textColor(tester, '$mine.status'), t.primaryText);
     expect(_key('$mine.versus'), findsNothing);
     expect(_dx(tester, '$mine.home'), greaterThan(_dx(tester, '$mine.away')));
     expect(_textColor(tester, '$mine.home'), t.gold);
