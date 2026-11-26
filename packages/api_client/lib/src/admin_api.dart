@@ -359,6 +359,18 @@ final class AdminApi {
     );
   }
 
+  // NK346_01
+  /// `GET /owner/audit` -- the owners' own log, the newest first: what an
+  /// owner seat did on `/owner` and inside the admin tools (script 346).
+  /// An owner seat alone: anyone else, and any failure, comes back as an
+  /// [Err], never as an empty log.
+  Future<Result<OwnerAuditLogDto>> ownerAudit() {
+    return _transport.getObject<OwnerAuditLogDto>(
+      '/owner/audit',
+      parse: OwnerAuditLogDto.fromJson,
+    );
+  }
+
   // NK294_08
   /// `GET /owner/admins` -- every admin, whether each holds an owner seat,
   /// and the latest changes (script 294). An owner seat alone.
