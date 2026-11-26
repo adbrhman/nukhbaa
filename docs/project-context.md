@@ -9694,6 +9694,65 @@ Elite Cup's matchups between the group leaders (the first places' path).
 <!-- NK318_03 -->
 <!-- NK306B_03 -->
 
+### The owners' own audit log, read at last (scripts 340-347, 2026-11-26)
+
+Owner decision 2026-11-26: what an owner seat does gets a log of its own, read
+by the owners alone and kept out of the admins' sight. One read model over the
+two tables that already exist; no third table, no `visibility` column, no
+migration (the last stays 0226).
+
+- **The read**: `GET /owner/audit` behind `ownerGate`. An owner seat reads it;
+  anyone else gets the 404 "Route not found" of a path with no route; a method
+  other than GET is 405; with no `listOwnerAudit` wired it answers 503
+  `owner.audit_unavailable`. `ListOwnerAudit` checks the admin role, then
+  `isOwner` (else `admin.owner_only`), and a failed lookup refuses; `limit` is
+  clamped to 1..200 (default 200). `PostgresOwnerAuditReader.latest` is one
+  read-only query, newest first, then `source`, then `id`.
+- **The two sources**: `admin.owner_audit_log` (an owner seat's requests to
+  `/owner`, written by `ownerGate`) is `source` = `owner`; the rows of
+  `admin.admin_activity_log` whose `actor_id` is in `admin.platform_owners`
+  (an owner seat's changes inside the admins' tools, with the player or match
+  touched and that match's result as it stands now) are `source` = `admin`.
+  The two tables count their ids apart (id 5 can be in both), so a line is told
+  apart by `source` and `id` together: `OwnerAuditEntryDto` and
+  `OwnerAuditLogDto` (`schema_version` 1), the screen's keys
+  `owner.audit.item.<source>.<id>`.
+- **The isolation, in SQL**: the same condition,
+  `actor_id NOT IN (SELECT user_id FROM admin.platform_owners)`, sits in two
+  places: `PostgresAuditLogRepository._listSql` (behind `GET /admin/audit`,
+  script 344) and `PostgresAdminActivityLog.latestSql` (the owners' «سجل
+  المشرفين», script 345). It reads `admin.platform_owners`, not
+  `admin.active_owners`, so it holds if a seat is disabled or withdrawn. Hiding
+  the tab in the app is a second layer only.
+- **The client and the screen**: `AdminApi.ownerAudit()` (346) returns an `Err`,
+  never an empty list, for any failure (404, 503, a body without `entries`).
+  `OwnerAuditSection` (347) is the tab «سجلي», after «سجل المشرفين» on
+  «الإدارة العامة للمالك»: each line in words (the page of `/owner` it came
+  from, or `adminActivityLabel` for the admins' tools; an unknown path keeps its
+  method and path), a badge for its source («صفحة المالك» or «أدوات
+  المشرفين»), the target and the result for an admin-tools line, and the time.
+  The ninth tab moved «المواجهات» to index 8 (`admin.owner.tab.8`).
+- **The declared concession**: an owner's action inside the admins' tools reads
+  in his log as what, where, when and the result, without the typed reason (it
+  stays in `admin.audit_log`). Showing the reason is a separate later item.
+- **Not changed**: no migration, table, column, permission or dependency; no
+  row of `admin.audit_log`, `admin.owner_audit_log` or
+  `admin.admin_activity_log` was touched or deleted; `ownerGate`, `bearerAuth`
+  and every write path are as they were, and no `isOwner` was added to a hot
+  request. The older logs missing from scripts 217-248 are not repaired here.
+- **Tests**, all run on the owner's device by the scripts: the DTOs (340), the
+  use case (341), the reader's SQL text (342, 344, 345), the route (343), the
+  client (346), the screen and the tab (347). The queries ran on no real
+  Postgres yet: they run in CI when the owner pushes
+  (`supabase/tests/*_test.sql`); a single `0345` SQL test covering the three
+  queries is a decision pending for the owner.
+- **State**: the commits of scripts 339 to 348 are local and not pushed. The
+  owner pushes when he decides: the server first, then the app (CI builds the
+  APK, installed by the in-app OTA update). The plan with its table is kept in
+  `docs/handoff/owner-audit-plan.md`.
+
+<!-- NK348_01 -->
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source
