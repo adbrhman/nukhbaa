@@ -204,10 +204,14 @@ void main() {
     expect(find.byKey(const Key('h2h.cupBoard')), findsOneWidget);
     expect(_text(tester, 'h2h.cupBoard.month'), 'نوفمبر 2026');
     // The hidden side says only that it appears after the kickoff.
+    // NK336_04: the hidden side now reads inside the fixtures card, and the
+    // tab no longer asks for the old cup card's own request.
+    expect(find.byKey(const Key('h2h.cupNow')), findsOneWidget);
     expect(
-      _text(tester, 'h2h.cupBoard.pair.1.semi.1.fixture.f-next.away.hidden'),
+      _text(tester, 'h2h.cupFixtures.row.f-next.away.hidden'),
       'تظهر بعد انطلاق المباراة',
     );
+    expect(paths, isNot(contains('/me/h2h-cup')));
   });
 
   testWidgets('initialSection 4 opens on the cup, a larger one too', (

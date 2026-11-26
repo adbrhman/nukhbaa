@@ -1,9 +1,10 @@
-// NK315_04
-/// لوحة كأس النخبة عبر `AuthApi` الحقيقي فوق خادم الاختبار وAppTheme الحقيقي:
-/// توقع الخصم لا يظهر إلا في مباراة انطلقت، والجانب المحجوب يقول «تظهر بعد
-/// انطلاق المباراة» لا غير، والمباراة بلا موعد لا تُكتب بشرطة، والموعد بتوقيت
-/// الرياض، والحالة الفارغة والفشل مع الإعادة، وعند 360px ونص x2 بلا فيض.
-/// القطعة لا تقرأ الساعة، فلا حاجة لساعة ثابتة هنا.
+// NK336_03
+/// لوحة كأس النخبة بعد التركيب (سكربت 336)، عبر `AuthApi` الحقيقي فوق خادم
+/// الاختبار وAppTheme الحقيقي: المشارك يقرأ مواجهته الآن ثم مساره ثم الشجرة
+/// ثم الأيام بهذا الترتيب، والمشاهد الترتيب نفسه بلا «مواجهتك الآن» وبـ
+/// «المسارات الثلاثة»، والجانب المحجوب يقول «تظهر بعد انطلاق المباراة» لا
+/// غير، والحالة الفارغة والفشل مع الإعادة، وعند 360px ونص x2 بلا فيض. تفاصيل
+/// كل قسم في اختبارات ودجاته. القطعة لا تقرأ الساعة، فلا حاجة لساعة ثابتة.
 library;
 
 import 'dart:convert';
@@ -37,6 +38,7 @@ final H2hCupPlayerDto _me = _p('u-me', 'سامي', 1, me: true);
 final H2hCupPlayerDto _noura = _p('u-n', 'نورة', 3);
 final H2hCupPlayerDto _omar = _p('u-o', 'عمر', 2);
 final H2hCupPlayerDto _huda = _p('u-h', 'هدى', 4);
+final H2hCupPlayerDto _majed = _p('u-m', 'ماجد', 1);
 
 const H2hCupBoardSideDto _hidden = H2hCupBoardSideDto.hidden();
 
@@ -220,183 +222,133 @@ Future<List<http.Request>> _open(
 String? _text(WidgetTester tester, String key) =>
     tester.widget<Text>(find.byKey(Key(key))).data;
 
-const String _live = 'h2h.cupBoard.pair.1.semi.1.fixture.f-live';
-const String _next = 'h2h.cupBoard.pair.1.semi.1.fixture.f-next';
+/// أول كل قسم من أقسام اللوحة بالترتيب الذي يُكتب به للمشارك.
+const List<String> _participantOrder = <String>[
+  'h2h.cupNow',
+  'h2h.cupFixtures',
+  'h2h.cupPath.heading',
+  'h2h.cupPaths.heading',
+  'h2h.cupTree',
+  'h2h.cupDays',
+];
+
+/// الأقسام نفسها للمشاهد: بلا «مواجهتك الآن» ولا «مسارك».
+const List<String> _spectatorOrder = <String>[
+  'h2h.cupPaths.heading',
+  'h2h.cupTree',
+  'h2h.cupDays',
+];
+
+/// لوحة لا يظهر فيها اللاعب: مساران بلا `isMe`، والثاني محسوم بلقب.
+H2hCupBoardDto _spectatorBoard() => H2hCupBoardDto(
+  monthStart: '2026-11-01',
+  paths: <H2hCupBoardPathDto>[
+    H2hCupBoardPathDto(
+      place: 1,
+      stages: <H2hCupBoardStageDto>[
+        _stage('semi', 'live', <H2hCupBoardPairDto>[
+          _pair(1, _majed, _noura, <H2hCupBoardFixtureDto>[
+            _fixture(
+              'f-live',
+              state: 'live',
+              homeSide: _shown(_pick(2, 1)),
+              awaySide: _shown(_pick(1, 1)),
+            ),
+          ]),
+          _pair(2, _omar, _huda, <H2hCupBoardFixtureDto>[
+            _fixture(
+              'f-next',
+              state: 'not_started',
+              homeSide: _shown(_pick(0, 0)),
+              awaySide: _hidden,
+            ),
+          ]),
+        ], day: '2026-11-23'),
+        _stage('final', 'waiting', const <H2hCupBoardPairDto>[]),
+      ],
+    ),
+    H2hCupBoardPathDto(
+      place: 2,
+      stages: <H2hCupBoardStageDto>[
+        _stage('semi', 'decided', <H2hCupBoardPairDto>[
+          _pair(1, _omar, _huda, <H2hCupBoardFixtureDto>[
+            _fixture(
+              'f-done',
+              state: 'finished',
+              homeGoals: 2,
+              awayGoals: 0,
+              homeSide: _shown(_pick(2, 0)),
+              awaySide: _shown(_pick(1, 0)),
+            ),
+          ], winner: 'u-o'),
+        ], day: '2026-11-22'),
+        _stage('final', 'decided', const <H2hCupBoardPairDto>[], bye: _noura),
+      ],
+      title: H2hCupTitleDto(how: 'final', champion: _omar),
+    ),
+  ],
+);
 
 void main() {
-  testWidgets('a pick shows once its fixture kicked off, not before', (
+  testWidgets('a player in the cup reads now, path, tree and days in order', (
     WidgetTester tester,
   ) async {
-    final List<http.Request> seen = await _open(
+    await _open(
       tester,
       responses: <http.Response Function()>[() => _json(_board().toJson())],
     );
 
-    expect(seen, hasLength(1));
     expect(find.byKey(const Key('h2h.cupBoard')), findsOneWidget);
     expect(_text(tester, 'h2h.cupBoard.month'), 'نوفمبر 2026');
-    // مباراة انطلقت: توقع الجانبين ظاهر، والمضاعفة مكتوبة.
-    expect(_text(tester, '$_live.home.pick'), '2 - 1');
-    expect(_text(tester, '$_live.home.extras'), 'مضاعفة');
-    expect(_text(tester, '$_live.away.pick'), '1 - 1');
-    expect(_text(tester, '$_live.state'), 'جارية');
-    // مباراة لم تنطلق: توقعه ظاهر لصاحبه، وتوقع الخصم عبارة الحجب وحدها.
-    expect(_text(tester, '$_next.home.pick'), '0 - 0');
-    expect(_text(tester, '$_next.away.hidden'), 'تظهر بعد انطلاق المباراة');
-    expect(find.byKey(const Key('$_next.away.pick')), findsNothing);
-    expect(find.byKey(const Key('$_next.away.none')), findsNothing);
-    expect(_text(tester, '$_next.state'), 'لم تبدأ');
+    final List<double> tops = <double>[];
+    for (final String key in _participantOrder) {
+      expect(find.byKey(Key(key)), findsOneWidget, reason: key);
+      tops.add(tester.getTopLeft(find.byKey(Key(key))).dy);
+    }
+    for (int i = 1; i < tops.length; i++) {
+      expect(
+        tops[i],
+        greaterThan(tops[i - 1]),
+        reason:
+            '${_participantOrder[i]} must sit under '
+            '${_participantOrder[i - 1]}',
+      );
+    }
+    // The old per-path list is gone; the opponent's pick is still withheld.
+    expect(find.byKey(const Key('h2h.cupBoard.pair.1.semi.1')), findsNothing);
+    expect(
+      _text(tester, 'h2h.cupFixtures.row.f-next.away.hidden'),
+      'تظهر بعد انطلاق المباراة',
+    );
   });
 
-  testWidgets('a side that kicked off with no pick says he did not predict', (
+  testWidgets('a spectator reads the three paths, the tree and the days', (
     WidgetTester tester,
   ) async {
     await _open(
       tester,
-      responses: <http.Response Function()>[() => _json(_board().toJson())],
-    );
-
-    const String other = 'h2h.cupBoard.pair.1.semi.2.fixture.f-live';
-    expect(_text(tester, '$other.home.pick'), '3 - 0');
-    expect(_text(tester, '$other.home.extras'), 'دقيقة · +9 ن');
-    expect(_text(tester, '$other.away.none'), 'لم يتوقع');
-  });
-
-  testWidgets('the caller who did not predict reads it in the second person', (
-    WidgetTester tester,
-  ) async {
-    final H2hCupBoardDto board = H2hCupBoardDto(
-      monthStart: '2026-11-01',
-      paths: <H2hCupBoardPathDto>[
-        H2hCupBoardPathDto(
-          place: 1,
-          stages: <H2hCupBoardStageDto>[
-            _stage('semi', 'live', <H2hCupBoardPairDto>[
-              _pair(1, _me, _noura, <H2hCupBoardFixtureDto>[
-                _fixture(
-                  'f-1',
-                  state: 'live',
-                  homeSide: _shown(),
-                  awaySide: _shown(_pick(1, 0)),
-                ),
-              ]),
-            ]),
-          ],
-        ),
+      responses: <http.Response Function()>[
+        () => _json(_spectatorBoard().toJson()),
       ],
     );
-    await _open(
-      tester,
-      responses: <http.Response Function()>[() => _json(board.toJson())],
-    );
 
-    const String f = 'h2h.cupBoard.pair.1.semi.1.fixture.f-1';
-    expect(_text(tester, '$f.home.none'), 'لم تتوقع');
-    expect(_text(tester, '$f.away.pick'), '1 - 0');
-  });
-
-  testWidgets('the kickoff is on the Riyadh clock, a missing one is a word', (
-    WidgetTester tester,
-  ) async {
-    final H2hCupBoardDto board = H2hCupBoardDto(
-      monthStart: '2026-11-01',
-      paths: <H2hCupBoardPathDto>[
-        H2hCupBoardPathDto(
-          place: 1,
-          stages: <H2hCupBoardStageDto>[
-            _stage('semi', 'scheduled', <H2hCupBoardPairDto>[
-              _pair(1, _me, _noura, <H2hCupBoardFixtureDto>[
-                _fixture(
-                  'f-1',
-                  state: 'not_started',
-                  kickoffAt: '2026-11-23T16:30:00Z',
-                  homeSide: _shown(),
-                  awaySide: _hidden,
-                ),
-                _fixture(
-                  'f-2',
-                  state: 'not_started',
-                  kickoffAt: null,
-                  homeSide: _shown(),
-                  awaySide: _hidden,
-                ),
-                _fixture(
-                  'f-3',
-                  state: 'finished',
-                  homeGoals: 2,
-                  awayGoals: 0,
-                  homeSide: _shown(_pick(2, 0)),
-                  awaySide: _shown(_pick(0, 2)),
-                ),
-                _fixture(
-                  'f-4',
-                  state: 'void',
-                  homeSide: _shown(),
-                  awaySide: _shown(),
-                ),
-              ]),
-            ]),
-          ],
-        ),
-      ],
-    );
-    await _open(
-      tester,
-      responses: <http.Response Function()>[() => _json(board.toJson())],
-    );
-
-    const String p = 'h2h.cupBoard.pair.1.semi.1.fixture';
-    expect(_text(tester, '$p.f-1.middle'), '19:30');
-    expect(_text(tester, '$p.f-2.middle'), 'بلا موعد');
-    expect(_text(tester, '$p.f-2.state'), 'لم تبدأ');
-    expect(_text(tester, '$p.f-3.middle'), '2 - 0');
-    expect(_text(tester, '$p.f-3.state'), 'انتهت');
-    expect(_text(tester, '$p.f-4.state'), 'لا تُحتسب');
-    expect(find.byKey(const Key('$p.f-4.void')), findsOneWidget);
-    expect(find.text('—'), findsNothing);
-  });
-
-  testWidgets('paths, stages, the winner, the bye and the title read right', (
-    WidgetTester tester,
-  ) async {
-    await _open(
-      tester,
-      responses: <http.Response Function()>[() => _json(_board().toJson())],
-    );
-
-    expect(_text(tester, 'h2h.cupBoard.path.1'), 'مسار أوائل المجموعات');
-    expect(_text(tester, 'h2h.cupBoard.path.2'), 'مسار ثواني المجموعات');
-    expect(_text(tester, 'h2h.cupBoard.stage.1.semi'), contains('جارية'));
-    expect(_text(tester, 'h2h.cupBoard.stage.1.semi'), contains('23'));
-    expect(
-      _text(tester, 'h2h.cupBoard.stage.1.final'),
-      contains('بانتظار الجدولة'),
-    );
-    expect(
-      _text(tester, 'h2h.cupBoard.stage.1.final.empty'),
-      'تُسحب المواجهات عند جدولة المرحلة',
-    );
-    expect(_text(tester, 'h2h.cupBoard.pair.2.semi.1.result'), 'الفائز: عمر');
-    expect(_text(tester, 'h2h.cupBoard.bye.2.final'), 'تأهل مباشرة: نورة');
-    expect(_text(tester, 'h2h.cupBoard.title.2'), 'بطل المسار: عمر');
-    expect(find.byKey(const Key('h2h.cupBoard.title.1')), findsNothing);
-  });
-
-  testWidgets('the same fixture in two paths keeps its own keys', (
-    WidgetTester tester,
-  ) async {
-    await _open(
-      tester,
-      responses: <http.Response Function()>[() => _json(_board().toJson())],
-    );
-
-    // `f-live` يظهر في ثلاثة أزواج؛ لكل زوج مفتاحه، ولا مفتاح مشترك.
-    for (final String pair in <String>[
-      'h2h.cupBoard.pair.1.semi.1',
-      'h2h.cupBoard.pair.1.semi.2',
-      'h2h.cupBoard.pair.2.semi.1',
-    ]) {
-      expect(find.byKey(Key('$pair.fixture.f-live')), findsOneWidget);
+    expect(find.byKey(const Key('h2h.cupBoard')), findsOneWidget);
+    expect(find.byKey(const Key('h2h.cupNow')), findsNothing);
+    expect(find.byKey(const Key('h2h.cupFixtures')), findsNothing);
+    expect(find.byKey(const Key('h2h.cupPath.heading')), findsNothing);
+    final List<double> tops = <double>[];
+    for (final String key in _spectatorOrder) {
+      expect(find.byKey(Key(key)), findsOneWidget, reason: key);
+      tops.add(tester.getTopLeft(find.byKey(Key(key))).dy);
+    }
+    for (int i = 1; i < tops.length; i++) {
+      expect(
+        tops[i],
+        greaterThan(tops[i - 1]),
+        reason:
+            '${_spectatorOrder[i]} must sit under '
+            '${_spectatorOrder[i - 1]}',
+      );
     }
   });
 
@@ -412,6 +364,7 @@ void main() {
 
     expect(find.byKey(const Key('h2h.cupBoard.empty')), findsOneWidget);
     expect(find.byKey(const Key('h2h.cupBoard')), findsNothing);
+    expect(find.byKey(const Key('h2h.cupNow')), findsNothing);
     expect(
       find.text(
         'لم يقم كأس النخبة بعد. تظهر هنا مبارياته وتوقعات الخصوم حين يبدأ.',
@@ -442,6 +395,7 @@ void main() {
     expect(seen, hasLength(2));
     expect(find.byKey(const Key('h2h.cupBoard.error')), findsNothing);
     expect(find.byKey(const Key('h2h.cupBoard')), findsOneWidget);
+    expect(find.byKey(const Key('h2h.cupNow')), findsOneWidget);
   });
 
   testWidgets('a 360px phone at text x2 shows long names without overflow', (
@@ -506,9 +460,9 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    const String p = 'h2h.cupBoard.pair.1.semi.1.fixture';
+    const String p = 'h2h.cupFixtures.row';
     expect(find.byKey(const Key('$p.f-a.home.pick')), findsOneWidget);
     expect(find.byKey(const Key('$p.f-b.away.hidden')), findsOneWidget);
-    expect(find.byKey(const Key('$p.f-c.middle')), findsOneWidget);
+    expect(find.byKey(const Key('$p.f-c.match.kickoff')), findsOneWidget);
   });
 }
