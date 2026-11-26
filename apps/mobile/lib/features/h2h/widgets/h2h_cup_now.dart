@@ -49,7 +49,7 @@ class H2hCupNowView extends StatelessWidget {
           _DuelCard(now: now),
           if (pair.fixtures.isNotEmpty) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
-            _FixturesCard(pair: pair),
+            H2hCupFixturesCard(pair: pair),
           ],
         ],
       ),
@@ -540,11 +540,24 @@ class _PickLine extends StatelessWidget {
   }
 }
 
+// NK334_04
 /// مباريات المواجهة: رأس بالاسمين، ثم صف لكل مباراة (توقع، مباراة، توقع).
-class _FixturesCard extends StatelessWidget {
-  const _FixturesCard({required this.pair});
+/// عامة لتفتحها شجرة الأدوار على الزوج المضغوط (سكربت 334): مفاتيحها كلها
+/// تبدأ بـ [keyPrefix]، والأصل هو المفتاح القديم، فلا تتعارض مع بطاقة
+/// «مواجهتك الآن» إن ظهرتا معاً.
+class H2hCupFixturesCard extends StatelessWidget {
+  /// ينشئ البطاقة لزوج.
+  const H2hCupFixturesCard({
+    required this.pair,
+    this.keyPrefix = 'h2h.cupFixtures',
+    super.key,
+  });
 
+  /// الزوج الذي تُعرض مبارياته.
   final H2hCupBoardPairDto pair;
+
+  /// أول كل مفتاح في البطاقة وصفوفها.
+  final String keyPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -556,7 +569,7 @@ class _FixturesCard extends StatelessWidget {
       (H2hCupBoardFixtureDto f) => f.state == 'void',
     );
     return AppCard(
-      key: const Key('h2h.cupFixtures'),
+      key: Key(keyPrefix),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -577,7 +590,7 @@ class _FixturesCard extends StatelessWidget {
                 flex: 4,
                 child: Text(
                   h2hCupFixturesHeading,
-                  key: const Key('h2h.cupFixtures.heading'),
+                  key: Key('$keyPrefix.heading'),
                   textAlign: TextAlign.center,
                   style: context.text.labelMedium?.copyWith(
                     color: t.textPrimary,
@@ -599,7 +612,7 @@ class _FixturesCard extends StatelessWidget {
           ),
           for (final H2hCupBoardFixtureDto f in pair.fixtures)
             _FixtureRow(
-              keyPrefix: 'h2h.cupFixtures.row.${f.fixtureId}',
+              keyPrefix: '$keyPrefix.row.${f.fixtureId}',
               pair: pair,
               fixture: f,
             ),
@@ -608,7 +621,7 @@ class _FixturesCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(
                 h2hCupBoardVoidNote,
-                key: const Key('h2h.cupFixtures.void'),
+                key: Key('$keyPrefix.void'),
                 style: context.text.bodySmall?.copyWith(color: t.textSecondary),
               ),
             ),

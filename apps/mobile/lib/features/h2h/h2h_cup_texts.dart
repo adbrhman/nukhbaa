@@ -362,3 +362,80 @@ String h2hCupPathStepLabel(int step, int total) {
   final String count = total == 3 ? 'ثلاث' : '$total';
   return 'المرحلة $ordinal من $count';
 }
+
+// NK334_01
+/// The words of the tree of rounds (script 334). The server decides every
+/// pair, winner and champion; these only say what it sent.
+const String h2hCupTreeByeNote = 'تأهل مباشرة';
+
+/// In the final's box while its pair is not drawn: the two finalists are the
+/// winners of the stage before.
+const String h2hCupTreeWaitingWinner = 'بانتظار الفائز';
+
+/// In the box of a stage that has no pairs yet and is not the final.
+const String h2hCupTreeWaitingDraw = 'بانتظار السحب';
+
+/// In the box of a stage left out of the path.
+const String h2hCupTreeNotPlayed = 'لا تُلعب';
+
+/// The label above the champion.
+const String h2hCupTreeChampionLabel = 'البطل';
+
+/// In the champion's ring while the path has no champion yet.
+const String h2hCupTreeUnknown = '؟';
+
+/// In the champion's ring when the path ended with the title vacant.
+const String h2hCupTreeVacant = 'شاغر';
+
+/// Said to a screen reader of a champion that is not decided.
+const String h2hCupTreeUndecided = 'لم يُحسم بعد';
+
+/// Under the tree: a box opens the fixtures of its pair.
+const String h2hCupTreeTapHint = 'اضغط أي مربع لترى مبارياته';
+
+/// An opened pair that has no fixture registered.
+const String h2hCupTreeNoFixtures = 'لا مباريات مسجّلة لهذه المواجهة بعد';
+
+/// What a stage's box says in place of players it does not have yet: the
+/// winner of the stage before for the final, a skipped stage, else the draw.
+String h2hCupTreeSlotText(H2hCupBoardStageDto stage) {
+  if (stage.phase == 'skipped') return h2hCupTreeNotPlayed;
+  return stage.round == 'final'
+      ? h2hCupTreeWaitingWinner
+      : h2hCupTreeWaitingDraw;
+}
+
+/// Whether [player] is the winner of a decided [pair].
+bool h2hCupPairWon(H2hCupBoardPairDto pair, H2hCupPlayerDto player) {
+  final String? winner = pair.winnerUserId;
+  return pair.decided &&
+      winner != null &&
+      winner.isNotEmpty &&
+      winner == player.userId;
+}
+
+/// A pair's box in one sentence for a screen reader: the two players, then how
+/// it ended once it has.
+String h2hCupTreeBoxLabel(H2hCupBoardPairDto pair) {
+  final String duel =
+      '${h2hCupNameOf(pair.home)} $h2hCupVersus ${h2hCupNameOf(pair.away)}';
+  final String result = h2hCupBoardPairResult(pair);
+  return result.isEmpty ? duel : '$duel · $result';
+}
+
+/// The champion step of [path]: the champion's name once crowned, "vacant"
+/// when the path ended without one, else a question mark.
+String h2hCupTreeChampionText(H2hCupBoardPathDto path) {
+  final H2hCupTitleDto? title = path.title;
+  if (title == null) return h2hCupTreeUnknown;
+  final H2hCupPlayerDto? champion = title.champion;
+  return champion == null ? h2hCupTreeVacant : h2hCupNameOf(champion);
+}
+
+/// The champion step of [path] in one sentence for a screen reader.
+String h2hCupTreeChampionSemantics(H2hCupBoardPathDto path) {
+  final String said = path.title == null
+      ? h2hCupTreeUndecided
+      : h2hCupTreeChampionText(path);
+  return '$h2hCupTreeChampionLabel: $said';
+}
