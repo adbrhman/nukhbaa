@@ -12,10 +12,6 @@ import 'h2h_texts.dart';
 /// The card's title.
 const String h2hCupTitle = 'كأس النخبة';
 
-// NK323_02
-/// The heading of the cup laid out by day, shown to a player who watches it.
-const String h2hCupDaysHeading = 'جدول الكأس حسب الأيام';
-
 /// A cup day (1 to 4, the match days of the cup, not the calendar's) by its
 /// number.
 String h2hCupDayName(int day) => switch (day) {
@@ -71,15 +67,6 @@ String h2hCupOutcomeName(String? outcome) => switch (outcome) {
 String h2hCupWaitingLine(H2hCupStageDto stage) =>
     'يُحدَّد اليوم بعد انتهاء المرحلة السابقة · المتوقع الجولة '
     '${stage.expectedDay}';
-
-/// The stage the card puts first: the first one still to play, else the
-/// last one.
-H2hCupStageDto? h2hCupFocusStage(MyH2hCupDto cup) {
-  for (final H2hCupStageDto stage in cup.stages) {
-    if (stage.phase != 'decided' && stage.phase != 'skipped') return stage;
-  }
-  return cup.stages.isEmpty ? null : cup.stages.last;
-}
 
 // NK315_02
 /// The board's empty state: no cup stands for the month yet.
@@ -146,15 +133,6 @@ String h2hCupPickExtras(H2hPickDto pick) => <String>[
   if (pick.exact) 'دقيقة',
   if (pick.points != null) '+${pick.points} ن',
 ].join(' · ');
-
-/// The caller's pair in [stage], or null (a bye, a stage not drawn, or a
-/// stage the caller is out of).
-H2hCupPairDto? h2hCupMyPair(H2hCupStageDto stage) {
-  for (final H2hCupPairDto pair in stage.pairs) {
-    if (pair.isMine) return pair;
-  }
-  return null;
-}
 
 // NK331_01
 /// The section headings of the cup tab (script 331). A player who is in the

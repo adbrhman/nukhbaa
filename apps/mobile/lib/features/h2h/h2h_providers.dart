@@ -45,18 +45,6 @@ final myH2hGroupRoundProvider = FutureProvider.autoDispose
       };
     });
 
-/// `GET /me/h2h-cup` -- the caller's Elite Cup: whether he qualified, his
-/// path, the stages with their day, pairs and results, and the title. The
-/// server draws and decides everything. A failed read shows no card instead
-/// of spinning through automatic retries.
-final myH2hCupProvider = FutureProvider.autoDispose<MyH2hCupDto>((ref) async {
-  final AuthApi api = ref.watch(authApiProvider);
-  return switch (await api.myH2hCup()) {
-    Ok<MyH2hCupDto>(:final value) => value,
-    Err<MyH2hCupDto>(:final error) => throw error,
-  };
-}, retry: (_, _) => null);
-
 // NK315_01
 /// `GET /me/h2h-cup/board` -- the whole Elite Cup of the month: the three
 /// paths, their stages, pairs and fixtures, with the two players' picks on
