@@ -216,6 +216,8 @@ final class CompositionRoot {
     this.ownerAuditLog,
     this.adminActivityLog,
     this.ownerAdminActivity,
+    this.ownerAuditReader,
+    this.listOwnerAudit,
     this.ownerSwitchBoard,
     this.ownerSwitches,
     this.ownerAdmins,
@@ -466,6 +468,8 @@ final class CompositionRoot {
     this.ownerAuditLog,
     this.adminActivityLog,
     this.ownerAdminActivity,
+    this.ownerAuditReader,
+    this.listOwnerAudit,
     this.ownerSwitchBoard,
     this.ownerSwitches,
     this.ownerAdmins,
@@ -2842,6 +2846,17 @@ final class CompositionRoot {
   /// tests that do not provide one.
   final OwnerAdminActivity? ownerAdminActivity;
 
+  // NK343_01
+  /// The owners' read of their own actions, the port behind
+  /// `/owner/audit` (script 343, plan 339 to 348). Null in tests that do
+  /// not provide one.
+  final OwnerAuditReader? ownerAuditReader;
+
+  /// The use-case behind `GET /owner/audit`: what the owner seats did, on
+  /// the owner page and inside the admins' tools. Null in tests that do not
+  /// provide one, and then the route answers `503`.
+  final ListOwnerAudit? listOwnerAudit;
+
   /// The owners' switches and their hands on them (`/owner/switches`,
   /// script 289, migration 0218): first the month's crowning. Null in tests
   /// that do not provide one.
@@ -3800,6 +3815,22 @@ final class CompositionRoot {
       adminActivityLog: PostgresAdminActivityLog(connection),
       ownerAdminActivity: OwnerAdminActivity(
         log: PostgresAdminActivityLog(connection),
+        owners: OwnerInbox(
+          owners: PostgresOwnerRegistry(connection),
+          announcements: announcementRepository,
+          notify: CreateNotification(
+            notifications: notificationRepository,
+            idGenerator: idGenerator,
+            clock: clock,
+          ),
+          idGenerator: idGenerator,
+          clock: clock,
+        ),
+      ),
+      // The owners' own audit log, read at last (script 343, plan 339 to 348).
+      ownerAuditReader: PostgresOwnerAuditReader(connection),
+      listOwnerAudit: ListOwnerAudit(
+        reader: PostgresOwnerAuditReader(connection),
         owners: OwnerInbox(
           owners: PostgresOwnerRegistry(connection),
           announcements: announcementRepository,
