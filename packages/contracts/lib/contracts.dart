@@ -60,6 +60,7 @@ export 'src/my_fixture_score_dto.dart';
 export 'src/notification_dto.dart';
 export 'src/notification_preferences_dto.dart';
 export 'src/owner_admins_dto.dart';
+export 'src/owner_audit_log_dto.dart';
 export 'src/owner_h2h_cup_dto.dart';
 export 'src/owner_switches_dto.dart';
 export 'src/participant_fixture_score_dto.dart';
