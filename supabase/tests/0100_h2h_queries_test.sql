@@ -222,9 +222,10 @@ per AS (
            - count(DISTINCT fx.fixture_id) FILTER (WHERE fp.id IS NOT NULL)
                                                               AS missed,
          COALESCE(sum(s.points), 0)                           AS points,
+         count(*) FILTER (WHERE s.grade = 'correct_outcome')  AS outcomes,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
-  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended'
+  JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
   JOIN fx ON fx.season_id = p.season_id
   LEFT JOIN prediction.fixture_predictions fp
     ON fp.fixture_id = fx.fixture_id AND fp.participant_id = p.id
@@ -235,7 +236,7 @@ per AS (
 SELECT user_id::text AS user_id
 FROM per
 WHERE active_days >= $2::integer
-ORDER BY missed ASC, points DESC, exact DESC, user_id;
+ORDER BY missed ASC, points DESC, outcomes DESC, exact DESC, user_id;
 
 -- carriedSql
 PREPARE draw_carried(text) AS
