@@ -591,6 +591,10 @@ final class H2hAbsencePolicy {
   /// again, and never up. [alreadyIn] came up or took a seat: not twice.
   /// [wouldRepeat] passes over a substitute whose seat would give the
   /// player going down an opponent he met already.
+  ///
+  /// NK352C: [eliteGroupCount] is the month's number of elite groups
+  /// ([H2hLeaguePolicy.eliteGroupsOf]), the numbering the [groups] carry:
+  /// groups 1 to [eliteGroupCount] go down to the first extra group.
   static H2hDecemberPlan planDecemberMoves({
     required List<H2hAbsenceGroup> groups,
     required List<H2hHeldSeat> waiting,
@@ -601,6 +605,7 @@ final class H2hAbsencePolicy {
     required Set<UserId> alreadyOut,
     required Set<UserId> alreadyIn,
     required bool Function(UserId relegated, H2hHeldSeat seat) wouldRepeat,
+    int eliteGroupCount = H2hLeaguePolicy.eliteGroups,
   }) {
     final byNumber = <int, H2hAbsenceGroup>{
       for (final group in groups) group.number: group,
@@ -657,7 +662,9 @@ final class H2hAbsencePolicy {
         if (run.length < relegationStreak) {
           continue;
         }
-        final below = byNumber[groupBelow(number)];
+        // NK352C: the month's own elite groups decide where he goes.
+        final below =
+            byNumber[groupBelow(number, eliteGroupCount: eliteGroupCount)];
         if (below == null) {
           taken.add(seat.userId);
           vacancies.add(

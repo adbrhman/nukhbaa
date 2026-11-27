@@ -576,9 +576,11 @@ Future<Result<H2hAbsenceState?>> loadH2hAbsenceState({
       playing.add(
         H2hAbsenceGroup(
           leagueId: group.leagueId,
+          // NK352C: numbered by the month's own count of elite groups.
           number: H2hLeaguePolicy.groupNumberOf(
             division: group.division,
             groupIndex: group.groupIndex,
+            eliteGroupCount: H2hLeaguePolicy.eliteGroupsOf(month),
           ),
           seats: List<H2hHeldSeat>.unmodifiable(held),
         ),
@@ -713,13 +715,17 @@ Future<void> tellH2hSeatMove({
   if (elite == null || extra == null) {
     return;
   }
+  // NK352C: the numbers the two players are told follow the month.
+  final eliteCount = H2hLeaguePolicy.eliteGroupsOf(state.monthStart);
   final eliteNumber = H2hLeaguePolicy.groupNumberOf(
     division: elite.division,
     groupIndex: elite.groupIndex,
+    eliteGroupCount: eliteCount,
   );
   final extraNumber = H2hLeaguePolicy.groupNumberOf(
     division: extra.division,
     groupIndex: extra.groupIndex,
+    eliteGroupCount: eliteCount,
   );
   // NK216_21: from round 7 of November 2026 the record stays with the seat.
   final keepsRecord = H2hLeaguePolicy.seatKeepsRecord(
@@ -809,6 +815,8 @@ Future<Result<H2hAbsenceRun>> applyH2hDecemberMoves({
     counted: state.counted,
     facts: (factsResult as Ok<List<H2hCandidateFacts>>).value,
     monthStart: state.monthStart,
+    // NK352C: groups 1 to the month's elite count go down to the first extra.
+    eliteGroupCount: H2hLeaguePolicy.eliteGroupsOf(state.monthStart),
     alreadyOut: state.relegated,
     alreadyIn: state.promoted,
     wouldRepeat: (out, seat) => state.wouldRepeat(out, seat, fromRound),
@@ -955,9 +963,11 @@ Future<void> _tellFill(
   if (group == null) {
     return;
   }
+  // NK352C: the number he is told follows the month.
   final number = H2hLeaguePolicy.groupNumberOf(
     division: group.division,
     groupIndex: group.groupIndex,
+    eliteGroupCount: H2hLeaguePolicy.eliteGroupsOf(state.monthStart),
   );
   final tokens = await moves.pushTokensOf(user);
   if (tokens is Ok<List<String>> && tokens.value.isNotEmpty) {

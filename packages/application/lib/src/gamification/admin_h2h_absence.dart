@@ -32,7 +32,7 @@ final class H2hAbsenceWatch {
   /// His seat.
   final H2hHeldSeat seat;
 
-  /// His group as players see it (1..4).
+  /// His group as players see it (1..4, or 1..10 from December 2026).
   final int groupNumber;
 
   /// The counted rounds he missed in a row, oldest first.
@@ -54,7 +54,7 @@ final class H2hAbsenceCandidate {
   /// His extra seat.
   final H2hHeldSeat seat;
 
-  /// His group as players see it (5 and up).
+  /// His group as players see it (5 and up; 11 and up from December 2026).
   final int groupNumber;
 
   /// What he is ranked on.
@@ -310,8 +310,11 @@ final class AdminH2hAbsence {
         if (seatOf[f.userId] != null)
           H2hAbsenceCandidate(
             seat: seatOf[f.userId]!,
+            // NK352C: the first extra group follows the month's elite ones.
             groupNumber:
-                H2hLeaguePolicy.eliteGroups + seatOf[f.userId]!.groupIndex + 1,
+                H2hLeaguePolicy.eliteGroupsOf(state.monthStart) +
+                seatOf[f.userId]!.groupIndex +
+                1,
             facts: f,
           ),
     ];
@@ -353,9 +356,11 @@ final class AdminH2hAbsence {
             .value,
         groupNumbers: {
           for (final g in state.book.groups)
+            // NK352C: numbered by the month's own count of elite groups.
             g.leagueId: H2hLeaguePolicy.groupNumberOf(
               division: g.division,
               groupIndex: g.groupIndex,
+              eliteGroupCount: H2hLeaguePolicy.eliteGroupsOf(state.monthStart),
             ),
         },
       ),
