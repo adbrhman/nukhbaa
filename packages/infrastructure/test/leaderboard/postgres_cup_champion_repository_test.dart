@@ -56,6 +56,7 @@ void main() {
           'champion_name': 'P4',
           'champion_avatar_updated_at': DateTime.utc(2099, 10),
           'photo_updated_at': DateTime.utc(2099, 12),
+          'decided_at': DateTime.utc(2099, 11, 28, 20),
         },
         {
           'month_start': '2099-11-01',
@@ -89,6 +90,9 @@ void main() {
     expect(champions.first.avatarUpdatedAt, DateTime.utc(2099, 10));
     expect(champions.last.displayName, '');
     expect(champions.last.photoUpdatedAt, isNull);
+    expect(champions.first.decidedAt, DateTime.utc(2099, 11, 28, 20));
+    expect(champions.last.decidedAt, isNull);
+    expect(connection.sqls.single, contains('t.decided_at'));
     expect(connection.params.single, {'limit': 30});
   });
 

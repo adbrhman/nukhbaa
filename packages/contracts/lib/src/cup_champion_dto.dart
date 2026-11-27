@@ -13,6 +13,7 @@ final class CupChampionDto {
     required this.displayName,
     this.photoUrl,
     this.avatarUrl,
+    this.decidedAt,
   });
 
   /// Deserializes from a JSON map, tolerating missing keys.
@@ -24,6 +25,7 @@ final class CupChampionDto {
     displayName: (json['display_name'] as String?) ?? '',
     photoUrl: json['photo_url'] as String?,
     avatarUrl: json['avatar_url'] as String?,
+    decidedAt: json['decided_at'] as String?,
   );
 
   /// The first day of the month of the cup (`YYYY-MM-DD`).
@@ -47,6 +49,11 @@ final class CupChampionDto {
   /// The server-relative URL of the champion's own avatar, if any.
   final String? avatarUrl;
 
+  /// When the title was decided, an ISO-8601 UTC instant; absent when the
+  /// server did not send it. The hall of fame hides paths 2 and 3 two days
+  /// after it.
+  final String? decidedAt;
+
   /// Serializes to a JSON-encodable map.
   Map<String, Object?> toJson() => {
     'month_start': monthStart,
@@ -56,6 +63,7 @@ final class CupChampionDto {
     'display_name': displayName,
     if (photoUrl != null) 'photo_url': photoUrl,
     if (avatarUrl != null) 'avatar_url': avatarUrl,
+    if (decidedAt != null) 'decided_at': decidedAt,
   };
 }
 

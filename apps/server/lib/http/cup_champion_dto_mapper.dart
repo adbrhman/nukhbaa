@@ -38,6 +38,7 @@ CupChampionDto cupChampionToDto(CupChampion champion) {
     avatarUrl: avatarAt == null
         ? null
         : avatarUrlOf(userId: champion.userId, updatedAt: avatarAt),
+    decidedAt: champion.decidedAt?.toUtc().toIso8601String(),
   );
 }
 

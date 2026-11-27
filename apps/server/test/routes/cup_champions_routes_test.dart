@@ -51,6 +51,7 @@ final class _Cups implements CupChampionRepository {
           displayName: 'P$place',
           photoUpdatedAt: photos[place]?.$3,
           avatarUpdatedAt: place == 2 ? DateTime.utc(2026, 11, 5) : null,
+          decidedAt: DateTime.utc(2026, 11, place == 1 ? 25 : 28, 20),
         ),
     ]);
   }
@@ -123,8 +124,10 @@ void main() {
         '/cup-champions/$_month/1/photo?v=${_now.millisecondsSinceEpoch}',
       );
       expect(first.containsKey('avatar_url'), isFalse);
+      expect(first['decided_at'], '2026-11-25T20:00:00.000Z');
       final second = listed.last! as Map<String, Object?>;
       expect(second.containsKey('photo_url'), isFalse);
+      expect(second['decided_at'], '2026-11-28T20:00:00.000Z');
       expect(
         second['avatar_url'],
         '/users/$_u2/avatar?v=${DateTime.utc(2026, 11, 5).millisecondsSinceEpoch}',

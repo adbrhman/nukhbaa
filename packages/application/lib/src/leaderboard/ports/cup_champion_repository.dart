@@ -51,6 +51,7 @@ final class CupChampion {
     required this.displayName,
     this.photoUpdatedAt,
     this.avatarUpdatedAt,
+    this.decidedAt,
   });
 
   /// The first day of the month of the cup, `YYYY-MM-DD`.
@@ -74,4 +75,8 @@ final class CupChampion {
 
   /// When the champion's own avatar was set, or null without one.
   final DateTime? avatarUpdatedAt;
+
+  /// When the title was decided (`h2h_cup_titles.decided_at`), or null when
+  /// the store did not say.
+  final DateTime? decidedAt;
 }

@@ -27,7 +27,8 @@ SELECT t.month_start::text AS month_start,
        t.champion::text AS champion_id,
        uc.display_name AS champion_name,
        uc.avatar_updated_at AS champion_avatar_updated_at,
-       p.photo_updated_at
+       p.photo_updated_at,
+       t.decided_at
 FROM gamification.h2h_cup_titles t
 LEFT JOIN identity.users uc ON uc.id = t.champion
 LEFT JOIN gamification.h2h_cup_title_photos p
@@ -95,6 +96,7 @@ WHERE month_start = @month_start::date AND place = @place::smallint
       }
       final Object? photoAt = row['photo_updated_at'];
       final Object? avatarAt = row['champion_avatar_updated_at'];
+      final Object? decidedAt = row['decided_at'];
       out.add(
         CupChampion(
           monthStart: monthStart,
@@ -104,6 +106,7 @@ WHERE month_start = @month_start::date AND place = @place::smallint
           displayName: (row['champion_name'] as String?) ?? '',
           photoUpdatedAt: photoAt is DateTime ? photoAt.toUtc() : null,
           avatarUpdatedAt: avatarAt is DateTime ? avatarAt.toUtc() : null,
+          decidedAt: decidedAt is DateTime ? decidedAt.toUtc() : null,
         ),
       );
     }

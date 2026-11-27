@@ -36,4 +36,26 @@ void main() {
 
     expect(CupChampionsDto.fromJson(const {}).champions, isEmpty);
   });
+
+  test('a cup champion carries the instant its title was decided', () {
+    const dto = CupChampionDto(
+      monthStart: '2026-11-01',
+      place: 2,
+      how: 'final',
+      userId: 'u-1',
+      displayName: 'Ahmad',
+      decidedAt: '2026-11-28T20:00:00.000Z',
+    );
+
+    expect(dto.toJson()['decided_at'], '2026-11-28T20:00:00.000Z');
+    expect(
+      CupChampionDto.fromJson(dto.toJson()).decidedAt,
+      '2026-11-28T20:00:00.000Z',
+    );
+    expect(CupChampionDto.fromJson(const {}).decidedAt, isNull);
+    expect(
+      CupChampionDto.fromJson(const {}).toJson().containsKey('decided_at'),
+      isFalse,
+    );
+  });
 }
