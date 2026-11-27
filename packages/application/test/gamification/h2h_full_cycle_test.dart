@@ -122,37 +122,10 @@ final class _Cycle {
   }
 }
 
-/// What the draw reads of the events a judged month wrote: the players the
-/// month sends on, in their next division.
-List<H2hCarry> _carriedBy(List<GamificationEvent> events) {
-  final carried = <H2hCarry>[];
-  for (final event in events) {
-    final nextLevel = event.payload['next_division'] as int?;
-    if (nextLevel == null) {
-      continue;
-    }
-    final next = H2hDivision.ofLevel(nextLevel);
-    final division = H2hDivision.ofLevel(event.payload['division'] as int);
-    if (next == null || division == null) {
-      continue;
-    }
-    carried.add(
-      H2hCarry(
-        userId: event.userId,
-        nextDivision: next,
-        division: division,
-        rank: event.payload['rank'] as int,
-        order: event.payload['next_order'] as int?,
-      ),
-    );
-  }
-  return carried;
-}
-
 void main() {
   group('H2H full cycle', () {
-    test('November is drawn, played and judged; December is dealt by the '
-        'elite carry (NK275)', () async {
+    test('November is drawn, played and judged; December is drawn afresh '
+        '(NK352)', () async {
       final cycle = _Cycle();
       await cycle.playNovember();
 
@@ -181,15 +154,17 @@ void main() {
       expect(byUser[userNo(2)]!['next_order'], 1);
       expect(byUser[userNo(3)]!.containsKey('next_order'), isFalse);
 
-      // November is judged: December is dealt in the order November
-      // wrote, the new player (5) last.
-      cycle.source
-        ..carried[_november] = _carriedBy(cycle.events.recorded)
-        ..active[_november] = <UserId>[userNo(1), userNo(2), userNo(5)];
+      // NK352A_03: November is judged: December is drawn afresh, nobody
+      // is carried; the order is the source's, the new player (5) in it.
+      cycle.source.active[_november] = <UserId>[
+        userNo(1),
+        userNo(2),
+        userNo(5),
+      ];
       final seated = await cycle.draw.call(now: _afterGrace);
 
       expect((seated as Ok<int>).value, 3);
-      expect(cycle.source.carriedAsked, <DateTime>[_november]);
+      expect(cycle.source.carriedAsked, isEmpty);
       final december = cycle.leagues.drawn[_december]!.single;
       expect(december.group.division, H2hLeaguePolicy.eliteDivision);
       expect(

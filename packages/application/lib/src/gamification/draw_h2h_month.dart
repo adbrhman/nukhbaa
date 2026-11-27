@@ -25,6 +25,11 @@ import 'package:shared/shared.dart';
 /// that carries is dealt by `eliteDraw` in the order its judged month
 /// wrote (`next_order`, NK275), the new players last; a month judged
 /// before that order existed waits undrawn (`h2h.elite_carry_pending`).
+/// **NK352, December 2026 on: no carry.** Once last month is judged, every
+/// player who predicted on enough days of it is drawn afresh, in the order
+/// above (fewest missed, points, right outcomes, exact scorelines, the id),
+/// into ten even groups of twenty (`H2hLeaguePolicy.eliteGroupsOf`); last
+/// month's standings decide nothing, there is no moving up or down.
 /// Every other month CARRIES: the members
 /// last month's events sent on, in their next division, then the new
 /// players who predicted on five days, at the end. A carrying month waits
@@ -121,6 +126,18 @@ final class DrawH2hMonth {
         // Last month is not judged yet: its standings decide this draw.
         return const Result.ok(0);
       }
+      if (H2hLeaguePolicy.usesDecemberRules(month)) {
+        // NK352A_01: from December 2026 nobody is carried: everyone who
+        // is active is drawn afresh, in the source's order.
+        return drawInto(
+          leagues: _leagues,
+          ids: _ids,
+          monthStart: month,
+          isPilot: false,
+          order: active,
+          waitingGroups: _waitingGroups,
+        );
+      }
       final carriedResult = await _source.carriedFrom(previous);
       if (carriedResult is Err<List<H2hCarry>>) {
         return Result.err(carriedResult.error);
@@ -173,11 +190,14 @@ final class DrawH2hMonth {
     // then extra groups of twenty (`H2hLeaguePolicy.eliteDraw`).
     // NK277: from December 2026 the last extra group, under twenty, waits
     // for its twentieth player instead of playing.
+    // NK352: from December 2026 ten even groups of the first 200
+    // (`H2hLeaguePolicy.eliteGroupsOf`).
     final groups = H2hLeaguePolicy.usesEliteDraw(monthStart)
         ? H2hLeaguePolicy.eliteDraw(
             order,
             waitingRest:
                 waitingGroups && H2hLeaguePolicy.usesDecemberRules(monthStart),
+            eliteGroupCount: H2hLeaguePolicy.eliteGroupsOf(monthStart),
           )
         : H2hLeaguePolicy.draw(H2hLeaguePolicy.cut(order));
     final drawn = <H2hDrawnGroup>[];

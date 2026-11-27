@@ -14,7 +14,9 @@ import 'package:shared/shared.dart';
 /// **The drawing order** (NK182, decided 2026-10-31): commitment first --
 /// the fewest of the month's matches left without a prediction (`missed`:
 /// the month's visible, non-test fixtures of the player's seasons minus
-/// those predicted) -- then points, then exact scorelines, then the id.
+/// those predicted) -- then points, then right outcomes (NK352, 2026-11-27:
+/// the direction -- win, draw, loss -- of a wrong score, the grade
+/// `correct_outcome`), then exact scorelines, then the id.
 ///
 /// Total (Application ADR, Section 2): never throws, binds every value
 /// through a `@named` parameter (Security ADR, Section 2).
@@ -43,6 +45,7 @@ per AS (
            - count(DISTINCT fx.fixture_id) FILTER (WHERE fp.id IS NOT NULL)
                                                               AS missed,
          COALESCE(sum(s.points), 0)                           AS points,
+         count(*) FILTER (WHERE s.grade = 'correct_outcome')  AS outcomes,
          count(*) FILTER (WHERE s.grade = 'exact_scoreline')  AS exact
   FROM competition.participants p
   JOIN identity.users u ON u.id = p.user_id AND u.status <> 'suspended' AND u.hidden_at IS NULL
@@ -56,7 +59,7 @@ per AS (
 SELECT user_id::text AS user_id
 FROM per
 WHERE active_days >= @min_days::integer
-ORDER BY missed ASC, points DESC, exact DESC, user_id
+ORDER BY missed ASC, points DESC, outcomes DESC, exact DESC, user_id
 ''';
 
   static const String carriedSql = '''

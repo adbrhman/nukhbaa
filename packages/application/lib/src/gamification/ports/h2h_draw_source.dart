@@ -12,8 +12,9 @@ import 'package:shared/shared.dart';
 abstract interface class H2hDrawSource {
   /// The players who predicted on at least [minActiveDays] Riyadh days of the
   /// month opened by [monthStart], best first: the fewest of the month's
-  /// matches missed (NK182), then points of that month, then exact
-  /// scorelines, then the user id. Suspended players are left out.
+  /// matches missed (NK182), then points of that month, then right
+  /// outcomes (NK352), then exact scorelines, then the user id. Suspended
+  /// players are left out.
   Future<Result<List<UserId>>> activeOrder({
     required DateTime monthStart,
     required int minActiveDays,

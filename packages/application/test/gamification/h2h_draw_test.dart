@@ -143,8 +143,9 @@ void main() {
       expect(store.months.containsKey(_december), isFalse);
     });
 
-    test('a later month of the elite draw waits for the carry rules, even '
-        'once last month is judged', () async {
+    // NK352A_02
+    test('NK352: December is drawn afresh, in the order of the players '
+        'November left, once November is judged', () async {
       final store = FakeH2hLeagueStore()
         ..months[_november] = H2hMonthInfo(
           monthStart: _november,
@@ -152,48 +153,30 @@ void main() {
           seatedCount: 45,
         )
         ..closed[_november] = 45;
-      final carried = <H2hCarry>[
-        // Deliberately out of order: the draw sorts them.
-        for (var i = 0; i < 20; i++)
-          H2hCarry(
-            userId: userNo(100 + i),
-            nextDivision: H2hDivision.second,
-            division: H2hDivision.second,
-            rank: i + 1,
-          ),
-        for (var i = 0; i < 20; i++)
-          H2hCarry(
-            userId: userNo(200 + i),
-            nextDivision: H2hDivision.first,
-            division: H2hDivision.first,
-            rank: i + 1,
-          ),
-        for (var i = 0; i < 5; i++)
-          H2hCarry(
-            userId: userNo(300 + i),
-            nextDivision: H2hDivision.third,
-            division: H2hDivision.third,
-            rank: i + 1,
-          ),
-      ];
-      final source = FakeH2hDrawSource()
-        ..carried[_november] = carried
-        ..active[_november] = [
-          ...carried.map((c) => c.userId),
-          userNo(900),
-          userNo(901),
-        ];
+      final source = FakeH2hDrawSource()..active[_november] = _users(1, 206);
 
       final result = await _draw(store, source).call(now: _decemberNight);
 
-      // NK275: an elite month is dealt in the order its judged month
-      // wrote. A November whose events carry no order (judged before
-      // NK275) leaves December undrawn, with the reason: a draw is never
-      // repeated.
-      expect((result as Err<int>).error.code, 'h2h.elite_carry_pending');
-      expect(store.months.containsKey(_december), isFalse);
-      expect(store.drawCalls, 0);
-      expect(source.carriedAsked, <DateTime>[_november]);
+      expect((result as Ok<int>).value, 206);
+      final drawn = store.drawn[_december]!;
+      expect(
+        [
+          for (final g in drawn)
+            (g.group.division, g.group.groupIndex, g.group.seats.length),
+        ],
+        [
+          for (var i = 0; i < 10; i++) (H2hDivision.first, i, 20),
+          (H2hDivision.second, 0, 6),
+        ],
+      );
+      expect(drawn.last.group.waiting, isTrue);
+      // The snake over ten groups: the 1st, 20th and 21st share group 1.
+      expect(
+        [for (final s in drawn[0].group.seats.take(3)) s.userId],
+        [userNo(1), userNo(20), userNo(21)],
+      );
+      // Nobody is carried: the previous month's finishes are not read.
+      expect(source.carriedAsked, isEmpty);
     });
   });
 

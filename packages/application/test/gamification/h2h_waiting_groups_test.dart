@@ -321,7 +321,7 @@ void main() {
         final leagues = FakeH2hLeagueStore();
         final source = FakeH2hDrawSource()
           ..active[H2hLeaguePolicy.previousMonthOf(month)] = [
-            for (var i = 0; i < 113; i++) userNo(i),
+            for (var i = 0; i < 206; i++) userNo(i),
           ];
         await DrawH2hMonth(
           leagues: leagues,
@@ -335,9 +335,10 @@ void main() {
       final december = await drawn(_december);
       expect(
         [for (final d in december) d.group.waiting],
-        [false, false, false, false, false, true],
+        // NK352: ten even groups of twenty, then the six left, waiting.
+        [for (var i = 0; i < 10; i++) false, true],
       );
-      expect(december.last.group.seats, hasLength(13));
+      expect(december.last.group.seats, hasLength(6));
       expect(
         (await drawn(_december, on: false)).any((d) => d.group.waiting),
         isFalse,

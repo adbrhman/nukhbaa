@@ -351,7 +351,9 @@ void main() {
       });
       expect(
         PostgresH2hDrawSource.activeOrderSql,
-        contains('ORDER BY missed ASC, points DESC, exact DESC, user_id'),
+        contains(
+          'ORDER BY missed ASC, points DESC, outcomes DESC, exact DESC, user_id',
+        ),
       );
       final carry = (carried as Ok<List<H2hCarry>>).value.single;
       expect(carry.nextDivision, H2hDivision.first);
