@@ -639,7 +639,7 @@ void main() {
     }
 
     test('December: the late group is held, not counted, with its results '
-        'kept; a move carries its reason', () async {
+        'kept; nobody moves (NK352B)', () async {
       final events = await close(_december);
       final byUser = {for (final e in events) e.userId: e.payload};
       for (var u = 20; u < 24; u++) {
@@ -649,9 +649,10 @@ void main() {
       // Its results are kept: rounds 15..19 played, the table ranked.
       expect(byUser[userNo(20)]!['league_points'], greaterThan(0));
       expect(byUser[userNo(20)]!['rank'], 1);
-      // Group 5 takes part: up to the elite, by commitment.
-      expect(byUser[userNo(10)]!['outcome'], 'promoted');
-      expect(byUser[userNo(10)]!['reason'], 'commitment');
+      // NK352B: nobody is carried from December 2026, group 5 included.
+      expect(byUser[userNo(10)]!['outcome'], 'held');
+      expect(byUser[userNo(10)]!.containsKey('reason'), isFalse);
+      expect(byUser[userNo(10)]!.containsKey('next_order'), isFalse);
       // The elite's leader stays: no reason recorded.
       expect(byUser[userNo(0)]!['outcome'], 'held');
       expect(byUser[userNo(0)]!.containsKey('reason'), isFalse);

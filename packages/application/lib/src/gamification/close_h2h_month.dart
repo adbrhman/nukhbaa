@@ -39,6 +39,14 @@ import 'package:shared/shared.dart';
 /// between the extra groups, and each event carries `next_order`, the
 /// place in the next month's drawing order.
 ///
+/// **A month from December 2026 (NK352B, owner 2026-11-27)** carries
+/// nobody: the ten even groups are drawn afresh every month, so no one is
+/// sent up or down and no `next_order` is written. Each member's event is
+/// `held` (his own group's division as `next_division`) or, when he
+/// predicted on too few days to be drawn, `out`; `reason` is `not_counted`
+/// for a late group and `active_days` for a player who is out. [outcomes]
+/// is not read for such a month.
+///
 /// **Past the month's end (NK279, owner 2026-11-14).** From December 2026 a
 /// league plays its 19 rounds even after its month's end: until it has them
 /// it is not judged (later months wait behind it), and it is due [grace]
@@ -313,7 +321,27 @@ final class CloseH2hMonth {
       })
     >
     finishes;
-    if (H2hLeaguePolicy.usesEliteDraw(month)) {
+    if (H2hLeaguePolicy.usesDecemberRules(month)) {
+      // NK352B: from December 2026 nothing is carried (owner 2026-11-27):
+      // the next draw deals every active player afresh, so a finish only
+      // says who stays in the draw (held) and who does not (out).
+      finishes = [
+        for (final group in eliteGroups)
+          for (final placing in group.placings)
+            (
+              placing: placing,
+              division: group.division,
+              nextDivision: eligible.contains(placing.standing.userId)
+                  ? group.division
+                  : null,
+              outcome: eligible.contains(placing.standing.userId)
+                  ? H2hLeagueOutcome.held
+                  : H2hLeagueOutcome.out,
+              nextOrder: null,
+              counted: group.counted,
+            ),
+      ];
+    } else if (H2hLeaguePolicy.usesEliteDraw(month)) {
       final measured = await _commitmentOf(month, groups, sheets, playedOf);
       if (measured is Err<Map<UserId, H2hCommitment>>) {
         return Result.err(measured.error);
