@@ -147,6 +147,7 @@ void main() {
         how: 'walkover',
         userId: 'c2',
         displayName: 'cup-two',
+        decidedAt: '2026-11-06T12:00:00.000Z',
       ),
     ],
   );
@@ -180,6 +181,137 @@ void main() {
   ) async {
     await _pump(tester, () async => twoMonths);
     expect(find.byKey(const Key('hall.section.cup')), findsNothing);
+  });
+
+  CupChampionDto cupPath(int place, String name, String? decidedAt) =>
+      CupChampionDto(
+        monthStart: '2026-11-01',
+        place: place,
+        how: 'final',
+        userId: 'u$place',
+        displayName: name,
+        decidedAt: decidedAt,
+      );
+
+  Future<void> scrollToCup(WidgetTester tester) => tester.scrollUntilVisible(
+    find.byKey(const Key('hall.section.cup')),
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+
+  // The screen's clock in these tests is 2026-11-07 00:00 UTC.
+  testWidgets('a runner-up leaves the hall 48 hours after its title', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      () async => twoMonths,
+      cup: CupChampionsDto(
+        champions: <CupChampionDto>[
+          cupPath(1, 'cup-one', '2026-10-01T10:00:00.000Z'),
+          cupPath(2, 'cup-two', '2026-11-05T00:00:01.000Z'),
+          cupPath(3, 'cup-three', '2026-11-05T00:00:00.000Z'),
+        ],
+      ),
+    );
+    await scrollToCup(tester);
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.3')),
+      findsNothing,
+    );
+    expect(find.text('أبطال كأس النخبة'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('only path 1 left: the heading goes singular', (tester) async {
+    await _pump(
+      tester,
+      () async => twoMonths,
+      cup: CupChampionsDto(
+        champions: <CupChampionDto>[
+          cupPath(1, 'cup-one', '2026-10-01T10:00:00.000Z'),
+          cupPath(2, 'cup-two', '2026-11-05T00:00:00.000Z'),
+          cupPath(3, 'cup-three', null),
+        ],
+      ),
+    );
+    await scrollToCup(tester);
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.2')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.3')),
+      findsNothing,
+    );
+    expect(find.text('بطل كأس النخبة'), findsOneWidget);
+    expect(find.text('أبطال كأس النخبة'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an unreadable decided_at hides a runner-up', (tester) async {
+    await _pump(
+      tester,
+      () async => twoMonths,
+      cup: CupChampionsDto(
+        champions: <CupChampionDto>[
+          cupPath(1, 'cup-one', null),
+          cupPath(2, 'cup-two', 'not-a-date'),
+          cupPath(3, 'cup-three', ''),
+        ],
+      ),
+    );
+    await scrollToCup(tester);
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.2')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.3')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('nobody left to show: the cup section takes no room', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      () async => twoMonths,
+      cup: CupChampionsDto(
+        champions: <CupChampionDto>[
+          cupPath(2, 'cup-two', '2026-11-01T00:00:00.000Z'),
+        ],
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('hall.section.legends')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const Key('hall.section.cup')), findsNothing);
+    expect(
+      find.byKey(const Key('hall.cup.champion.2026-11-01.2')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the cup fits 360 wide at double text size', (tester) async {

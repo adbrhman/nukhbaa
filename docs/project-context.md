@@ -9753,6 +9753,46 @@ migration (the last stays 0226).
 
 <!-- NK348_01 -->
 
+### The hall of fame keeps the Elite Cup's second and third paths two days (scripts 349-350, 2026-11-27)
+
+Owner decision 2026-11-27: in the cup section of the hall of fame the champion
+of path 2 and the champion of path 3 stay **48 hours exactly** from the
+`decided_at` of each path, then disappear; the champion of path 1 stays always.
+The heading is «أبطال كأس النخبة» while a path 2 or 3 champion is on screen and
+«بطل كأس النخبة» otherwise (ARB key `hallCupHeadingOne`).
+
+- **The server sends the instant (349)**: `PostgresCupChampionRepository`
+  reads `t.decided_at` (`gamification.h2h_cup_titles`, migration 0190,
+  `timestamptz not null`), `CupChampion.decidedAt` and `CupChampionDto.decidedAt`
+  (`decided_at`, optional, ISO-8601 UTC, left out when absent) carry it. Nothing
+  is filtered on the server.
+- **The app hides (350)**: `visibleCupChampions(champions, now)` and
+  `kCupRunnerUpDays = 2` in `cup_champions_providers.dart`. Path 1 always stays;
+  path 2 and 3 stay while `now - decided_at` is under 48 hours (47:59 shows,
+  48:00 does not); a missing or unreadable `decided_at` hides them (it fails
+  closed, which is why the server went first); an instant in the future shows.
+  `_CupSection` filters with it, takes `now` from `HallOfFameScreen.now` (no
+  `DateTime.now()` inside the section), and shows nothing when nobody is left.
+- **Why only the hall of fame**: `GET /cup-champions` and
+  `cupChampionsProvider` also feed the admin's crowning panel
+  (`cup_champions_admin_section.dart`), which needs all three paths to add and
+  remove pictures. The photo route `/cup-champions/<month>/<place>/photo` is as
+  it was.
+- **Old months** lose their path 2 and 3 champions at once; that is intended.
+- **Not changed**: no migration, table, column or dependency; no row was
+  deleted; the existing fields of `CupChampionDto` and the admin panel are as
+  they were.
+- **Tests**, run on the owner's device by script 350: the rule itself
+  (`cup_champions_visibility_test.dart`, with the 47:59 and 48:00 edge and an
+  offset instant) and the real `HallOfFameScreen` with the real `AppTheme`, the
+  provider overridden and `now` pinned (`hall_of_fame_screen_test.dart`), with
+  `test/audit/`.
+- **State**: the commits of scripts 339 to 350 are local and not pushed. The
+  owner pushes when he decides: the server first (it sends `decided_at`), then
+  the app.
+
+<!-- NK350_01 -->
+
 ## 3. Version-Verification Log
 
 Per ADR 0007 §8: every external version/API verified against current source

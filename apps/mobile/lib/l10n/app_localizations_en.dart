@@ -1805,6 +1805,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hallCupHeading => 'Elite Cup champions';
 
   @override
+  String get hallCupHeadingOne => 'Elite Cup champion';
+
+  @override
   String get hallCupPath1 => 'Elite Cup';
 
   @override

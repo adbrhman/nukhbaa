@@ -23,6 +23,33 @@ final cupChampionsProvider = FutureProvider.autoDispose<CupChampionsDto>((
   };
 });
 
+/// How many days the champions of paths 2 and 3 stay in the hall of fame,
+/// counted from the instant their title was decided (owner decision
+/// 2026-11-27: 48 hours exactly).
+const int kCupRunnerUpDays = 2;
+
+/// The champions the hall of fame shows at [now]: path 1 always; path 2 and
+/// path 3 only while `now - decidedAt` is under [kCupRunnerUpDays] days, so a
+/// title decided exactly 48 hours ago is already gone. A missing or unreadable
+/// `decided_at` hides the path (it fails closed); an instant in the future
+/// shows it. The order is kept. The admin's crowning panel reads the whole
+/// list and is not filtered.
+List<CupChampionDto> visibleCupChampions(
+  List<CupChampionDto> champions,
+  DateTime now,
+) {
+  const Duration window = Duration(days: kCupRunnerUpDays);
+  return <CupChampionDto>[
+    for (final CupChampionDto c in champions)
+      if (c.place == 1 || _decidedWithin(c.decidedAt, now, window)) c,
+  ];
+}
+
+bool _decidedWithin(String? decidedAt, DateTime now, Duration window) {
+  final DateTime? at = decidedAt == null ? null : DateTime.tryParse(decidedAt);
+  return at != null && now.difference(at) < window;
+}
+
 /// The name of the cup of path [place] (1 to 3).
 String cupPathName(int place) => switch (place) {
   1 => 'كأس النخبة',

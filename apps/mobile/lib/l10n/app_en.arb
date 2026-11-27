@@ -1335,6 +1335,7 @@
   "hallTitlesCount": "{count, plural, =1{1 title} other{{count} titles}}",
   "@hallTitlesCount": {"placeholders": {"count": {"type": "int"}}},
   "hallCupHeading": "Elite Cup champions",
+  "hallCupHeadingOne": "Elite Cup champion",
   "hallCupPath1": "Elite Cup",
   "hallCupPath2": "Second path cup",
   "hallCupPath3": "Third path cup",

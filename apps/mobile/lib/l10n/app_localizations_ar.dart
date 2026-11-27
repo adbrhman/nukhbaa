@@ -1821,6 +1821,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hallCupHeading => 'أبطال كأس النخبة';
 
   @override
+  String get hallCupHeadingOne => 'بطل كأس النخبة';
+
+  @override
   String get hallCupPath1 => 'كأس النخبة';
 
   @override

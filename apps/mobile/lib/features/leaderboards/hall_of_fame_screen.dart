@@ -30,7 +30,9 @@ class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
   /// Creates the screen. [now] is the clock the season cup reads; tests pin it.
   const HallOfFameScreen({this.now, super.key});
 
-  /// The instant the season cup is worked out for; null reads the real clock.
+  /// The instant the season cup is worked out for, and the one the Elite
+  /// Cup's second and third paths are judged against; null reads the real
+  /// clock.
   final DateTime? now;
 
   @override
@@ -40,6 +42,7 @@ class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens t = context.tokens;
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime clock = now ?? DateTime.now();
     final AsyncValue<MonthChampionsDto> champions = ref.watch(
       monthChampionsProvider,
     );
@@ -72,7 +75,8 @@ class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
           },
           child: _HallBody(
             hall: buildHallOfFame(list),
-            season: SportingSeasonWindow.at(now ?? DateTime.now()),
+            season: SportingSeasonWindow.at(clock),
+            now: clock,
           ),
         ),
       ),
@@ -81,10 +85,17 @@ class HallOfFameScreen extends ConsumerWidget implements NamedScreen {
 }
 
 class _HallBody extends StatelessWidget {
-  const _HallBody({required this.hall, required this.season});
+  const _HallBody({
+    required this.hall,
+    required this.season,
+    required this.now,
+  });
 
   final HallOfFame hall;
   final SportingSeasonWindow season;
+
+  /// The clock the cup section reads; the screen pins it for tests.
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +158,7 @@ class _HallBody extends StatelessWidget {
             ],
           ],
         ],
-        const _CupSection(),
+        _CupSection(now: now),
         _SectionHeader(
           key: const Key('hall.section.legends'),
           title: l10n.hallLegendsHeading,
@@ -378,26 +389,42 @@ class _MonthCard extends ConsumerWidget {
 /// The champions of the Elite Cup, by month (migration 0190): one card per
 /// path, with the picture an admin added or the champion's own picture.
 /// Decoration beside the months: while the list loads, when it failed, or
-/// while nobody has been crowned, it takes no room at all.
+/// while nobody has been crowned, or when nobody is left to show, it takes no
+/// room at all. Path 1 stays for good; paths 2 and 3 leave 48 hours after
+/// their title ([visibleCupChampions]), and the heading goes singular when
+/// only path 1 is left.
 class _CupSection extends ConsumerWidget {
-  const _CupSection();
+  const _CupSection({required this.now});
+
+  /// The instant the runner-up paths are judged against.
+  final DateTime now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final CupChampionsDto? cup = ref.watch(cupChampionsProvider).value;
-    if (cup == null || cup.champions.isEmpty) {
+    if (cup == null) {
+      return const SizedBox.shrink();
+    }
+    final List<CupChampionDto> champions = visibleCupChampions(
+      cup.champions,
+      now,
+    );
+    if (champions.isEmpty) {
       return const SizedBox.shrink();
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Locale locale = Localizations.localeOf(context);
+    final bool runnerUpsShown = champions.any(
+      (CupChampionDto c) => c.place != 1,
+    );
     final List<Widget> children = <Widget>[
       _SectionHeader(
         key: const Key('hall.section.cup'),
-        title: l10n.hallCupHeading,
+        title: runnerUpsShown ? l10n.hallCupHeading : l10n.hallCupHeadingOne,
       ),
     ];
     String? month;
-    for (final CupChampionDto c in cup.champions) {
+    for (final CupChampionDto c in champions) {
       if (c.monthStart != month) {
         month = c.monthStart;
         children.add(

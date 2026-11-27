@@ -3144,6 +3144,12 @@ abstract class AppLocalizations {
   /// **'Elite Cup champions'**
   String get hallCupHeading;
 
+  /// No description provided for @hallCupHeadingOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Elite Cup champion'**
+  String get hallCupHeadingOne;
+
   /// No description provided for @hallCupPath1.
   ///
   /// In en, this message translates to:
