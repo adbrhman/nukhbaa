@@ -488,9 +488,14 @@ final class H2hAbsencePolicy {
   /// The group a player of group [number] goes down to from December 2026:
   /// المجموعة 5 from the elite groups (1 to 4), the next group from an
   /// extra group.
-  static int groupBelow(int number) => number <= H2hLeaguePolicy.eliteGroups
-      ? H2hLeaguePolicy.eliteGroups + 1
-      : number + 1;
+  ///
+  /// NK351: [eliteGroupCount] is the month's number of elite groups
+  /// ([H2hLeaguePolicy.eliteGroupsOf]): 1 to 4, or 1 to 10 from the draw of
+  /// ten groups.
+  static int groupBelow(
+    int number, {
+    int eliteGroupCount = H2hLeaguePolicy.eliteGroups,
+  }) => number <= eliteGroupCount ? eliteGroupCount + 1 : number + 1;
 
   /// The run of absences of [seat]'s holder from December 2026: the
   /// counted rounds of [monthStart] from the round he took the seat, when he

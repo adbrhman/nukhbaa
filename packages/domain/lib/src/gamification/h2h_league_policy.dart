@@ -621,6 +621,21 @@ final class H2hLeaguePolicy {
   /// Players of the elite groups: 20 a group.
   static const int eliteSeats = eliteGroups * groupCapacity;
 
+  // NK351 ten even groups (owner, 2026-11-27; December 2026 on)
+  /// The elite groups of the draw from December 2026: every player is in
+  /// the first division, in this many even groups of [groupCapacity]
+  /// (`h2h_leagues.group_index` 0 .. 9, shown as المجموعة 1 .. 10).
+  static const int fairGroups = 10;
+
+  /// Players of the [fairGroups]: 20 a group.
+  static const int fairSeats = fairGroups * groupCapacity;
+
+  /// How many elite groups the draw of [monthOrDay] opens: [eliteGroups]
+  /// before December 2026, [fairGroups] from then on. Selected from the
+  /// month itself, never today's date.
+  static int eliteGroupsOf(DateTime monthOrDay) =>
+      usesDecemberRules(monthOrDay) ? fairGroups : eliteGroups;
+
   /// The division the four elite groups are stored under
   /// (`h2h_leagues.division`). Shown as المجموعة 1 .. 4.
   static const H2hDivision eliteDivision = H2hDivision.first;
@@ -641,11 +656,16 @@ final class H2hLeaguePolicy {
 
   /// The 1-based group number players see: المجموعة 1 .. 4 for the elite
   /// groups, 5 and up for the extra groups, in the draw's order.
+  ///
+  /// NK351: [eliteGroupCount] is the month's number of elite groups
+  /// ([eliteGroupsOf]); [eliteGroups] unless the month opened [fairGroups].
   static int groupNumberOf({
     required H2hDivision division,
     required int groupIndex,
-  }) =>
-      division == eliteDivision ? groupIndex + 1 : eliteGroups + groupIndex + 1;
+    int eliteGroupCount = eliteGroups,
+  }) => division == eliteDivision
+      ? groupIndex + 1
+      : eliteGroupCount + groupIndex + 1;
 
   /// The top places of a group shown as the Elite Cup's places: three in an
   /// elite group, none in an extra group.
@@ -678,17 +698,26 @@ final class H2hLeaguePolicy {
   /// (`H2hDrawGroup.waiting`): it plays no round until its twentieth player
   /// joins. No 21st member: a single player left at the end is a waiting
   /// group of one.
+  ///
+  /// **NK351:** [eliteGroupCount] is the number of elite groups, [eliteGroups]
+  /// (four) unless the month opened [fairGroups] (ten, December 2026 on:
+  /// [eliteGroupsOf]); the elite seats are then [eliteGroupCount] times
+  /// [groupCapacity], the same snake over more groups.
   static List<H2hDrawGroup> eliteDraw(
     List<UserId> ordered, {
     bool waitingRest = false,
+    int eliteGroupCount = eliteGroups,
   }) {
-    final eliteCount = ordered.length < eliteSeats
+    final eliteSeatCount = eliteGroupCount * groupCapacity;
+    final eliteCount = ordered.length < eliteSeatCount
         ? ordered.length
-        : eliteSeats;
+        : eliteSeatCount;
     // Fewer than eight players (never the case in a real month) open fewer
     // groups, so that no elite group is a player alone.
     final pairs = eliteCount ~/ 2;
-    final count = pairs >= eliteGroups ? eliteGroups : (pairs < 1 ? 1 : pairs);
+    final count = pairs >= eliteGroupCount
+        ? eliteGroupCount
+        : (pairs < 1 ? 1 : pairs);
     final elite = <List<H2hDrawSeat>>[
       for (var g = 0; g < count; g++) <H2hDrawSeat>[],
     ];
