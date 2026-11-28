@@ -1,5 +1,5 @@
-/// CloseH2hMonth from December 2026 (NK352B, owner 2026-11-27): the ten
-/// even groups are drawn afresh every month, so a judged month carries
+/// CloseH2hMonth from December 2026 (NK352B, owner 2026-11-27): the even
+/// groups (NK353_01) are drawn afresh every month, so a judged month carries
 /// nobody: every member is `held` or `out`, with no `next_order` and no move
 /// up or down, and the outcomes reader is not asked. November keeps the
 /// carry it had.
@@ -49,8 +49,8 @@ typedef _Closed = ({
 });
 
 /// Closes [month]: three groups of four, each from round 1 and every round
-/// settled. December: three groups of the first division (the ten-group
-/// shape); November: one elite group and two extra ones. User 3 predicted on
+/// settled. December: three groups of the first division (the
+/// even-group shape); November: one elite group and two extra ones. User 3 predicted on
 /// two days only.
 Future<_Closed> _close(DateTime month) async {
   final december = month == _december;

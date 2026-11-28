@@ -165,15 +165,18 @@ void main() {
             (g.group.division, g.group.groupIndex, g.group.seats.length),
         ],
         [
-          for (var i = 0; i < 10; i++) (H2hDivision.first, i, 20),
-          (H2hDivision.second, 0, 6),
+          // NK353_01: eight groups, two extra of twenty, then the six.
+          for (var i = 0; i < 8; i++) (H2hDivision.first, i, 20),
+          (H2hDivision.second, 0, 20),
+          (H2hDivision.second, 1, 20),
+          (H2hDivision.second, 2, 6),
         ],
       );
       expect(drawn.last.group.waiting, isTrue);
-      // The snake over ten groups: the 1st, 20th and 21st share group 1.
+      // The snake over eight groups: the 1st, 16th and 17th share group 1.
       expect(
         [for (final s in drawn[0].group.seats.take(3)) s.userId],
-        [userNo(1), userNo(20), userNo(21)],
+        [userNo(1), userNo(16), userNo(17)],
       );
       // Nobody is carried: the previous month's finishes are not read.
       expect(source.carriedAsked, isEmpty);

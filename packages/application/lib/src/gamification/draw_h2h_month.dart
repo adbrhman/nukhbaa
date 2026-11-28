@@ -28,7 +28,7 @@ import 'package:shared/shared.dart';
 /// **NK352, December 2026 on: no carry.** Once last month is judged, every
 /// player who predicted on enough days of it is drawn afresh, in the order
 /// above (fewest missed, points, right outcomes, exact scorelines, the id),
-/// into ten even groups of twenty (`H2hLeaguePolicy.eliteGroupsOf`); last
+/// into eight even groups of twenty (`H2hLeaguePolicy.eliteGroupsOf`, NK353_01); last
 /// month's standings decide nothing, there is no moving up or down.
 /// Every other month CARRIES: the members
 /// last month's events sent on, in their next division, then the new
@@ -190,8 +190,8 @@ final class DrawH2hMonth {
     // then extra groups of twenty (`H2hLeaguePolicy.eliteDraw`).
     // NK277: from December 2026 the last extra group, under twenty, waits
     // for its twentieth player instead of playing.
-    // NK352: from December 2026 ten even groups of the first 200
-    // (`H2hLeaguePolicy.eliteGroupsOf`).
+    // NK352: from December 2026 even groups of the first division
+    // (`H2hLeaguePolicy.eliteGroupsOf`; NK353_01: eight, the first 160).
     final groups = H2hLeaguePolicy.usesEliteDraw(monthStart)
         ? H2hLeaguePolicy.eliteDraw(
             order,

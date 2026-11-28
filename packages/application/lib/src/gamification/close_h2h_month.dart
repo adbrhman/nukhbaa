@@ -40,7 +40,7 @@ import 'package:shared/shared.dart';
 /// place in the next month's drawing order.
 ///
 /// **A month from December 2026 (NK352B, owner 2026-11-27)** carries
-/// nobody: the ten even groups are drawn afresh every month, so no one is
+/// nobody: the even groups (NK353_01) are drawn afresh every month, so no one is
 /// sent up or down and no `next_order` is written. Each member's event is
 /// `held` (his own group's division as `next_division`) or, when he
 /// predicted on too few days to be drawn, `out`; `reason` is `not_counted`

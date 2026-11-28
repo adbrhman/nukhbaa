@@ -1,5 +1,6 @@
-/// Script 351: from December 2026 the draw opens ten even groups of twenty,
-/// every player in the first division; November 2026 keeps its four.
+/// Script 351, changed by 353 (NK353_01, owner 2026-11-28): from December
+/// 2026 the draw opens eight even groups of twenty in the first division and
+/// puts the rest in extra groups; November 2026 keeps its four.
 library;
 
 import 'package:domain/domain.dart';
@@ -12,8 +13,8 @@ List<UserId> _players(int count) => [
 ];
 
 void main() {
-  group('eliteDraw with ten groups', () {
-    test('206 players: ten groups of 20, then the six left', () {
+  group('eliteDraw with eight groups', () {
+    test('206 players: eight groups of 20, two extra of 20, then six', () {
       final order = _players(206);
 
       final groups = H2hLeaguePolicy.eliteDraw(
@@ -24,8 +25,10 @@ void main() {
       expect(
         [for (final g in groups) (g.division, g.groupIndex, g.seats.length)],
         [
-          for (var i = 0; i < 10; i++) (H2hDivision.first, i, 20),
-          (H2hDivision.second, 0, 6),
+          for (var i = 0; i < 8; i++) (H2hDivision.first, i, 20),
+          (H2hDivision.second, 0, 20),
+          (H2hDivision.second, 1, 20),
+          (H2hDivision.second, 2, 6),
         ],
       );
       expect(groups.last.waiting, isFalse);
@@ -44,7 +47,7 @@ void main() {
       expect(groups.last.capacity, H2hLeaguePolicy.groupCapacity);
     });
 
-    test('the snake gives every group one player of each band of ten', () {
+    test('the snake gives every group one player of each band of eight', () {
       final order = _players(206);
 
       final groups = H2hLeaguePolicy.eliteDraw(
@@ -53,7 +56,7 @@ void main() {
       );
 
       final sums = <int>[];
-      for (final g in groups.take(10)) {
+      for (final g in groups.take(8)) {
         expect(
           [for (final seat in g.seats) seat.slot],
           [for (var band = 0; band < 20; band++) band],
@@ -79,16 +82,19 @@ void main() {
       expect(seated.toSet(), hasLength(206));
     });
 
-    test('150 players share the ten groups evenly, with no extra group', () {
+    test('150 players share the eight groups within one seat, no extra', () {
       final groups = H2hLeaguePolicy.eliteDraw(
         _players(150),
         eliteGroupCount: H2hLeaguePolicy.fairGroups,
       );
 
-      expect(groups, hasLength(10));
+      expect(groups, hasLength(8));
+      expect(
+        [for (final g in groups) g.seats.length],
+        [19, 19, 19, 19, 19, 19, 18, 18],
+      );
       for (final g in groups) {
         expect(g.division, H2hDivision.first);
-        expect(g.seats, hasLength(15));
         expect(g.capacity, H2hLeaguePolicy.groupCapacity);
       }
     });
@@ -103,23 +109,23 @@ void main() {
     });
   });
 
-  group('the ten groups by month', () {
-    test('November 2026 has four elite groups, December on has ten', () {
+  group('the eight groups by month', () {
+    test('November 2026 has four elite groups, December on has eight', () {
       expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2026, 11)), 4);
       expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2026, 11, 30)), 4);
-      expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2026, 12)), 10);
-      expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2027, 1)), 10);
-      expect(H2hLeaguePolicy.fairSeats, 200);
+      expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2026, 12)), 8);
+      expect(H2hLeaguePolicy.eliteGroupsOf(DateTime.utc(2027, 1)), 8);
+      expect(H2hLeaguePolicy.fairSeats, 160);
     });
 
     test('the group number a player sees follows the month', () {
       expect(
         H2hLeaguePolicy.groupNumberOf(
           division: H2hDivision.first,
-          groupIndex: 9,
+          groupIndex: 7,
           eliteGroupCount: H2hLeaguePolicy.fairGroups,
         ),
-        10,
+        8,
       );
       expect(
         H2hLeaguePolicy.groupNumberOf(
@@ -127,7 +133,7 @@ void main() {
           groupIndex: 0,
           eliteGroupCount: H2hLeaguePolicy.fairGroups,
         ),
-        11,
+        9,
       );
       expect(
         H2hLeaguePolicy.groupNumberOf(
@@ -138,11 +144,11 @@ void main() {
       );
     });
 
-    test('the group below, with ten groups and with four', () {
-      const ten = H2hLeaguePolicy.fairGroups;
-      expect(H2hAbsencePolicy.groupBelow(3, eliteGroupCount: ten), 11);
-      expect(H2hAbsencePolicy.groupBelow(10, eliteGroupCount: ten), 11);
-      expect(H2hAbsencePolicy.groupBelow(11, eliteGroupCount: ten), 12);
+    test('the group below, with eight groups and with four', () {
+      const eight = H2hLeaguePolicy.fairGroups;
+      expect(H2hAbsencePolicy.groupBelow(3, eliteGroupCount: eight), 9);
+      expect(H2hAbsencePolicy.groupBelow(8, eliteGroupCount: eight), 9);
+      expect(H2hAbsencePolicy.groupBelow(9, eliteGroupCount: eight), 10);
       expect(H2hAbsencePolicy.groupBelow(4), 5);
       expect(H2hAbsencePolicy.groupBelow(5), 6);
     });

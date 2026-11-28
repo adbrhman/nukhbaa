@@ -621,11 +621,14 @@ final class H2hLeaguePolicy {
   /// Players of the elite groups: 20 a group.
   static const int eliteSeats = eliteGroups * groupCapacity;
 
-  // NK351 ten even groups (owner, 2026-11-27; December 2026 on)
-  /// The elite groups of the draw from December 2026: every player is in
-  /// the first division, in this many even groups of [groupCapacity]
-  /// (`h2h_leagues.group_index` 0 .. 9, shown as المجموعة 1 .. 10).
-  static const int fairGroups = 10;
+  // NK351 even groups (owner, 2026-11-27); NK353_01: eight, not ten (owner,
+  // 2026-11-28; December 2026 on)
+  /// The elite groups of the draw from December 2026: the first division, in
+  /// this many even groups of [groupCapacity]
+  /// (`h2h_leagues.group_index` 0 .. 7, shown as المجموعة 1 .. 8). The
+  /// players the groups have no seat for are drawn into the extra groups,
+  /// from المجموعة 9.
+  static const int fairGroups = 8;
 
   /// Players of the [fairGroups]: 20 a group.
   static const int fairSeats = fairGroups * groupCapacity;
@@ -700,7 +703,7 @@ final class H2hLeaguePolicy {
   /// group of one.
   ///
   /// **NK351:** [eliteGroupCount] is the number of elite groups, [eliteGroups]
-  /// (four) unless the month opened [fairGroups] (ten, December 2026 on:
+  /// (four) unless the month opened [fairGroups] (eight, December 2026 on:
   /// [eliteGroupsOf]); the elite seats are then [eliteGroupCount] times
   /// [groupCapacity], the same snake over more groups.
   static List<H2hDrawGroup> eliteDraw(

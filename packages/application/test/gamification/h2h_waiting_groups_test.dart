@@ -335,7 +335,8 @@ void main() {
       final december = await drawn(_december);
       expect(
         [for (final d in december) d.group.waiting],
-        // NK352: ten even groups of twenty, then the six left, waiting.
+        // NK352, NK353_01: eight even groups of twenty and two extra groups
+        // of twenty, then the six left, waiting.
         [for (var i = 0; i < 10; i++) false, true],
       );
       expect(december.last.group.seats, hasLength(6));

@@ -54,7 +54,7 @@ final class H2hAbsenceCandidate {
   /// His extra seat.
   final H2hHeldSeat seat;
 
-  /// His group as players see it (5 and up; 11 and up from December 2026).
+  /// His group as players see it (5 and up; 9 and up from December 2026).
   final int groupNumber;
 
   /// What he is ranked on.

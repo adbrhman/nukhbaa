@@ -1,8 +1,8 @@
 /// NK352C: the December absence plan on the month's own numbering. From
-/// the draw of ten groups the elite groups are 1 to 10, so a player of group
-/// 7 goes down to the first extra group (11), the extra groups follow
-/// (11 to 12), and without the month's count the old four-group numbering
-/// still holds.
+/// the draw of eight groups (NK353_01) the elite groups are 1 to 8, so a
+/// player of group 7 goes down to the first extra group (9), the extra
+/// groups follow (9 to 10), and without the month's count the old
+/// four-group numbering still holds.
 library;
 
 import 'package:domain/domain.dart';
@@ -44,8 +44,8 @@ H2hCandidateFacts _facts(int user, {int predicted = 10}) => H2hCandidateFacts(
 );
 
 void main() {
-  // Group 7 (elite of the ten): 70, 71. Group 11 (first extra): 110, 111.
-  // Group 12 (the last that plays): 120, 121. 70 missed three rounds.
+  // Group 7 (elite of the eight): 70, 71. Group 9 (first extra): 90, 91.
+  // Group 10 (the last that plays): 100, 101. 70 missed three rounds.
   final groups = [
     H2hAbsenceGroup(
       leagueId: _lg(7),
@@ -53,25 +53,25 @@ void main() {
       seats: [_seat(70, _lg(7), 6, 0), _seat(71, _lg(7), 6, 1)],
     ),
     H2hAbsenceGroup(
-      leagueId: _lg(11),
-      number: 11,
-      seats: [_seat(110, _lg(11), 0, 0), _seat(111, _lg(11), 0, 1)],
+      leagueId: _lg(9),
+      number: 9,
+      seats: [_seat(90, _lg(9), 0, 0), _seat(91, _lg(9), 0, 1)],
     ),
     H2hAbsenceGroup(
-      leagueId: _lg(12),
-      number: 12,
-      seats: [_seat(120, _lg(12), 1, 0), _seat(121, _lg(12), 1, 1)],
+      leagueId: _lg(10),
+      number: 10,
+      seats: [_seat(100, _lg(10), 1, 0), _seat(101, _lg(10), 1, 1)],
     ),
   ];
-  final everyone = {70, 71, 110, 111, 120, 121};
+  final everyone = {70, 71, 90, 91, 100, 101};
   final counted = [
     for (var n = 1; n <= 3; n++) _round(n, everyone.difference({70})),
   ];
   final facts = [
-    _facts(110),
-    _facts(111, predicted: 30),
-    _facts(120),
-    _facts(121, predicted: 30),
+    _facts(90),
+    _facts(91, predicted: 30),
+    _facts(100),
+    _facts(101, predicted: 30),
   ];
 
   H2hDecemberPlan plan({int? eliteGroupCount}) {
@@ -102,16 +102,16 @@ void main() {
           );
   }
 
-  group('planDecemberMoves with the ten groups', () {
-    test('an elite group of the ten goes down to the first extra group', () {
-      final p = plan(eliteGroupCount: 10);
+  group('planDecemberMoves with the eight groups', () {
+    test('an elite group of the eight goes down to the first extra', () {
+      final p = plan(eliteGroupCount: 8);
 
       expect(p.vacancies, isEmpty);
       expect(p.unfilled, isEmpty);
       expect(p.moves, hasLength(1));
       expect(p.moves.single.out, _u(70));
-      expect(p.moves.single.extraSeat.leagueId, _lg(11));
-      expect(p.moves.single.substitute, _u(111));
+      expect(p.moves.single.extraSeat.leagueId, _lg(9));
+      expect(p.moves.single.substitute, _u(91));
     });
 
     test('without the count group 7 is an extra group: no group 8 plays, '

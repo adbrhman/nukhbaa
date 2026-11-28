@@ -490,8 +490,8 @@ final class H2hAbsencePolicy {
   /// extra group.
   ///
   /// NK351: [eliteGroupCount] is the month's number of elite groups
-  /// ([H2hLeaguePolicy.eliteGroupsOf]): 1 to 4, or 1 to 10 from the draw of
-  /// ten groups.
+  /// ([H2hLeaguePolicy.eliteGroupsOf]): 1 to 4, or 1 to 8 from the draw of
+  /// eight groups (NK353_01).
   static int groupBelow(
     int number, {
     int eliteGroupCount = H2hLeaguePolicy.eliteGroups,
