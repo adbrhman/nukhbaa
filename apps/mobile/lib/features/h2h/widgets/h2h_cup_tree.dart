@@ -27,6 +27,18 @@ import 'h2h_cup_now.dart' show H2hCupFixturesCard;
 /// قطر دائرة البطل.
 const double _championSize = 54;
 
+// NK362B_03
+/// عدد المراحل التي تتسع لها بطاقة الشجرة بعرض الهاتف دون تمرير (نصف النهائي
+/// والنهائي). مسار أكثر (كأس الشجرة: أربعة أدوار) أعرض من الهاتف، فتبقى
+/// أعمدته بعرض ثابت وتتحرك البطاقة أفقياً بدل أن تُسحق.
+const int _fitStages = 2;
+
+/// عرض عمود الدور في شجرة تتحرك.
+const double _wideStageWidth = 116;
+
+/// عرض عمود البطل في شجرة تتحرك.
+const double _wideChampionWidth = 84;
+
 /// القسم: العنوان، وتبويب المسارات، والشجرة، وتحتها تلميح أو مباريات
 /// المربع المفتوح. لا يعرض شيئاً قبل أن يقوم الكأس.
 class H2hCupTreeView extends StatefulWidget {
@@ -225,33 +237,49 @@ class _TreeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // NK362B_04
+    final bool bracket = h2hCupIsBracket(path);
+    final bool wide = path.stages.length > _fitStages;
     final List<Widget> columns = <Widget>[];
     for (int i = 0; i < path.stages.length; i++) {
+      final Widget column = _StageColumn(
+        index: i,
+        stage: path.stages[i],
+        open: open,
+        onToggle: onToggle,
+        bracket: bracket,
+      );
       columns
         ..add(
-          Expanded(
-            flex: 3,
-            child: _StageColumn(
-              index: i,
-              stage: path.stages[i],
-              open: open,
-              onToggle: onToggle,
-            ),
-          ),
+          wide
+              ? SizedBox(width: _wideStageWidth, child: column)
+              : Expanded(flex: 3, child: column),
         )
         ..add(const _Connector());
     }
-    columns.add(Expanded(flex: 2, child: _ChampionColumn(path: path)));
+    final Widget champion = _ChampionColumn(path: path);
+    columns.add(
+      wide
+          ? SizedBox(width: _wideChampionWidth, child: champion)
+          : Expanded(flex: 2, child: champion),
+    );
+    final Widget row = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: columns,
+    );
     return AppCard(
       key: const Key('h2h.cupTree.card'),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.md,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: columns,
-      ),
+      child: wide
+          ? SingleChildScrollView(
+              key: const Key('h2h.cupTree.scroll'),
+              scrollDirection: Axis.horizontal,
+              child: row,
+            )
+          : row,
     );
   }
 }
@@ -269,17 +297,22 @@ class _Connector extends StatelessWidget {
 /// عمود مرحلة: اسمها، ثم مربع لكل زوج، ثم مربع من تأهل مباشرة، أو مربع
 /// متقطع إن لم يكن فيها زوج.
 class _StageColumn extends StatelessWidget {
+  // NK362B_05
   const _StageColumn({
     required this.index,
     required this.stage,
     required this.open,
     required this.onToggle,
+    required this.bracket,
   });
 
   final int index;
   final H2hCupBoardStageDto stage;
   final ({int stage, int slot})? open;
   final void Function(int stage, int slot) onToggle;
+
+  /// المسار هو كأس الشجرة الواحدة.
+  final bool bracket;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +338,10 @@ class _StageColumn extends StatelessWidget {
       if (boxes.isNotEmpty) boxes.add(const SizedBox(height: AppSpacing.md));
       boxes.add(_ByeBox(index: index, player: bye));
     }
-    if (boxes.isEmpty) boxes.add(_SlotBox(index: index, stage: stage));
+    // NK362B_06
+    if (boxes.isEmpty) {
+      boxes.add(_SlotBox(index: index, stage: stage, bracket: bracket));
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -503,15 +539,24 @@ class _ByeBox extends StatelessWidget {
 /// مربع متقطع لمرحلة بلا أزواج: صفان بنص واحد («بانتظار الفائز» مثلاً)،
 /// وصف واحد لمرحلة لا تُلعب.
 class _SlotBox extends StatelessWidget {
-  const _SlotBox({required this.index, required this.stage});
+  // NK362B_07
+  const _SlotBox({
+    required this.index,
+    required this.stage,
+    required this.bracket,
+  });
 
   final int index;
   final H2hCupBoardStageDto stage;
 
+  /// المسار هو كأس الشجرة: الأدوار بعد الأول تنتظر الفائز لا السحب.
+  final bool bracket;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens t = context.tokens;
-    final String text = h2hCupTreeSlotText(stage);
+    // NK362B_08
+    final String text = h2hCupTreeSlotText(stage, bracket: bracket);
     final TextStyle? style = context.text.labelSmall?.copyWith(
       color: t.textSecondary,
     );

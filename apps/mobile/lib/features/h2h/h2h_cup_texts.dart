@@ -423,13 +423,16 @@ const String h2hCupTreeTapHint = 'اضغط أي مربع لترى مباريات
 /// An opened pair that has no fixture registered.
 const String h2hCupTreeNoFixtures = 'لا مباريات مسجّلة لهذه المواجهة بعد';
 
-/// What a stage's box says in place of players it does not have yet: the
-/// winner of the stage before for the final, a skipped stage, else the draw.
-String h2hCupTreeSlotText(H2hCupBoardStageDto stage) {
+// NK362B_02
+/// What a stage's box says in place of players it does not have yet: a
+/// skipped stage, else the winner of the stage before (the final of the three
+/// paths; every round after the first of the [bracket] cup), else the draw.
+String h2hCupTreeSlotText(H2hCupBoardStageDto stage, {bool bracket = false}) {
   if (stage.phase == 'skipped') return h2hCupTreeNotPlayed;
-  return stage.round == 'final'
-      ? h2hCupTreeWaitingWinner
-      : h2hCupTreeWaitingDraw;
+  final bool waitsWinner = bracket
+      ? stage.round != 'round16'
+      : stage.round == 'final';
+  return waitsWinner ? h2hCupTreeWaitingWinner : h2hCupTreeWaitingDraw;
 }
 
 /// Whether [player] is the winner of a decided [pair].
