@@ -122,10 +122,10 @@ select pg_temp.check(
     where month_start = '2099-11-01') = 'quarter,semi,final',
   'the stages run in order');
 
-select pg_temp.refused($q$execute cup_stage('c2270000-0000-4000-8000-0000000005a4', '2099-11-01', 2, 'round16', 1, '2099-11-23', 0)$q$,
+select pg_temp.refused($q$execute cup_stage('c2270000-0000-4000-8000-0000000005a4', '2099-11-01', 2, 'round32', 1, '2099-11-23', 0)$q$,
   'h2h_cup_stages_stage_known', 'an unknown stage is still refused');
-select pg_temp.refused($q$execute cup_stage('c2270000-0000-4000-8000-0000000005a4', '2099-11-01', 4, 'quarter', 1, '2099-11-23', 0)$q$,
-  'h2h_cup_stages_place_range', 'a fourth path is still refused');
+select pg_temp.refused($q$execute cup_stage('c2270000-0000-4000-8000-0000000005a4', '2099-11-01', 4, 'final', 1, '2099-11-23', 0)$q$,
+  'h2h_cup_stages_place_range', 'a fourth path is still refused (a final keeps the order of days, so the range check refuses it)');
 select pg_temp.refused($q$execute cup_stage('c2270000-0000-4000-8000-0000000005a4', '2099-11-01', 2, 'quarter', 1, '2099-11-22', 0)$q$,
   'h2h_cup_stages_in_order', 'a quarter-final keeps the order of days');
 
@@ -144,8 +144,8 @@ select pg_temp.check(
     where stage_id = 'c2270000-0000-4000-8000-0000000005a1') = 4,
   'four pairs in the quarter-final');
 
-select pg_temp.refused($q$execute cup_pair('c2270000-0000-4000-8000-0000000005a1', 5, '00000000-0227-4000-8227-000000000001', '00000000-0227-4000-8227-000000000002')$q$,
-  'h2h_cup_pairs_slot_range', 'a fifth slot is refused');
+select pg_temp.refused($q$execute cup_pair('c2270000-0000-4000-8000-0000000005a1', 9, '00000000-0227-4000-8227-000000000001', '00000000-0227-4000-8227-000000000002')$q$,
+  'h2h_cup_pairs_slot_range', 'a ninth slot is refused (0228 widened the slots to 1..8)');
 select pg_temp.refused($q$execute cup_pair('c2270000-0000-4000-8000-0000000005a1', 0, '00000000-0227-4000-8227-000000000001', '00000000-0227-4000-8227-000000000002')$q$,
   'h2h_cup_pairs_slot_range', 'slot 0 is refused');
 select pg_temp.refused($q$execute cup_pair('c2270000-0000-4000-8000-0000000005a2', 3, '00000000-0227-4000-8227-000000000003', '00000000-0227-4000-8227-000000000003')$q$,
