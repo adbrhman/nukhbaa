@@ -326,6 +326,31 @@ void main() {
       expect(find.byKey(const Key('h2h.pilot')), findsNothing);
     });
 
+    // NK362C: from December 2026 the eight elite groups come first, so the
+    // first extra group (division 2, group index 0) is group 9, not 5.
+    testWidgets('December: the first extra group is group 9', (tester) async {
+      final MyH2hLeagueDto base = _open();
+      await _pump(
+        tester,
+        MyH2hLeagueDto(
+          state: 'open',
+          monthStart: '2026-12-01',
+          startsOn: '2026-12-01',
+          isPilot: false,
+          division: 2,
+          groupIndex: 0,
+          myRank: base.myRank,
+          promotionZone: 0,
+          relegationZone: 0,
+          daysLeft: 21,
+          standings: base.standings,
+          rounds: base.rounds,
+        ),
+      );
+
+      expect(_text(tester, 'h2h.division'), 'المجموعة 9');
+    });
+
     testWidgets('the place reads first: the leader, in the promotion zone', (
       tester,
     ) async {

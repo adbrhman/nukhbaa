@@ -1,8 +1,8 @@
 /// The rules text is chosen by the month a player is in, never by today's
 /// date (decided 2026-10-29): November keeps its own eight rules, December
-/// 2026 and every month after it read the December rules (the four-day cup
-/// and the carry, NK276), and the sheet and the card draw the list of the
-/// month they are given.
+/// 2026 and every month after it read the December rules (eight even
+/// groups, no carry and the one bracket cup, NK362C), and the sheet and the
+/// card draw the list of the month they are given.
 library;
 
 import 'package:flutter/material.dart';
@@ -113,22 +113,27 @@ void main() {
       expect(all, isNot(contains('ويحتفظ كل لاعب بنقاطه.')));
     });
 
-    // NK276: December tells the four-day cup and the carry (NK275).
-    test('December says the Elite Cup in four days, paths 2 and 3 side by '
-        'side', () {
+    // NK362C: December tells the one bracket cup of sixteen.
+    test('December says the Elite Cup is one bracket of sixteen in four '
+        'days, a round a day', () {
       final String all = h2hDecemberRules.join('\n');
-      expect(all, contains('في 4 أيام مباريات'));
+      expect(all, contains('شجرة واحدة من 16 لاعبًا'));
+      expect(all, contains('أول اثنين من كل مجموعة من المجموعات 1 إلى 8'));
+      expect(all, contains('في 4 أيام مباريات ودور في كل يوم'));
       final List<int> at = <String>[
-        'في اليوم الأول نصف نهائي أصحاب المركز الأول',
-        'وفي اليوم الثاني نهائيهم ويُتوَّج بطل كأس النخبة',
-        'في اليوم الثالث نصف نهائي أصحاب المركز الثاني فيما بينهم',
-        'ونصف نهائي أصحاب المركز الثالث فيما بينهم، في اليوم نفسه',
-        'وفي اليوم الرابع النهائيان معًا، ويُتوَّج ثاني الكأس وثالثها',
+        'دور الـ16',
+        'ثم ربع النهائي',
+        'ثم نصف النهائي',
+        'ثم النهائي',
+        'ويُتوَّج بطل كأس النخبة بلقب واحد',
       ].map(all.indexOf).toList();
       expect(at.every((int i) => i >= 0), isTrue, reason: '$at');
       expect(at, orderedEquals(<int>[...at]..sort()));
-      expect(all, contains('كأس منفصلة'));
+      expect(all, contains('يُسحب دور الـ16 بقرعة متباعدة'));
+      expect(all, contains('أول المجموعة يلاقي ثاني مجموعة أخرى'));
       expect(all, isNot(contains('ثلاث كؤوس')));
+      expect(all, isNot(contains('كأس منفصلة')));
+      expect(all, isNot(contains('أصحاب المركز الثالث')));
     });
 
     test('December says how a cup pair is decided, in order', () {
@@ -148,23 +153,46 @@ void main() {
       expect(at, orderedEquals(<int>[...at]..sort()));
     });
 
-    test('December says the carry of NK275: 3 down from each of the first '
-        'four groups, the elite filled from groups 5 and 6, 5 and 5 below', () {
-      final String all = h2hDecemberRules.join('\n');
-      expect(
-        all,
-        contains('يهبط آخر 3 من كل مجموعة من 1 إلى 4 إلى المجموعة 5'),
+    // NK362C: nothing is carried; every month deals the players afresh.
+    test('December says nothing is carried: the players are dealt afresh '
+        'each month into eight even groups', () {
+      final String line = h2hDecemberRules.singleWhere(
+        (String r) => r.startsWith('لا صعود ولا هبوط بين الأشهر'),
       );
-      expect(all, contains('بالأكثر التزامًا من المجموعتين 5 و6 معًا'));
-      expect(all, contains('يهبط آخر 5 من كل مجموعة إلى التي تحتها'));
-      expect(all, contains('أكثر 5 التزامًا من المجموعة التي تحتها'));
-      expect(all, isNot(contains('درجة')));
-      expect(all, isNot(contains('حتى 3 لاعبين')));
+      final List<int> at = <String>[
+        'يُوزَّع المؤهلون من جديد',
+        'الأقل غيابًا',
+        'الأكثر نقاطًا',
+        'الأكثر نتائج صحيحة',
+        'الأكثر إصابات دقيقة',
+        'أول 160',
+        'المجموعات الثماني بالتساوي',
+        'توزيع متعرّج',
+        'المجموعات الإضافية',
+      ].map(line.indexOf).toList();
+      expect(at.every((int i) => i >= 0), isTrue, reason: '$at');
+      expect(at, orderedEquals(<int>[...at]..sort()));
+      final String all = h2hDecemberRules.join('\n');
+      expect(all, isNot(contains('يهبط آخر 3')));
+      expect(all, isNot(contains('يهبط آخر 5')));
+      expect(all, isNot(contains('المجموعتين 5 و6')));
+      expect(all, isNot(contains('المجموعات 1 إلى 4')));
+      expect(all, isNot(contains('80 لاعبًا')));
+      expect(all, contains('المجموعات 1 إلى 8 تضم 160 لاعبًا'));
+      expect(all, contains('تبدأ بالمجموعة 9'));
     });
 
-    test('December ranks commitment in the owner\'s order', () {
+    test('December says an absent player goes down from groups 1 to 8 to '
+        'group 9', () {
+      final String all = h2hDecemberRules.join('\n');
+      expect(all, contains('(من المجموعات 1 إلى 8 إلى المجموعة 9)'));
+      expect(all, isNot(contains('إلى المجموعة 5)')));
+    });
+
+    test('December ranks commitment, for filling an absent seat, in the '
+        'owner\'s order', () {
       final String line = h2hDecemberRules.singleWhere(
-        (String r) => r.startsWith('الالتزام:'),
+        (String r) => r.startsWith('الالتزام عند ملء مقعد غائب:'),
       );
       final List<int> at = <String>[
         'الأقل غيابًا',
@@ -172,20 +200,6 @@ void main() {
         'الأكثر إصابات دقيقة',
         'الأكثر نتائج صحيحة',
         'الأكثر نقاطًا',
-      ].map(line.indexOf).toList();
-      expect(at.every((int i) => i >= 0), isTrue, reason: '$at');
-      expect(at, orderedEquals(<int>[...at]..sort()));
-    });
-
-    test('December ranks the eighty by the month, in order', () {
-      final String line = h2hDecemberRules.singleWhere(
-        (String r) => r.startsWith('في نهاية الشهر'),
-      );
-      final List<int> at = <String>[
-        'المركز في المجموعة',
-        'نقاط التوقع',
-        'الإصابات الدقيقة',
-        'نقاط الدوري',
       ].map(line.indexOf).toList();
       expect(at.every((int i) => i >= 0), isTrue, reason: '$at');
       expect(at, orderedEquals(<int>[...at]..sort()));

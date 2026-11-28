@@ -29,6 +29,20 @@ void main() {
       expect(h2hGroupTitle('2026-11-01', 2, 2), 'المجموعة 7');
     });
 
+    // NK362C: eight elite groups from December 2026, so the extra ones go on
+    // from 9; the month decides, never today's date.
+    test('from December the elite groups are 1 to 8, the extra ones go on '
+        'from 9', () {
+      expect(h2hEliteGroupCount('2026-11-01'), 4);
+      expect(h2hEliteGroupCount('2026-12-01'), 8);
+      expect(h2hEliteGroupCount('2027-01-01'), 8);
+      expect(h2hGroupTitle('2026-12-01', 1, 0), 'المجموعة 1');
+      expect(h2hGroupTitle('2026-12-01', 1, 7), 'المجموعة 8');
+      expect(h2hGroupTitle('2026-12-01', 2, 0), 'المجموعة 9');
+      expect(h2hGroupTitle('2026-12-01', 2, 2), 'المجموعة 11');
+      expect(h2hGroupTitle('2027-01-01', 2, 0), 'المجموعة 9');
+    });
+
     test('before November the division and the group, as always', () {
       expect(h2hGroupTitle('2026-10-01', 2, 0), 'الدرجة الثانية · المجموعة 1');
       expect(h2hGroupTitle('2026-10-01', 4, 2), 'الدرجة الرابعة · المجموعة 3');

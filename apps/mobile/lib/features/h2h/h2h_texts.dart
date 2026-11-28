@@ -32,18 +32,34 @@ bool h2hUsesEliteDraw(String monthStart) {
       (date.year > 2026 || (date.year == 2026 && date.month >= 11));
 }
 
-/// The group's number in a month of the elite draw: the four elite groups
-/// (division 1) are groups 1 to 4, and the extra groups (division 2) go on
-/// from 5.
-int h2hGroupNumber(int division, int groupIndex) =>
-    division <= 1 ? groupIndex + 1 : groupIndex + 5;
+// NK362C_group
+/// How many elite groups the draw of [monthStart] opens: four before
+/// December 2026, eight from it (`H2hLeaguePolicy.eliteGroupsOf`).
+int h2hEliteGroupCount(String monthStart) =>
+    h2hUsesDecemberRules(monthStart) ? 8 : 4;
 
-/// A group in words for [monthStart]: `المجموعة 6` from November 2026, the
-/// division and the group (`الدرجة الثانية · المجموعة 1`) before it.
-String h2hGroupTitle(String monthStart, int division, int groupIndex) =>
-    h2hUsesEliteDraw(monthStart)
-    ? 'المجموعة ${h2hGroupNumber(division, groupIndex)}'
-    : '${h2hDivisionName(division)} · ${h2hGroupName(groupIndex)}';
+/// The group's number in a month of the elite draw: the elite groups
+/// (division 1) are groups 1 to [eliteGroups], and the extra groups
+/// (division 2) go on after them: from 5 after the four elite groups of
+/// November, from 9 after the eight of December 2026 on.
+int h2hGroupNumber(int division, int groupIndex, {int eliteGroups = 4}) =>
+    division <= 1 ? groupIndex + 1 : groupIndex + eliteGroups + 1;
+
+// NK362C_title
+/// A group in words for [monthStart]: `المجموعة 6` from November 2026 (the
+/// extra groups counted after the month's elite groups, [h2hEliteGroupCount]),
+/// the division and the group (`الدرجة الثانية · المجموعة 1`) before it.
+String h2hGroupTitle(String monthStart, int division, int groupIndex) {
+  if (!h2hUsesEliteDraw(monthStart)) {
+    return '${h2hDivisionName(division)} · ${h2hGroupName(groupIndex)}';
+  }
+  final int number = h2hGroupNumber(
+    division,
+    groupIndex,
+    eliteGroups: h2hEliteGroupCount(monthStart),
+  );
+  return 'المجموعة $number';
+}
 
 /// What the report counts under a division key: the four elite groups and
 /// the extra ones from November 2026, the division before it.
@@ -336,13 +352,15 @@ const List<String> h2hRules = <String>[
 
 // NK172 month-specific rules
 /// Rules effective from December 2026; earlier months retain their own rules.
-/// They tell the month as the server plays it (NK276, owner 2026-11-14):
-/// the four groups of 80 and the extra groups, the Elite Cup in four days,
-/// and the carry into the next month (NK275).
+/// They tell the month as the server plays it (NK276, owner 2026-11-14;
+/// NK362C, owner 2026-11-28): eight even groups of twenty, every player
+/// dealt afresh each month with no carry, and the Elite Cup as one bracket
+/// of sixteen in four days.
 const List<String> h2hDecemberRules = <String>[
   // NK276_rules
-  'المجموعات 1 إلى 4 تضم 80 لاعبًا، 20 في كل مجموعة، والباقون في مجموعات '
-      'من 20 تبدأ بالمجموعة 5.',
+  // NK362C_rules
+  'المجموعات 1 إلى 8 تضم 160 لاعبًا، 20 في كل مجموعة، والباقون في '
+      'مجموعات من 20 تبدأ بالمجموعة 9 ولا طريق لها إلى كأس النخبة.',
   // NK279_rules
   'في كل جولة تواجه لاعبًا واحدًا من مجموعتك، وفي الدوري 19 جولة تُلعب '
       'كلها: إذا انتهى الشهر قبلها تستمر الجولات في الشهر التالي حتى '
@@ -360,7 +378,7 @@ const List<String> h2hDecemberRules = <String>[
   // NK278_rules
   'الغياب في كل المجموعات: بعد جولتين متتاليتين بلا أي توقّع يصلك تنبيه، '
       'وبعد الثالثة تهبط قبل الجولة التالية إلى المجموعة التي تلي مجموعتك '
-      '(من المجموعات 1 إلى 4 إلى المجموعة 5) ويأخذ مقعدك الأكثر التزامًا '
+      '(من المجموعات 1 إلى 8 إلى المجموعة 9) ويأخذ مقعدك الأكثر التزامًا '
       'منها، وتبقى نقاط المقعد مع المقعد. لا هبوط بالغياب بعد الجولة 19، '
       'ولا يهبط أحد بالغياب أكثر من مرة في الشهر.',
   'في آخر مجموعة تلعب: الغائب 3 جولات يترك مقعده إلى قائمة الانتظار، '
@@ -368,12 +386,14 @@ const List<String> h2hDecemberRules = <String>[
       'يبقى المقعد شاغرًا حتى يُملأ، ومن يواجهه يعامل معاملة خصم غائب.',
   'من انتقل إلى قائمة الانتظار لا يُحسب في مجموعة الانتظار حتى يتوقّع من '
       'جديد، فيعود إليها عند أول توقّع إن كان فيها مقعد.',
-  'كأس النخبة بعد الجولة 19 في 4 أيام مباريات: في اليوم الأول نصف نهائي '
-      'أصحاب المركز الأول في المجموعات 1 إلى 4 بالقرعة، وفي اليوم الثاني '
-      'نهائيهم ويُتوَّج بطل كأس النخبة.',
-  'في اليوم الثالث نصف نهائي أصحاب المركز الثاني فيما بينهم ونصف نهائي '
-      'أصحاب المركز الثالث فيما بينهم، في اليوم نفسه وكلٌّ في كأس منفصلة. '
-      'وفي اليوم الرابع النهائيان معًا، ويُتوَّج ثاني الكأس وثالثها.',
+  // NK362C_cup
+  'كأس النخبة بعد الجولة 19 شجرة واحدة من 16 لاعبًا: أول اثنين من كل '
+      'مجموعة من المجموعات 1 إلى 8، في 4 أيام مباريات ودور في كل يوم: '
+      'دور الـ16 ثم ربع النهائي ثم نصف النهائي ثم النهائي، ويُتوَّج '
+      'بطل كأس النخبة بلقب واحد.',
+  'يُسحب دور الـ16 بقرعة متباعدة: أول المجموعة يلاقي ثاني مجموعة أخرى، '
+      'فلا يلتقي لاعبان من مجموعة واحدة في الدور الأول. ومن يبقى بلا '
+      'خصم في دور يمرّ إلى الذي بعده.',
   // NK320_01
   'تُحسم مواجهة الكأس بمباريات يومها وحده: من توقّع يفوز على من لم يتوقّع، '
       'ثم الأكثر نقاط توقّع، ثم الأكثر إصابات دقيقة، ثم الأكثر اتجاهات '
@@ -389,15 +409,16 @@ const List<String> h2hDecemberRules = <String>[
       'آخر تتويج، ولا تبدأ قبل أول أيامه.',
   'بطل الشهر يُحسب على أيام الشهر وحدها، من أوله إلى آخره، ولو استمرت '
       'جولات المواجهات بعده.',
-  'في نهاية الشهر يهبط آخر 3 من كل مجموعة من 1 إلى 4 إلى المجموعة 5، '
-      'ويُكمَل الثمانون بالأكثر التزامًا من المجموعتين 5 و6 معًا. ثم يُرتَّب '
-      'الثمانون بترتيب الشهر: المركز في المجموعة، ثم نقاط التوقع، ثم '
-      'الإصابات الدقيقة، ثم نقاط الدوري، ويُوزَّعون من جديد على المجموعات '
-      'الأربع.',
-  'من المجموعة 5 فما بعدها: يهبط آخر 5 من كل مجموعة إلى التي تحتها، '
-      'ويصعد بدلهم أكثر 5 التزامًا من المجموعة التي تحتها.',
-  'الالتزام: الأقل غيابًا (جولات بلا توقّع) أولًا، ثم الأكثر توقّعات، ثم '
-      'الأكثر إصابات دقيقة، ثم الأكثر نتائج صحيحة، ثم الأكثر نقاطًا.',
+  // NK362C_draw
+  'لا صعود ولا هبوط بين الأشهر: في أول كل شهر يُوزَّع المؤهلون من جديد، '
+      'مرتَّبين بأداء الشهر السابق: الأقل غيابًا (مباريات بلا توقّع) أولًا، '
+      'ثم الأكثر نقاطًا، ثم الأكثر نتائج صحيحة، ثم الأكثر إصابات دقيقة. '
+      'ويُوزَّع أول 160 على المجموعات الثماني بالتساوي بتوزيع متعرّج حتى لا '
+      'تُظلَم مجموعة، والباقون في المجموعات الإضافية.',
+  // NK362C_commitment
+  'الالتزام عند ملء مقعد غائب: الأقل غيابًا (جولات بلا توقّع) أولًا، ثم '
+      'الأكثر توقّعات، ثم الأكثر إصابات دقيقة، ثم الأكثر نتائج صحيحة، ثم '
+      'الأكثر نقاطًا.',
   'متصدّر كل مجموعة في نهاية الشهر بطل مجموعته، ويحصل على شارة بطل '
       'المواجهات.',
   'يُحتسب تصحيح النتائج حتى إغلاق الدوري: بعد 3 ساعات من نهاية الشهر، أو '
@@ -410,8 +431,8 @@ const List<String> h2hDecemberRules = <String>[
   'اللاعب الجديد يدخل عند أول توقّع له مجموعة الانتظار، وهي آخر '
       'المجموعات. لا تُلعب فيها جولات ولا يُحتسب فيها غياب حتى يكتمل 20 '
       'لاعبًا، فتبدأ من أول جولة لم تبدأ بعد، ولا تتأثر المجموعات الأخرى.',
-  'المجموعة التي تبدأ وقد بقي لها أقل من 7 جولات تلعبها وتُحفظ نتائجها، '
-      'لكن لا يصعد منها أحد ولا يهبط في ذلك الشهر.',
+  // NK362C_late
+  'المجموعة التي تبدأ وقد بقي لها أقل من 7 جولات تلعبها وتُحفظ نتائجها.',
 ];
 
 /// Rules of November 2026, the first month of the elite draw (NK182, NK183).
@@ -450,8 +471,8 @@ bool h2hUsesDecemberRules(String monthStart) {
       (date.year > 2026 || (date.year == 2026 && date.month >= 12));
 }
 
-/// The rules displayed for [monthStart]: December 2026 on read the elite
-/// month with its carry and the four-day cup (NK276), November 2026 has the
+/// The rules displayed for [monthStart]: December 2026 on read the eight even
+/// groups and the bracket cup (NK276, NK362C), November 2026 has the
 /// elite draw's rules, earlier months the ladder's.
 List<String> h2hRulesForMonth(String monthStart) {
   if (h2hUsesDecemberRules(monthStart)) return h2hDecemberRules;
