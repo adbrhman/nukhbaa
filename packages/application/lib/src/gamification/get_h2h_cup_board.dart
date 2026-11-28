@@ -211,7 +211,9 @@ final class H2hCupBoard {
   /// empty too.
   final DateTime? monthStart;
 
-  /// The cup's paths, 1 to 3; empty before the cup stands.
+  /// The cup's paths, 1 to 3; empty before the cup stands. NK360_01e: the
+  /// bracket of December 2026 on is one path, the place 1, with all sixteen
+  /// players and its four rounds.
   final List<H2hCupBoardPathView> paths;
 }
 
@@ -234,6 +236,16 @@ final class H2hCupBoardBuilder {
     H2hCupRound.finale,
   ];
 
+  // NK360_01a
+  /// The rounds of the one bracket of sixteen (December 2026 on), in the
+  /// order they are played.
+  static const List<H2hCupRound> _bracketRounds = <H2hCupRound>[
+    H2hCupRound.round16,
+    H2hCupRound.quarter,
+    H2hCupRound.semi,
+    H2hCupRound.finale,
+  ];
+
   /// Builds the board of [state], the cup of [monthStart], as [caller] reads
   /// it. [readFixtures] reads the fixtures of the stages, once, and is the
   /// only place a pick comes from.
@@ -248,15 +260,24 @@ final class H2hCupBoardBuilder {
     Function(List<H2hCupStage> stages)
     readFixtures,
   }) async {
+    // NK360_01b: from December 2026 the cup is one bracket of sixteen, so
+    // the board has one path, the place 1, holding every qualifier and the
+    // four rounds of the bracket; before it, three paths of a semi-final and
+    // a final. The month decides, never today's date.
+    final bracket = H2hCupPolicy.isBracket(monthStart);
+    final rounds = bracket ? _bracketRounds : _rounds;
+    List<H2hCupEntry> entriesOf(int place) =>
+        bracket ? state.entries : state.entriesOf(place);
+    H2hCupStep stepOf(int place, H2hCupRound round) =>
+        H2hCupStep(place, round, bracket: bracket);
     final places = <int>[
-      for (final place in H2hCupPolicy.places)
-        if (state.entriesOf(place).isNotEmpty || state.titleOf(place) != null)
-          place,
+      for (final place in bracket ? const <int>[1] : H2hCupPolicy.places)
+        if (entriesOf(place).isNotEmpty || state.titleOf(place) != null) place,
     ];
     final stages = <H2hCupStage>[];
     for (final place in places) {
-      for (final round in _rounds) {
-        final stage = state.stageOf(H2hCupStep(place, round));
+      for (final round in rounds) {
+        final stage = state.stageOf(stepOf(place, round));
         if (stage != null) {
           stages.add(stage);
         }
@@ -275,7 +296,7 @@ final class H2hCupBoardBuilder {
 
     final ids = <UserId>{};
     for (final place in places) {
-      for (final entry in state.entriesOf(place)) {
+      for (final entry in entriesOf(place)) {
         ids.add(entry.userId);
       }
       final title = state.titleOf(place);
@@ -312,17 +333,26 @@ final class H2hCupBoardBuilder {
 
     final paths = <H2hCupBoardPathView>[];
     for (final place in places) {
-      final entries = state.entriesOf(place);
+      final entries = entriesOf(place);
       final title = state.titleOf(place);
       final champion = title?.champion;
       final runnerUp = title?.runnerUp;
       final stageViews = <H2hCupBoardStageView>[];
-      for (final round in _rounds) {
-        final step = H2hCupStep(place, round);
+      // NK360_01c: who is still in the bracket before each round, as
+      // RunH2hCup counts them (the winners of the round before and the one it
+      // left without a pair); null once a round is not decided yet.
+      var alive = bracket ? <UserId>[for (final e in entries) e.userId] : null;
+      for (final round in rounds) {
+        final step = stepOf(place, round);
         final stage = state.stageOf(step);
-        final bye = stage != null && round == H2hCupRound.semi
-            ? H2hCupPolicy.byeOf(entries, stage.pairs)
-            : null;
+        final bye = _byeOf(
+          bracket: bracket,
+          round: round,
+          stage: stage,
+          entries: entries,
+          alive: alive,
+        );
+        alive = bracket ? _through(stage, alive, bye) : null;
         final fixtures = stage == null
             ? const <H2hCupStageFixture>[]
             : _byKickoff(
@@ -332,7 +362,11 @@ final class H2hCupBoardBuilder {
           H2hCupBoardStageView(
             round: round,
             cupDay: step.cupDay,
-            phase: GetMyH2hCup.phaseOf(step, stage, entries.length, title),
+            phase: bracket && stage == null
+                ? (title == null
+                      ? MyH2hCupPhase.waiting
+                      : MyH2hCupPhase.skipped)
+                : GetMyH2hCup.phaseOf(step, stage, entries.length, title),
             attempt: stage?.attempt ?? 1,
             day: stage?.day,
             pairs: stage == null
@@ -374,6 +408,60 @@ final class H2hCupBoardBuilder {
         paths: List<H2hCupBoardPathView>.unmodifiable(paths),
       ),
     );
+  }
+
+  // NK360_01d
+  /// The player [stage] left without a pair. A three-path cup: the one of
+  /// [entries] its semi-finals left out (three qualifiers). The bracket: the
+  /// one of [alive] its pairs left out, or null when [alive] is not known
+  /// (a round before it is still to be decided).
+  static UserId? _byeOf({
+    required bool bracket,
+    required H2hCupRound round,
+    required H2hCupStage? stage,
+    required List<H2hCupEntry> entries,
+    required List<UserId>? alive,
+  }) {
+    if (stage == null) {
+      return null;
+    }
+    if (!bracket) {
+      return round == H2hCupRound.semi
+          ? H2hCupPolicy.byeOf(entries, stage.pairs)
+          : null;
+    }
+    if (alive == null) {
+      return null;
+    }
+    final paired = <UserId>{
+      for (final pair in stage.pairs) ...[pair.home, pair.away],
+    };
+    for (final id in alive) {
+      if (!paired.contains(id)) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  /// The players that go on after [stage] in the bracket: its winners by
+  /// slot, then [bye]; null while [stage] is not decided or [alive] is not
+  /// known, so a round after it shows no bye of its own.
+  static List<UserId>? _through(
+    H2hCupStage? stage,
+    List<UserId>? alive,
+    UserId? bye,
+  ) {
+    if (stage == null || alive == null || !stage.decided) {
+      return null;
+    }
+    final results = [...stage.results]
+      ..sort((a, b) => a.slot.compareTo(b.slot));
+    return <UserId>[
+      for (final r in results)
+        if (r.winner != null) r.winner!,
+      if (bye != null) bye,
+    ];
   }
 
   static H2hCupBoardPairView _pairView({
