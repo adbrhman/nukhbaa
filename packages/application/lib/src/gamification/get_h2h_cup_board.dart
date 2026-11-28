@@ -460,7 +460,7 @@ final class H2hCupBoardBuilder {
     return <UserId>[
       for (final r in results)
         if (r.winner != null) r.winner!,
-      if (bye != null) bye,
+      ?bye,
     ];
   }
 

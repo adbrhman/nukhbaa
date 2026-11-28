@@ -44,7 +44,7 @@ final class _NoPicks implements H2hCupPickReader {
     required List<H2hCupStage> stages,
     required UserId reader,
     required DateTime nowUtc,
-  }) async => Result.ok(const <H2hCupStageId, List<H2hCupStageFixture>>{});
+  }) async => const Result.ok(<H2hCupStageId, List<H2hCupStageFixture>>{});
 }
 
 H2hCupEntry _entry(int n, int place, int group) => H2hCupEntry(
