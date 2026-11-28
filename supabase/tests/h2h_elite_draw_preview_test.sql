@@ -1,12 +1,12 @@
--- The read-only preview of the elite draw (NK182, NK352D):
+-- The read-only preview of the elite draw (NK182, NK352D, NK354):
 -- supabase/queries/h2h_elite_draw_preview.sql, run as it is (its comments
 -- stripped, its month moved to November 2099 so the seeded predictions come
 -- before their kickoffs) over a seeded month: 221 eligible players, two
 -- with too few days, one suspended and one hidden. It must order like
 -- PostgresH2hDrawSource.activeOrderSql (fewest missed, then points, then
 -- right outcomes) and deal like H2hLeaguePolicy.eliteDraw. A 2099 month is
--- drawn by the December rules: ten even groups of twenty, then extra groups
--- from group 11, the last one a waiting group of one. The same file run again
+-- drawn by the December rules: eight even groups of twenty, then extra groups
+-- from group 9, the last one a waiting group of one. The same file run again
 -- with its December date moved to 2100 is drawn by the November rules: four
 -- elite groups, then twenty a group, a last single player joining the group
 -- before him. The expected places were dealt by a port of eliteDraw.
@@ -95,8 +95,8 @@ values (pg_temp.nk('fixture', 2), pg_temp.nk('participant', 12), 1, 'correct_out
 create temp table preview_out as :preview;
 create temp table preview_nov_out as :preview_nov;
 
--- December rules (a 2099 month): ten even groups, group 11 of twenty, and the
--- last single player alone in the waiting group 12.
+-- December rules (a 2099 month): eight even groups, groups 9 to 11 of twenty,
+-- and the last single player alone in the waiting group 12.
 do $$
 begin
   perform pg_temp.check(
@@ -110,32 +110,32 @@ begin
          '00000000-0190-4000-8190-000000000020:6',
          '00000000-0190-4000-8190-000000000012:7',
          '00000000-0190-4000-8190-000000000001:8',
-         '00000000-0190-4000-8190-000000000004:9',
-         '00000000-0190-4000-8190-000000000015:10',
-         '00000000-0190-4000-8190-000000000007:10',
-         '00000000-0190-4000-8190-000000000018:9',
-         '00000000-0190-4000-8190-000000000010:8',
-         '00000000-0190-4000-8190-000000000002:7',
-         '00000000-0190-4000-8190-000000000013:6',
-         '00000000-0190-4000-8190-000000000005:5',
-         '00000000-0190-4000-8190-000000000016:4',
-         '00000000-0190-4000-8190-000000000008:3',
-         '00000000-0190-4000-8190-000000000019:2',
-         '00000000-0190-4000-8190-000000000011:1',
-         '00000000-0190-4000-8190-000000000025:1',
-         '00000000-0190-4000-8190-000000000036:2',
-         '00000000-0190-4000-8190-000000000028:3',
-         '00000000-0190-4000-8190-000000000039:4'],
+         '00000000-0190-4000-8190-000000000004:8',
+         '00000000-0190-4000-8190-000000000015:7',
+         '00000000-0190-4000-8190-000000000007:6',
+         '00000000-0190-4000-8190-000000000018:5',
+         '00000000-0190-4000-8190-000000000010:4',
+         '00000000-0190-4000-8190-000000000002:3',
+         '00000000-0190-4000-8190-000000000013:2',
+         '00000000-0190-4000-8190-000000000005:1',
+         '00000000-0190-4000-8190-000000000016:1',
+         '00000000-0190-4000-8190-000000000008:2',
+         '00000000-0190-4000-8190-000000000019:3',
+         '00000000-0190-4000-8190-000000000011:4',
+         '00000000-0190-4000-8190-000000000025:5',
+         '00000000-0190-4000-8190-000000000036:6',
+         '00000000-0190-4000-8190-000000000028:7',
+         '00000000-0190-4000-8190-000000000039:8'],
     'December: every eligible player in the order and group of eliteDraw (first 24 places)');
   perform pg_temp.check(
     (select array_agg(n order by g) from (
        select "group" as g, count(*) as n from preview_out
         where eligible group by 1) s) = array[20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]::bigint[],
-    'December: ten elite groups of 20, group 11 of 20, the 221st alone in group 12');
+    'December: eight elite groups of 20, groups 9 to 11 of 20, the 221st alone in group 12');
   perform pg_temp.check(
     (select array_agg(place::int order by place) from preview_out
-      where "group" = 2) = array[2, 19, 22, 39, 42, 59, 62, 79, 82, 99, 102, 119, 122, 139, 142, 159, 162, 179, 182, 199],
-    'December: group 2 by the snake over ten groups');
+      where "group" = 2) = array[2, 15, 18, 31, 34, 47, 50, 63, 66, 79, 82, 95, 98, 111, 114, 127, 130, 143, 146, 159],
+    'December: group 2 by the snake over eight groups');
   perform pg_temp.check(
     (select place from preview_out where user_id = pg_temp.nk('user', 12)) = 7
     and (select place from preview_out where user_id = pg_temp.nk('user', 1)) = 8,

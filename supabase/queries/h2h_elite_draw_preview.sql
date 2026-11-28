@@ -1,5 +1,6 @@
--- Preview of the elite draw (NK182, decided 2026-10-31; NK352D: ten even
--- groups from December 2026, owner's decision of 2026-11-27) -- READ ONLY.
+-- Preview of the elite draw (NK182, decided 2026-10-31; NK352D, NK354: eight
+-- even groups from December 2026, owner's decisions of 2026-11-27 and
+-- 2026-11-28) -- READ ONLY.
 --
 -- One SELECT and nothing else: it writes nothing. Paste it into the
 -- Supabase SQL Editor before the draw to see, on the live data, exactly
@@ -10,9 +11,9 @@
 -- the rules, as H2hLeaguePolicy.eliteGroupsOf does:
 --   before December 2026  four elite groups of the first 80, then extra
 --                         groups of twenty from group 5
---   from December 2026    ten even groups of the first 200 (group_index
---                         0..9, shown as groups 1..10), then extra groups
---                         of twenty from group 11
+--   from December 2026    eight even groups of the first 160 (group_index
+--                         0..7, shown as groups 1..8), then extra groups
+--                         of twenty from group 9
 -- `params.waiting_groups` is true unless the server runs with
 -- NUKHBA_H2H_NEWCOMERS=off. From December 2026 the last extra group, when
 -- it has fewer than twenty players, waits for its twentieth: no single
@@ -33,7 +34,7 @@
 -- exact DESC, user id. Nobody is carried from the month before: every
 -- eligible player is drawn afresh from December 2026.
 -- The order is then dealt as H2hLeaguePolicy.eliteDraw deals it: the elite
--- seats like a snake into the elite groups (1 2 .. 10, 10 9 .. 1, ...), the
+-- seats like a snake into the elite groups (1 2 .. 8, 8 7 .. 1, ...), the
 -- rest twenty at a time into the groups after them; where the last group
 -- does not wait, a single player left at the end joins the group before him.
 --
@@ -45,7 +46,7 @@
 with params as (
   select m.month,
          m.waiting_groups and f.fair         as waits,
-         case when f.fair then 10 else 4 end as elite_groups
+         case when f.fair then 8 else 4 end  as elite_groups
   from (select date '2026-11-01' as month, true as waiting_groups) m
   cross join lateral (
     select (m.month + interval '1 month')::date >= date '2026-12-01' as fair
