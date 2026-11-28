@@ -82,6 +82,14 @@ final class H2hCupRun {
 /// * **Titles.** A final decides its path; a path whose semi-finals leave
 ///   one finalist crowns him without a final; none, the title is vacant.
 ///
+/// NK358_01a (owner decision 2026-11-28): a month from December 2026 is ONE
+/// bracket of sixteen, not three paths. The first two places of each of the
+/// eight elite groups are stored as the qualifiers; the bracket is played one
+/// round a day on path 1 (the round of sixteen, the quarter-finals, the
+/// semi-finals, the final), each round only once the one before it is decided,
+/// and its one champion is the cup's only title. Every month up to November
+/// 2026 keeps the three paths above.
+///
 /// The monthly championship and the month's close never wait for any of
 /// this, and the league's tables are never written. With automatic approval
 /// off nothing is scheduled; frozen stages are still judged.
@@ -197,7 +205,8 @@ final class RunH2hCup {
       return Result.err(stateResult.error);
     }
     var state = (stateResult as Ok<H2hCupState>).value;
-    if (state.titles.length >= H2hCupPolicy.places.length) {
+    // NK358_01b: a bracket month ends with its one title, others with three.
+    if (state.titles.length >= H2hCupPolicy.titleCountOf(month)) {
       return Result.ok(run);
     }
 
@@ -228,6 +237,20 @@ final class RunH2hCup {
       state = (stateResult as Ok<H2hCupState>).value;
     }
 
+    // NK358_01c: from December 2026 the cup is one bracket of sixteen; the
+    // three paths below stay for November 2026 and before.
+    if (H2hCupPolicy.isBracket(month)) {
+      return _keepBracket(
+        month: month,
+        now: now,
+        today: today,
+        days: days,
+        crownHeld: crownHeld,
+        state: state,
+        rounds: rounds,
+        run: run,
+      );
+    }
     // NK276: the cup's four days (H2hCupPolicy.days), one after the other.
     // The paths of one day play side by side on its fixtures; a day starts
     // only once every stage of the day before it is decided, on a day after
@@ -382,6 +405,128 @@ final class RunH2hCup {
       lastDay = played;
     }
     return Result.ok(run);
+  }
+
+  // NK358_01e
+  /// Keeps the one bracket of sixteen (December 2026 on,
+  /// [H2hCupPolicy.isBracket]).
+  ///
+  /// One round a day on path 1 ([H2hCupPolicy.bracketDays]). The first round
+  /// is the spaced draw of every qualifier ([H2hCupPolicy.drawBracket]); each
+  /// later round pairs the winners in the order of their slots
+  /// ([H2hCupPolicy.pairsOf]), and an odd one out goes through without
+  /// playing. The round follows the players left ([H2hCupPolicy.roundFor]),
+  /// never the day, so a pair nobody played leaves one player fewer and the
+  /// bracket still ends in a final. A round is given a day only once the one
+  /// before it is decided, on a day after every stage before it; the one
+  /// player left is the champion. The stored stages are replayed from the
+  /// first round, so a run that finds the bracket half played carries on.
+  Future<Result<H2hCupRun>> _keepBracket({
+    required DateTime month,
+    required DateTime now,
+    required DateTime today,
+    required _Window days,
+    required bool crownHeld,
+    required H2hCupState state,
+    required List<H2hRound> rounds,
+    required H2hCupRun run,
+  }) async {
+    var total = run;
+    var alive = <UserId>[for (final e in state.entries) e.userId];
+    var drawn = false;
+    var lastDay = rounds.isEmpty ? null : rounds.last.day;
+    for (var turn = 0; turn <= H2hCupPolicy.bracketDays.length; turn++) {
+      final kind = H2hCupPolicy.roundFor(alive.length);
+      if (kind == null) {
+        // One player left, or none: the champion, or nobody.
+        if (crownHeld) {
+          return Result.ok(total);
+        }
+        final alone = await _crownAlone(month, 1, alive);
+        if (alone is Err<void>) {
+          return Result.err(alone.error);
+        }
+        return Result.ok(total._plus(crowned: 1));
+      }
+      final players = alive;
+      final first = !drawn;
+      final step = H2hCupStep(1, kind, bracket: true);
+      final moved = await _advance(
+        month: month,
+        step: step,
+        stage: state.stageOf(step),
+        entries: state.entries,
+        pairs: () => first
+            ? H2hCupPolicy.drawBracket(state.entries, _random)
+            : H2hCupPolicy.pairsOf(players),
+        now: now,
+        today: today,
+        lastDay: lastDay,
+        days: days,
+      );
+      if (moved is Err<_Advance>) {
+        return Result.err(moved.error);
+      }
+      final advance = (moved as Ok<_Advance>).value;
+      total = total._plus(
+        scheduled: advance.scheduled,
+        locked: advance.locked,
+        decided: advance.decided,
+      );
+      final decided = advance.decidedStage;
+      if (decided == null) {
+        // The round is not over: nothing after it may start.
+        return Result.ok(total);
+      }
+      lastDay = _later(lastDay, decided.day);
+      final results = [...decided.results]
+        ..sort((a, b) => a.slot.compareTo(b.slot));
+      if (kind == H2hCupRound.finale) {
+        if (crownHeld) {
+          return Result.ok(total);
+        }
+        final pair = decided.pairs.first;
+        final winner = results.first.winner;
+        final crowned = await _cups.crown(
+          monthStart: month,
+          place: 1,
+          champion: winner,
+          runnerUp: winner == null
+              ? null
+              : (winner == pair.home ? pair.away : pair.home),
+          how: winner == null ? 'vacant' : 'final',
+        );
+        if (crowned is Err<void>) {
+          return Result.err(crowned.error);
+        }
+        return Result.ok(total._plus(crowned: 1));
+      }
+      final through = <UserId>[
+        for (final r in results)
+          if (r.winner != null) r.winner!,
+      ];
+      final bye = _unpaired(alive, decided.pairs);
+      if (bye != null) {
+        through.add(bye);
+      }
+      alive = through;
+      drawn = true;
+    }
+    return Result.ok(total);
+  }
+
+  /// The player of [alive] left without a pair by [pairs] (an odd number of
+  /// players), or null.
+  static UserId? _unpaired(List<UserId> alive, List<H2hCupPair> pairs) {
+    final paired = <UserId>{
+      for (final p in pairs) ...[p.home, p.away],
+    };
+    for (final id in alive) {
+      if (!paired.contains(id)) {
+        return id;
+      }
+    }
+    return null;
   }
 
   /// Crowns [place] without a final: the one player [left], or nobody.
@@ -629,13 +774,16 @@ final class RunH2hCup {
     final refs = [for (final r in rounds) r.ref];
     final merged = book.standings(refs);
     final entries = <H2hCupEntry>[];
-    for (final group in elite.take(H2hLeaguePolicy.eliteGroups)) {
+    // NK358_01d: the elite groups and the places that qualify follow the month:
+    // four groups and three places up to November 2026, eight groups and two
+    // places (the bracket's sixteen) from December 2026.
+    final groupCount = H2hLeaguePolicy.eliteGroupsOf(month);
+    final placeCount = H2hCupPolicy.isBracket(month)
+        ? H2hCupPolicy.bracketQualifiers
+        : H2hCupPolicy.places.length;
+    for (final group in elite.take(groupCount)) {
       final placings = book.placingsOf(group.leagueId, refs, merged: merged);
-      for (
-        var i = 0;
-        i < placings.length && i < H2hCupPolicy.places.length;
-        i++
-      ) {
+      for (var i = 0; i < placings.length && i < placeCount; i++) {
         final standing = placings[i].standing;
         entries.add(
           H2hCupEntry(
