@@ -77,7 +77,8 @@ abstract final class H2hCupMonthPicker {
         return Result.err(read.error);
       }
       final state = (read as Ok<H2hCupState>).value;
-      if (isOver(state, today)) {
+      // NK359_01c
+      if (isOver(state, today, month: month)) {
         continue;
       }
       final mine = entryOf(state, user);
@@ -116,9 +117,16 @@ abstract final class H2hCupMonthPicker {
     return null;
   }
 
-  /// Whether the cup is finished and has been for more than [lingerDays].
-  static bool isOver(H2hCupState state, DateTime today) {
-    if (state.titles.length < H2hCupPolicy.places.length) {
+  /// Whether the cup of [month] is finished and has been for more than
+  /// [lingerDays]. It is finished with the titles of its own kind
+  /// ([H2hCupPolicy.titleCountOf]): three paths, or the bracket's one.
+  static bool isOver(
+    H2hCupState state,
+    DateTime today, {
+    required DateTime month,
+  }) {
+    // NK359_01d
+    if (state.titles.length < H2hCupPolicy.titleCountOf(month)) {
       return false;
     }
     DateTime? last;

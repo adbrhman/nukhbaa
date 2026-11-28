@@ -264,7 +264,8 @@ final class RunH2hRounds {
 
   /// Whether the Elite Cup of the month before [month] is still to be
   /// played: that month finished its 19 rounds, its cup has qualifiers, and
-  /// fewer than the three paths are crowned. A month with no cup (before the
+  /// its titles are not all crowned (the three paths; the one of the bracket
+  /// from December 2026, NK359_01a). A month with no cup (before the
   /// elite draw, a pilot, an unfinished league, no qualifiers) holds nothing
   /// back, so the league can never wait for a cup that will not come.
   Future<Result<bool>> _cupHoldsBack(DateTime month) async {
@@ -297,7 +298,8 @@ final class RunH2hRounds {
       return Result.err(state.error);
     }
     final H2hCupState cup = (state as Ok<H2hCupState>).value;
-    if (cup.titles.length >= H2hCupPolicy.places.length) {
+    // NK359_01b: the titles of the month's own cup (one for a bracket).
+    if (cup.titles.length >= H2hCupPolicy.titleCountOf(before)) {
       return const Result.ok(false);
     }
     if (cup.entries.isNotEmpty) {

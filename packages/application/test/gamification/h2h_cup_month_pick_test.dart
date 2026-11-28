@@ -198,7 +198,15 @@ void main() {
         ],
       );
 
-      expect(H2hCupMonthPicker.isOver(state, DateTime.utc(2027)), isFalse);
+      // NK359_01e
+      expect(
+        H2hCupMonthPicker.isOver(
+          state,
+          DateTime.utc(2027),
+          month: DateTime.utc(2026, 11),
+        ),
+        isFalse,
+      );
     });
 
     test('entryOf finds a qualifier and nobody else', () {
