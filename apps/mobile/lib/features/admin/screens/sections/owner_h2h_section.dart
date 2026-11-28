@@ -445,7 +445,11 @@ class _Path extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            h2hCupPathName(path.place),
+            h2hCupRoundsAreBracket(
+                  path.stages.map((H2hCupStageDto s) => s.round),
+                )
+                ? h2hCupBracketPathName
+                : h2hCupPathName(path.place),
             style: context.text.titleSmall?.copyWith(
               color: t.gold,
               fontWeight: FontWeight.w800,

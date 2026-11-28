@@ -34,8 +34,27 @@ String h2hCupPathName(int place) => switch (place) {
   _ => 'مسار الكأس',
 };
 
+/// Whether [rounds] are the rounds of the single bracket cup (December 2026
+/// on): only that cup has a round of 16 and a quarter-final. The three-path
+/// months have the semi-final and the final alone.
+bool h2hCupRoundsAreBracket(Iterable<String> rounds) =>
+    rounds.any((String r) => r == 'round16' || r == 'quarter');
+
+/// Whether [path] is the one path of the bracket cup.
+bool h2hCupIsBracket(H2hCupBoardPathDto path) =>
+    h2hCupRoundsAreBracket(path.stages.map((H2hCupBoardStageDto s) => s.round));
+
+/// The name of the bracket's only path: the cup itself.
+const String h2hCupBracketPathName = h2hCupTitle;
+
+/// The name of [path] in a sentence, for the bracket or for a place's path.
+String h2hCupBoardPathName(H2hCupBoardPathDto path) =>
+    h2hCupIsBracket(path) ? h2hCupBracketPathName : h2hCupPathName(path.place);
+
 /// A stage by its round wire value.
 String h2hCupRoundName(String round) => switch (round) {
+  'round16' => 'دور الـ16',
+  'quarter' => 'ربع النهائي',
   'semi' => 'نصف النهائي',
   'final' => 'النهائي',
   _ => 'مرحلة',
@@ -119,8 +138,14 @@ String h2hCupBoardPairResult(H2hCupBoardPairDto pair) {
 }
 
 /// A path's title line once decided.
-String h2hCupBoardTitleLine(H2hCupTitleDto title) {
+String h2hCupBoardTitleLine(H2hCupTitleDto title, {bool bracket = false}) {
   final H2hCupPlayerDto? champion = title.champion;
+  if (bracket) {
+    if (champion == null) return 'اللقب شاغر';
+    return champion.isMe
+        ? 'أنت بطل كأس النخبة'
+        : 'بطل كأس النخبة: ${h2hCupNameOf(champion)}';
+  }
   if (champion == null) return 'اللقب شاغر في هذا المسار';
   return champion.isMe
       ? 'أنت بطل هذا المسار'
@@ -151,6 +176,21 @@ const String h2hCupOtherPathsHeading = 'بقية المسارات';
 
 /// The heading of the three paths, for a player who only watches.
 const String h2hCupThreePathsHeading = 'المسارات الثلاثة';
+
+/// The heading of the bracket's one path, for a player who only watches.
+const String h2hCupBracketPathHeading = 'مسار الكأس';
+
+/// The heading over the paths shown apart from the caller's own: the other
+/// paths when he is in one, else the bracket's path or the three paths.
+String h2hCupPathsHeading(
+  Iterable<H2hCupBoardPathDto> paths, {
+  required bool mine,
+}) {
+  if (mine) return h2hCupOtherPathsHeading;
+  return paths.any(h2hCupIsBracket)
+      ? h2hCupBracketPathHeading
+      : h2hCupThreePathsHeading;
+}
 
 /// The heading of the tree of rounds.
 const String h2hCupTreeHeading = 'شجرة الأدوار';
@@ -229,7 +269,9 @@ H2hCupBoardFixtureDto? h2hCupBoardCurrentFixture(H2hCupBoardPairDto pair) {
 /// and where that stage stands.
 String h2hCupBoardPathStatus(H2hCupBoardPathDto path) {
   final H2hCupTitleDto? title = path.title;
-  if (title != null) return h2hCupBoardTitleLine(title);
+  if (title != null) {
+    return h2hCupBoardTitleLine(title, bracket: h2hCupIsBracket(path));
+  }
   final H2hCupBoardStageDto? stage = h2hCupBoardFocusStage(path);
   if (stage == null) return h2hCupPhaseName('waiting');
   return '${h2hCupRoundName(stage.round)} · ${h2hCupPhaseName(stage.phase)}';
@@ -286,6 +328,12 @@ String h2hCupPathShortName(int place) => switch (place) {
   _ => 'الكأس',
 };
 
+/// [path] by its short name: the cup itself for the bracket.
+String h2hCupBoardPathShortName(H2hCupBoardPathDto path) =>
+    h2hCupIsBracket(path)
+    ? h2hCupBracketPathName
+    : h2hCupPathShortName(path.place);
+
 /// A stage of a path as a title: the round, then its Riyadh day when it has
 /// one (`نصف النهائي · 25 نوفمبر`).
 String h2hCupBoardStageTitle(H2hCupBoardStageDto stage) {
@@ -317,9 +365,10 @@ String h2hCupMyStageLine(H2hCupBoardStageDto stage) {
 /// The last step of a path: its champion once decided, else who it waits for.
 String h2hCupBoardChampionLine(H2hCupBoardPathDto path) {
   final H2hCupTitleDto? title = path.title;
+  final bool bracket = h2hCupIsBracket(path);
   return title == null
-      ? 'بطل ${h2hCupPathName(path.place)}'
-      : h2hCupBoardTitleLine(title);
+      ? 'بطل ${bracket ? h2hCupTitle : h2hCupPathName(path.place)}'
+      : h2hCupBoardTitleLine(title, bracket: bracket);
 }
 
 /// The step of [path] that stands now, counted from 1 (the stage that
@@ -500,7 +549,7 @@ String h2hCupDayTabLabel(H2hCupDayEntry day) {
 
 /// A stage on its day as a title: the path, then the round.
 String h2hCupDaySlotTitle(H2hCupDaySlot slot) =>
-    '${h2hCupPathShortName(slot.path.place)} · '
+    '${h2hCupBoardPathShortName(slot.path)} · '
     '${h2hCupRoundName(slot.stage.round)}';
 
 /// Where a pair stands in words: ended once decided, else its stage's phase.

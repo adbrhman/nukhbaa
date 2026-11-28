@@ -48,7 +48,7 @@ class H2hCupPathsView extends StatelessWidget {
         children: <Widget>[
           if (mine != null) ...<Widget>[
             _Heading(
-              text: '$h2hCupMyPathHeading · ${h2hCupPathShortName(mine.place)}',
+              text: '$h2hCupMyPathHeading · ${h2hCupBoardPathShortName(mine)}',
               keyName: 'h2h.cupPath.heading',
             ),
             _MyPathCard(path: mine),
@@ -56,9 +56,7 @@ class H2hCupPathsView extends StatelessWidget {
           ],
           if (others.isNotEmpty) ...<Widget>[
             _Heading(
-              text: mine == null
-                  ? h2hCupThreePathsHeading
-                  : h2hCupOtherPathsHeading,
+              text: h2hCupPathsHeading(others, mine: mine != null),
               keyName: 'h2h.cupPaths.heading',
             ),
             for (final H2hCupBoardPathDto path in others) _PathRow(path: path),
@@ -379,7 +377,7 @@ class _PathRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    h2hCupPathShortName(path.place),
+                    h2hCupBoardPathShortName(path),
                     key: Key('$prefix.name'),
                     style: context.text.labelLarge?.copyWith(
                       color: t.textPrimary,

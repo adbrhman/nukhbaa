@@ -109,7 +109,7 @@ class _DuelCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${h2hCupRoundName(now.stage.round)} · '
-                  '${h2hCupPathName(now.path.place)}',
+                  '${h2hCupBoardPathName(now.path)}',
                   key: const Key('h2h.cupNow.stage'),
                   textAlign: badge == null ? TextAlign.start : TextAlign.end,
                   style: context.text.labelMedium?.copyWith(
