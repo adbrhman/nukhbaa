@@ -121,7 +121,7 @@ void main() {
         {
           'id': _stage,
           'place': 1,
-          'stage': 'quarter',
+          'stage': 'round32',
           'attempt': 1,
           'day': '2026-11-20',
           'fixture_count': 9,
@@ -136,6 +136,50 @@ void main() {
     ).stateOf(DateTime.utc(2026, 11));
 
     expect(result, isA<Err<H2hCupState>>());
+  });
+
+  // NK357_01i
+  test('a December stage is read as a step of the bracket', () async {
+    const second = 'c1900000-0000-4000-8000-0000000005a2';
+    final connection = _answers([
+      [],
+      [],
+      [
+        {
+          'id': _stage,
+          'place': 1,
+          'stage': 'round16',
+          'attempt': 1,
+          'day': '2026-12-20',
+          'fixture_count': 9,
+          'locked_at': null,
+        },
+        {
+          'id': second,
+          'place': 1,
+          'stage': 'semi',
+          'attempt': 1,
+          'day': '2026-12-22',
+          'fixture_count': 7,
+          'locked_at': null,
+        },
+      ],
+      [],
+    ]);
+
+    final result = await PostgresH2hCupStore(
+      connection,
+    ).stateOf(DateTime.utc(2026, 12));
+
+    final state = (result as Ok<H2hCupState>).value;
+    expect(
+      [for (final s in state.stages) s.step],
+      [
+        const H2hCupStep(1, H2hCupRound.round16, bracket: true),
+        const H2hCupStep(1, H2hCupRound.semi, bracket: true),
+      ],
+    );
+    expect([for (final s in state.stages) s.step.cupDay], [1, 3]);
   });
 
   test('schedule writes the stage then its pairs, with their values', () async {

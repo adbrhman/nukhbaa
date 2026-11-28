@@ -351,7 +351,12 @@ ON CONFLICT DO NOTHING
         H2hCupStage(
           id: stageId,
           monthStart: monthStart,
-          step: H2hCupStep(place, round),
+          // NK357_01g
+          step: H2hCupStep(
+            place,
+            round,
+            bracket: H2hCupPolicy.isBracket(monthStart),
+          ),
           attempt: attempt,
           day: day,
           fixtureCount: count,

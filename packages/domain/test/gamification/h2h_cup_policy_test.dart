@@ -98,7 +98,9 @@ void main() {
     test('the stored round names', () {
       expect(H2hCupRound.fromWire('semi'), H2hCupRound.semi);
       expect(H2hCupRound.fromWire('final'), H2hCupRound.finale);
-      expect(H2hCupRound.fromWire('quarter'), isNull);
+      expect(H2hCupRound.fromWire('round16'), H2hCupRound.round16);
+      expect(H2hCupRound.fromWire('quarter'), H2hCupRound.quarter);
+      expect(H2hCupRound.fromWire('round32'), isNull);
     });
   });
 
@@ -144,6 +146,172 @@ void main() {
         hasLength(1),
       );
       expect(H2hCupPolicy.drawSemis(four.sublist(0, 1), Random(1)), isEmpty);
+    });
+  });
+
+  // NK357_01h
+  group('the bracket', () {
+    // Owner decision 2026-11-28: one bracket of sixteen, a round a day.
+    test('four days, one round each, on path 1: days 20 to 23', () {
+      expect(
+        [
+          for (final day in H2hCupPolicy.bracketDays)
+            [for (final s in day) '${s.place}${s.round.wire}'],
+        ],
+        [
+          ['1round16'],
+          ['1quarter'],
+          ['1semi'],
+          ['1final'],
+        ],
+      );
+      for (var i = 0; i < H2hCupPolicy.bracketDays.length; i++) {
+        final s = H2hCupPolicy.bracketDays[i].single;
+        expect(s.cupDay, i + 1, reason: '$s');
+        expect(s.expectedDay, 20 + i, reason: '$s');
+        expect(s.inBracket, isTrue, reason: '$s');
+      }
+    });
+
+    test('a bracket semi-final is not the old path semi-final', () {
+      const old = H2hCupStep(1, H2hCupRound.semi);
+      const inBracket = H2hCupStep(1, H2hCupRound.semi, bracket: true);
+      expect(old.cupDay, 1);
+      expect(inBracket.cupDay, 3);
+      expect(old == inBracket, isFalse);
+      expect(const H2hCupStep(1, H2hCupRound.finale).cupDay, 2);
+      expect(const H2hCupStep(1, H2hCupRound.finale, bracket: true).cupDay, 4);
+      // A round only the bracket has needs no flag.
+      expect(
+        const H2hCupStep(1, H2hCupRound.round16),
+        const H2hCupStep(1, H2hCupRound.round16, bracket: true),
+      );
+      expect(const H2hCupStep(1, H2hCupRound.quarter).cupDay, 2);
+    });
+
+    test('only December 2026 on is a bracket; November keeps the paths', () {
+      final november = DateTime.utc(2026, 11);
+      final december = DateTime.utc(2026, 12);
+      expect(H2hCupPolicy.isBracket(november), isFalse);
+      expect(H2hCupPolicy.isBracket(december), isTrue);
+      expect(H2hCupPolicy.isBracket(DateTime.utc(2027)), isTrue);
+      expect(H2hCupPolicy.titleCountOf(november), 3);
+      expect(H2hCupPolicy.titleCountOf(december), 1);
+      expect(H2hCupPolicy.daysOf(november), H2hCupPolicy.days);
+      expect(H2hCupPolicy.daysOf(december), H2hCupPolicy.bracketDays);
+      expect(H2hCupPolicy.bracketSize, 16);
+    });
+
+    test('the round follows the number of players left', () {
+      expect(
+        [
+          for (final n in [16, 9, 8, 5, 4, 3, 2]) H2hCupPolicy.roundFor(n),
+        ],
+        [
+          H2hCupRound.round16,
+          H2hCupRound.round16,
+          H2hCupRound.quarter,
+          H2hCupRound.quarter,
+          H2hCupRound.semi,
+          H2hCupRound.semi,
+          H2hCupRound.finale,
+        ],
+      );
+      expect(H2hCupPolicy.roundFor(1), isNull);
+      expect(H2hCupPolicy.roundFor(0), isNull);
+    });
+  });
+
+  group('drawBracket', () {
+    // Eight groups with a first and a second place each: users 1 to 8 are
+    // the firsts and users 11 to 18 the seconds of groups 1 to 8.
+    List<H2hCupEntry> sixteen() => [
+      for (var g = 1; g <= 8; g++) _entry(g, place: 1, group: g),
+      for (var g = 1; g <= 8; g++) _entry(10 + g, place: 2, group: g),
+    ];
+
+    test('every first meets a second of another group, whatever the seed', () {
+      final entries = sixteen();
+      final byUser = {for (final e in entries) e.userId: e};
+      for (var seed = 0; seed < 300; seed++) {
+        final pairs = H2hCupPolicy.drawBracket(entries, Random(seed));
+        expect(pairs, hasLength(8), reason: 'seed $seed');
+        expect([for (final p in pairs) p.slot], [1, 2, 3, 4, 5, 6, 7, 8]);
+        final seen = <UserId>{};
+        for (final p in pairs) {
+          final home = byUser[p.home]!;
+          final away = byUser[p.away]!;
+          expect(home.place, 1, reason: 'seed $seed');
+          expect(away.place, 2, reason: 'seed $seed');
+          expect(
+            home.groupNumber == away.groupNumber,
+            isFalse,
+            reason: 'seed $seed',
+          );
+          seen
+            ..add(p.home)
+            ..add(p.away);
+        }
+        expect(seen, hasLength(16), reason: 'seed $seed');
+        expect(H2hCupPolicy.byeOf(entries, pairs), isNull);
+      }
+    });
+
+    test('the draw is random: other seeds, other pairs', () {
+      final entries = sixteen();
+      final drawn = <String>{
+        for (var seed = 0; seed < 20; seed++)
+          [
+            for (final p in H2hCupPolicy.drawBracket(entries, Random(seed)))
+              '${p.home.value}-${p.away.value}',
+          ].join(','),
+      };
+      expect(drawn.length, greaterThan(1));
+    });
+
+    test('a group with no second place leaves one over: the bye', () {
+      final entries = [
+        for (var g = 1; g <= 8; g++) _entry(g, place: 1, group: g),
+        for (var g = 1; g <= 7; g++) _entry(10 + g, place: 2, group: g),
+      ];
+      final byUser = {for (final e in entries) e.userId: e};
+      for (var seed = 0; seed < 100; seed++) {
+        final pairs = H2hCupPolicy.drawBracket(entries, Random(seed));
+        expect(pairs, hasLength(7), reason: 'seed $seed');
+        for (final p in pairs) {
+          expect(
+            byUser[p.home]!.groupNumber == byUser[p.away]!.groupNumber,
+            isFalse,
+            reason: 'seed $seed',
+          );
+        }
+        expect(
+          H2hCupPolicy.byeOf(entries, pairs),
+          isNotNull,
+          reason: 'seed $seed',
+        );
+      }
+    });
+
+    test('one group alone still gets a draw, without a throw', () {
+      final pairs = H2hCupPolicy.drawBracket([
+        _entry(1, place: 1, group: 1),
+        _entry(2, place: 2, group: 1),
+      ], Random(1));
+      expect(pairs, hasLength(1));
+    });
+
+    test('later rounds pair the survivors in slot order', () {
+      final four = [for (var i = 1; i <= 4; i++) _u(i)];
+      final pairs = H2hCupPolicy.pairsOf(four);
+      expect([for (final p in pairs) p.slot], [1, 2]);
+      expect(pairs[0].home, _u(1));
+      expect(pairs[0].away, _u(2));
+      expect(pairs[1].home, _u(3));
+      expect(pairs[1].away, _u(4));
+      expect(H2hCupPolicy.pairsOf([_u(1), _u(2), _u(3)]), hasLength(1));
+      expect(H2hCupPolicy.pairsOf([_u(1)]), isEmpty);
+      expect(H2hCupPolicy.pairsOf(const <UserId>[]), isEmpty);
     });
   });
 
