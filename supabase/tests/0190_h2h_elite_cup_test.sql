@@ -283,7 +283,7 @@ select pg_temp.refused($q$execute cup_stage('c1900000-0000-4000-8000-0000000005a
   'h2h_cup_stages_after_league', 'no stage on the last round''s day');
 select pg_temp.refused($q$execute cup_stage('c1900000-0000-4000-8000-0000000005a1', '2099-11-01', 4, 'semi', 1, '2099-11-20', 3)$q$,
   'h2h_cup_stages_place_range', 'a fourth path is refused');
-select pg_temp.refused($q$execute cup_stage('c1900000-0000-4000-8000-0000000005a1', '2099-11-01', 1, 'quarter', 1, '2099-11-20', 3)$q$,
+select pg_temp.refused($q$execute cup_stage('c1900000-0000-4000-8000-0000000005a1', '2099-11-01', 1, 'round16', 1, '2099-11-20', 3)$q$,
   'h2h_cup_stages_stage_known', 'an unknown stage is refused');
 
 -- ---------------------------------------------------------------------------
@@ -295,8 +295,8 @@ execute cup_enter('2099-11-01', 1, '00000000-0190-4000-8190-000000000003', 3, 36
 execute cup_enter('2099-11-01', 1, '00000000-0190-4000-8190-000000000004', 4, 34, 90, 3);
 -- Entered again: nothing changes.
 execute cup_enter('2099-11-01', 1, '00000000-0190-4000-8190-000000000001', 1, 0, 0, 0);
-select pg_temp.refused($q$execute cup_enter('2099-11-01', 2, '00000000-0190-4000-8190-000000000001', 5, 1, 1, 1)$q$,
-  'h2h_cup_entries_group_range', 'group 5 is not an elite group');
+select pg_temp.refused($q$execute cup_enter('2099-11-01', 2, '00000000-0190-4000-8190-000000000001', 9, 1, 1, 1)$q$,
+  'h2h_cup_entries_group_range', 'group 9 is not an elite group');
 
 create temp table entries_out as execute cup_entries('2099-11-01');
 select pg_temp.check((select count(*) from entries_out) = 4, 'four qualifiers');
