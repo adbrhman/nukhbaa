@@ -186,7 +186,9 @@ final class MyH2hCup {
   /// The month whose cup it is.
   final DateTime? monthStart;
 
-  /// The caller's path: 1, 2 or 3 (0 when not qualified).
+  /// The caller's path: 1, 2 or 3 (0 when not qualified). NK361_01a: in the
+  /// one bracket of December 2026 on there is a single path, the place 1,
+  /// whoever the caller is.
   final int place;
 
   /// The caller's elite group (0 when not qualified).
@@ -195,7 +197,9 @@ final class MyH2hCup {
   /// The qualifiers of the caller's path, by group.
   final List<MyH2hCupPlayer> entrants;
 
-  /// The two stages of the path: semi-finals, then the final.
+  /// The stages of the path in the order they are played: semi-finals, then
+  /// the final. NK361_01b: in the bracket, the round of sixteen, the
+  /// quarter-finals, the semi-finals and the final.
   final List<MyH2hCupStage> stages;
 
   /// The path's title once decided.
@@ -268,12 +272,14 @@ final class GetMyH2hCup {
     int groupNumber = 0,
     bool watching = false,
   }) async {
-    final entries = state.entriesOf(place);
-    final steps = <H2hCupStep>[
-      H2hCupStep(place, H2hCupRound.semi),
-      H2hCupStep(place, H2hCupRound.finale),
-    ];
-    final title = state.titleOf(place);
+    // NK361_01c: from December 2026 the cup is one bracket of sixteen: one
+    // path, the place 1, with every qualifier and the bracket's four
+    // rounds. The month decides, never today's date.
+    final bracket = H2hCupPolicy.isBracket(month);
+    final path = bracket ? 1 : place;
+    final entries = bracket ? state.entries : state.entriesOf(path);
+    final steps = stepsOf(path, bracket: bracket);
+    final title = state.titleOf(path);
 
     final ids = <UserId>{for (final e in entries) e.userId};
     for (final step in steps) {
@@ -313,11 +319,18 @@ final class GetMyH2hCup {
     );
 
     final stages = <MyH2hCupStage>[];
+    // NK361_01d: who is still in the bracket before each round.
+    var alive = bracket ? <UserId>[for (final e in entries) e.userId] : null;
     for (final step in steps) {
       final stage = state.stageOf(step);
-      final bye = stage != null && step.round == H2hCupRound.semi
-          ? H2hCupPolicy.byeOf(entries, stage.pairs)
-          : null;
+      final bye = byeOf(
+        bracket: bracket,
+        round: step.round,
+        stage: stage,
+        entries: entries,
+        alive: alive,
+      );
+      alive = bracket ? through(stage, alive, bye) : null;
       stages.add(
         MyH2hCupStage(
           round: step.round,
@@ -348,7 +361,7 @@ final class GetMyH2hCup {
       MyH2hCup(
         state: watching ? MyH2hCupState.spectator : MyH2hCupState.qualified,
         monthStart: month,
-        place: place,
+        place: path, // NK361_01f
         groupNumber: groupNumber,
         entrants: <MyH2hCupPlayer>[for (final e in entries) player(e.userId)],
         stages: stages,
@@ -374,7 +387,12 @@ final class GetMyH2hCup {
     H2hCupTitle? title,
   ) {
     if (stage == null) {
-      final neverPlayed = step.round == H2hCupRound.semi
+      // NK361_01g: a round only the bracket has is never skipped by the
+      // qualifiers' count: it waits until the title is decided, then it
+      // is skipped.
+      final neverPlayed = step.inBracket
+          ? title != null
+          : step.round == H2hCupRound.semi
           ? entrants <= 2
           : title != null;
       return neverPlayed ? MyH2hCupPhase.skipped : MyH2hCupPhase.waiting;
@@ -383,6 +401,75 @@ final class GetMyH2hCup {
       return MyH2hCupPhase.decided;
     }
     return stage.locked ? MyH2hCupPhase.live : MyH2hCupPhase.scheduled;
+  }
+
+  // NK361_01e
+  /// The steps of the path of [place], in the order they are played: its
+  /// semi-finals, then its final; or, for the bracket of December 2026 on
+  /// ([bracket]), the bracket's four rounds, all on the place 1. Shared with
+  /// the owners' cup (`GetOwnerH2hCup`).
+  static List<H2hCupStep> stepsOf(int place, {required bool bracket}) {
+    if (bracket) {
+      return <H2hCupStep>[for (final day in H2hCupPolicy.bracketDays) ...day];
+    }
+    return <H2hCupStep>[
+      H2hCupStep(place, H2hCupRound.semi),
+      H2hCupStep(place, H2hCupRound.finale),
+    ];
+  }
+
+  /// The player [stage] left without a pair. A three-path cup: the one of
+  /// [entries] its semi-finals left out (three qualifiers). The bracket: the
+  /// one of [alive] its pairs left out, or null when [alive] is not known
+  /// (a round before it is still to be decided). Shared with the cup board
+  /// (`GetH2hCupBoard`) and the owners' cup (`GetOwnerH2hCup`).
+  static UserId? byeOf({
+    required bool bracket,
+    required H2hCupRound round,
+    required H2hCupStage? stage,
+    required List<H2hCupEntry> entries,
+    required List<UserId>? alive,
+  }) {
+    if (stage == null) {
+      return null;
+    }
+    if (!bracket) {
+      return round == H2hCupRound.semi
+          ? H2hCupPolicy.byeOf(entries, stage.pairs)
+          : null;
+    }
+    if (alive == null) {
+      return null;
+    }
+    final paired = <UserId>{
+      for (final pair in stage.pairs) ...[pair.home, pair.away],
+    };
+    for (final id in alive) {
+      if (!paired.contains(id)) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  /// The players that go on after [stage] in the bracket: its winners by
+  /// slot, then [bye]; null while [stage] is not decided or [alive] is not
+  /// known, so a round after it shows no bye of its own.
+  static List<UserId>? through(
+    H2hCupStage? stage,
+    List<UserId>? alive,
+    UserId? bye,
+  ) {
+    if (stage == null || alive == null || !stage.decided) {
+      return null;
+    }
+    final results = [...stage.results]
+      ..sort((a, b) => a.slot.compareTo(b.slot));
+    return <UserId>[
+      for (final r in results)
+        if (r.winner != null) r.winner!,
+      ?bye,
+    ];
   }
 
   /// The result stored for pair [slot] of [stage], or null until the stage

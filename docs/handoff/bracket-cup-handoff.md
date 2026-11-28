@@ -1,6 +1,6 @@
-# نقطة استئناف: كأس النخبة بشجرة الستة عشر (353 إلى 360b)
+# نقطة استئناف: كأس النخبة بشجرة الستة عشر (353 إلى 361)
 
-ملف تسليم لحساب آخر. البروتوكول: `docs/agent-script-protocol.md`، والمرجع الوحيد: `docs/project-context.md`. الشجرة تغلب هذا الملف عند أي اختلاف. أُنشئ في 2026-11-28 بعد سكربت 360b.
+ملف تسليم لحساب آخر. البروتوكول: `docs/agent-script-protocol.md`، والمرجع الوحيد: `docs/project-context.md`. الشجرة تغلب هذا الملف عند أي اختلاف. أُنشئ في 2026-11-28 بعد سكربت 360b وحُدّث بعد 361.
 
 ## قرارات المالك (2026-11-28)
 
@@ -20,15 +20,15 @@
 - 359 (`ed6bcf9d`): `RunH2hRounds._cupHoldsBack` و`H2hCupMonthPicker.isOver` يعدّان `titleCountOf(الشهر)`.
 - 360 (`b043cf68`): لوحة الكأس `H2hCupBoardBuilder` (يشترك فيها `GetH2hCupBoard` و`GetOwnerH2hCupPicks`) تعرض الشجرة مساراً واحداً `place` 1 بأدوارها الأربعة و`bye` من الباقين.
 - 360b (`61bd3195`): تنظيف ملاحظتَي info. `dart analyze` عند 35 ملاحظة info سابقة لـ360 لا تُمَسّ.
+- 361: قارئا المالك على الشجرة (منجز): `GetMyH2hCup` و`GetOwnerH2hCup` يقرآن في شهر الشجرة مساراً واحداً `place` 1 بأدواره الأربعة، ودوالّ `stepsOf` و`byeOf` و`through` مشتركة في `GetMyH2hCup` مع اللوحة؛ الاختبار `h2h_bracket_cup_owner_readers_test.dart`.
 
 ## المتبقي (بهذا الترتيب، الخادم قبل التطبيق)
 
-1. **361: قارئا المالك على الشجرة.** `GetMyH2hCup._view` و`GetOwnerH2hCup._path` يمرّان على المسارات الثلاثة (`state.entriesOf(place)` ونصف نهائي ونهائي غير موسومين بالشجرة). `GetMyH2hCup` تستعمله `GET /me/h2h-cup` وقسم المالك الإداري فقط، لا شاشة اللاعب. يُحلّ بنفس مبدأ 360: في شهر الشجرة مسار واحد وأدواره الأربعة، وطريقة `phaseOf` و`byeOf` كما في `H2hCupBoardBuilder`. الاختبارات: `get_my_h2h_cup_test` و`get_owner_h2h_cup_test` وملف جديد على نمط `h2h_bracket_cup_board_test.dart`.
-2. **362: نصوص الواجهة والشجرة.** في `apps/mobile/lib/features/h2h/h2h_cup_texts.dart`: `h2hCupRoundName` لا يعرف `round16` و`quarter` (يعيد «مرحلة»)، و`h2hCupPathName(1)` يعيد «مسار أوائل المجموعات» وهو خطأ لشجرة تضم الأوائل والثواني. و`widgets/h2h_cup_tree.dart` يمرّ على `path.stages` بالطول فيُفحص بأربع مراحل، و`widgets/h2h_cup_days.dart` و`h2h_cup_now.dart` و`h2h_cup_path.dart` تُفحص على لوحة شجرة. اختبار الشاشة الحقيقية بـ`ProviderScope` override، وتُشغَّل معه `test/audit/` (مشكلة نص الألوان `primaryText` وخريطة 360px بنص x2 سبق أن أسقطت الفحص الشامل).
-3. **قاعة المشاهير**: لقب واحد في الشجرة، و`visibleCupChampions` في `cup_champions_providers.dart` تخفي المركزين الثاني والثالث بعد 48 ساعة؛ يُتحقق أن عنوان «بطل كأس النخبة» يظهر بلقب واحد بلا فراغ.
-4. **التوثيق الختامي**: قسم في `docs/project-context.md` وتعليم الجدول في الخطط المعنية وسطر الحالة.
+1. **362: نصوص الواجهة والشجرة.** في `apps/mobile/lib/features/h2h/h2h_cup_texts.dart`: `h2hCupRoundName` لا يعرف `round16` و`quarter` (يعيد «مرحلة»)، و`h2hCupPathName(1)` يعيد «مسار أوائل المجموعات» وهو خطأ لشجرة تضم الأوائل والثواني. و`widgets/h2h_cup_tree.dart` يمرّ على `path.stages` بالطول فيُفحص بأربع مراحل، و`widgets/h2h_cup_days.dart` و`h2h_cup_now.dart` و`h2h_cup_path.dart` تُفحص على لوحة شجرة. اختبار الشاشة الحقيقية بـ`ProviderScope` override، وتُشغَّل معه `test/audit/` (مشكلة نص الألوان `primaryText` وخريطة 360px بنص x2 سبق أن أسقطت الفحص الشامل).
+2. **قاعة المشاهير**: لقب واحد في الشجرة، و`visibleCupChampions` في `cup_champions_providers.dart` تخفي المركزين الثاني والثالث بعد 48 ساعة؛ يُتحقق أن عنوان «بطل كأس النخبة» يظهر بلقب واحد بلا فراغ.
+3. **التوثيق الختامي**: قسم في `docs/project-context.md` وتعليم الجدول في الخطط المعنية وسطر الحالة.
 
-سؤال مفتوح للمالك: أي المتبقي أولاً، 361 (قارئا المالك) أم 362 (نصوص الواجهة)؟ كنت أميل إلى 361 لأن الخادم قبل التطبيق، والذي يراه اللاعب في ديسمبر هو 362.
+التالي: 362 (نصوص الواجهة والشجرة): الخادم صار يقرأ الشجرة في كل قراءاته، والذي يراه اللاعب في ديسمبر هو نصوص الواجهة.
 
 ## قبل الدفع (بإذن صريح فقط)
 
@@ -47,4 +47,4 @@
 
 ## أول رسالة في الجلسة الجديدة
 
-ارفع `nukhbaa-latest.zip` (الأمر بعد حفظ هذا الملف) وهذا الملف، واكتب: «أكمل من docs/handoff/bracket-cup-handoff.md، والبروتوكول docs/agent-script-protocol.md. المتبقي 361 ثم 362. ابدأ بـ361.»
+ارفع `nukhbaa-latest.zip` (الأمر بعد حفظ هذا الملف) وهذا الملف، واكتب: «أكمل من docs/handoff/bracket-cup-handoff.md، والبروتوكول docs/agent-script-protocol.md. المتبقي 362. ابدأ بـ362.»

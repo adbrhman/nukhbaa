@@ -28,13 +28,15 @@ final class OwnerH2hCupPath {
     this.title,
   });
 
-  /// The place in the elite groups the path is for: 1, 2 or 3.
+  /// The place in the elite groups the path is for: 1, 2 or 3. NK361_02b:
+  /// the one path of the bracket (December 2026 on) is the place 1.
   final int place;
 
   /// Its qualifiers, by group.
   final List<MyH2hCupPlayer> entrants;
 
-  /// Semi-finals, then the final.
+  /// Semi-finals, then the final; in the bracket, the round of sixteen, the
+  /// quarter-finals, the semi-finals and the final.
   final List<MyH2hCupStage> stages;
 
   /// The title once decided.
@@ -99,7 +101,8 @@ final class OwnerH2hCup {
   /// The month's approved rounds.
   final List<OwnerH2hCupRound> rounds;
 
-  /// The three paths; empty before the month has qualifiers.
+  /// The three paths, or the bracket's one (December 2026 on); empty before
+  /// the month has qualifiers.
   final List<OwnerH2hCupPath> paths;
 }
 
@@ -220,8 +223,11 @@ final class GetOwnerH2hCup {
 
     final paths = <OwnerH2hCupPath>[];
     if (state.entries.isNotEmpty) {
-      for (final place in H2hCupPolicy.places) {
-        paths.add(_path(place, state, player));
+      // NK361_02a: the bracket of December 2026 on is one path, the place 1,
+      // with every qualifier and its four rounds; before it, three paths.
+      final bracket = H2hCupPolicy.isBracket(shown);
+      for (final place in bracket ? const <int>[1] : H2hCupPolicy.places) {
+        paths.add(_path(place, state, player, bracket: bracket));
       }
     }
 
@@ -247,23 +253,29 @@ final class GetOwnerH2hCup {
   static OwnerH2hCupPath _path(
     int place,
     H2hCupState state,
-    MyH2hCupPlayer Function(UserId) player,
-  ) {
-    final entries = state.entriesOf(place);
+    MyH2hCupPlayer Function(UserId) player, {
+    required bool bracket,
+  }) {
+    final entries = bracket ? state.entries : state.entriesOf(place);
     final title = state.titleOf(place);
     final stages = <MyH2hCupStage>[];
-    for (final round in const [H2hCupRound.semi, H2hCupRound.finale]) {
-      final step = H2hCupStep(place, round);
+    var alive = bracket ? <UserId>[for (final e in entries) e.userId] : null;
+    for (final step in GetMyH2hCup.stepsOf(place, bracket: bracket)) {
       final stage = state.stageOf(step);
-      final bye = stage != null && round == H2hCupRound.semi
-          ? H2hCupPolicy.byeOf(entries, stage.pairs)
-          : null;
+      final bye = GetMyH2hCup.byeOf(
+        bracket: bracket,
+        round: step.round,
+        stage: stage,
+        entries: entries,
+        alive: alive,
+      );
+      alive = bracket ? GetMyH2hCup.through(stage, alive, bye) : null;
       stages.add(
         MyH2hCupStage(
-          round: round,
+          round: step.round,
           cupDay: step.cupDay,
           expectedDay: step.expectedDay,
-          phase: _phaseOf(step, stage, entries.length, title),
+          phase: GetMyH2hCup.phaseOf(step, stage, entries.length, title),
           attempt: stage?.attempt ?? 1,
           day: stage?.day,
           fixtureCount: stage?.fixtureCount,
@@ -276,7 +288,7 @@ final class GetOwnerH2hCup {
                       home: player(pair.home),
                       away: player(pair.away),
                       isMine: false,
-                      result: _resultOf(stage, pair.slot),
+                      result: GetMyH2hCup.resultOf(stage, pair.slot),
                     ),
                 ],
           bye: bye == null ? null : player(bye),
@@ -297,32 +309,5 @@ final class GetOwnerH2hCup {
               runnerUp: runnerUp == null ? null : player(runnerUp),
             ),
     );
-  }
-
-  static MyH2hCupPhase _phaseOf(
-    H2hCupStep step,
-    H2hCupStage? stage,
-    int entrants,
-    H2hCupTitle? title,
-  ) {
-    if (stage == null) {
-      final neverPlayed = step.round == H2hCupRound.semi
-          ? entrants <= 2
-          : title != null;
-      return neverPlayed ? MyH2hCupPhase.skipped : MyH2hCupPhase.waiting;
-    }
-    if (stage.decided) {
-      return MyH2hCupPhase.decided;
-    }
-    return stage.locked ? MyH2hCupPhase.live : MyH2hCupPhase.scheduled;
-  }
-
-  static H2hCupResult? _resultOf(H2hCupStage stage, int slot) {
-    for (final result in stage.results) {
-      if (result.slot == slot) {
-        return result;
-      }
-    }
-    return null;
   }
 }
